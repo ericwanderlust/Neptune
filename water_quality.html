@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="水质溯源">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 水质溯源</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .quality-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 120px);
+            padding: var(--spacing-lg);
+        }
+
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        .analysis-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        /* 水质监测总览 */
+        .quality-overview {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        .quality-metric {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            position: relative;
+        }
+
+        .quality-metric.alert {
+            border-left: 4px solid var(--danger);
+            background: rgba(255, 56, 56, 0.05);
+        }
+
+        .quality-metric.warning {
+            border-left: 4px solid var(--warning);
+            background: rgba(255, 165, 2, 0.05);
+        }
+
+        .quality-metric.normal {
+            border-left: 4px solid var(--success);
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            font-size: 20px;
+        }
+
+        .metric-icon.ph {
+            background: rgba(74, 144, 184, 0.1);
+            color: var(--primary);
+        }
+
+        .metric-icon.turbidity {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .metric-icon.chlorine {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .metric-icon.bacteria {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        .metric-content {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .metric-value {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .metric-status {
+            font-size: var(--font-size-xs);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .metric-trend {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+        }
+
+        /* 溯源地图 */
+        .trace-map {
+            flex: 1;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            position: relative;
+            overflow: hidden;
+            min-height: 400px;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: var(--spacing-md);
+            left: var(--spacing-md);
+            z-index: 1000;
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .trace-controls {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            z-index: 1000;
+            background: var(--bg-primary);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 250px;
+        }
+
+        .trace-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .trace-form label {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .trace-legend {
+            position: absolute;
+            bottom: var(--spacing-md);
+            left: var(--spacing-md);
+            background: var(--bg-primary);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        /* 监测点列表 */
+        .monitoring-points {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .points-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .points-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .point-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .point-item.selected {
+            background: rgba(74, 144, 184, 0.1);
+        }
+
+        .point-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .point-status.normal {
+            background: var(--success);
+        }
+
+        .point-status.warning {
+            background: var(--warning);
+        }
+
+        .point-status.alert {
+            background: var(--danger);
+            animation: blink 1s infinite;
+        }
+
+        .point-info {
+            flex: 1;
+        }
+
+        .point-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .point-location {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        .point-value {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+        }
+
+        /* 历史分析 */
+        .history-analysis {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .analysis-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .analysis-content {
+            padding: var(--spacing-lg);
+        }
+
+        .chart-container {
+            height: 250px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .comparison-table {
+            width: 100%;
+            font-size: var(--font-size-sm);
+        }
+
+        .comparison-table th {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+        }
+
+        .comparison-table td {
+            text-align: center;
+        }
+
+        .value-normal {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .value-warning {
+            color: var(--warning);
+            font-weight: 500;
+        }
+
+        .value-alert {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        /* 污染源分析 */
+        .pollution-analysis {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .pollution-sources {
+            display: grid;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border-left: 4px solid transparent;
+        }
+
+        .source-item.high-risk {
+            border-left-color: var(--danger);
+        }
+
+        .source-item.medium-risk {
+            border-left-color: var(--warning);
+        }
+
+        .source-item.low-risk {
+            border-left-color: var(--info);
+        }
+
+        .source-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            font-size: 18px;
+        }
+
+        .source-icon.industrial {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        .source-icon.domestic {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .source-icon.agricultural {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .source-content {
+            flex: 1;
+        }
+
+        .source-name {
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .source-details {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .source-risk {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .source-risk.high {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        .source-risk.medium {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .source-risk.low {
+            background: rgba(0, 210, 211, 0.1);
+            color: var(--info);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1400px) {
+            .quality-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-panel {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        /* 状态栏样式 */
+        .status-bar {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .status-bar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+    <div class="water-quality-container">
+        <!-- 主内容区 -->
+        <div class="quality-layout">
+            <!-- 左侧主区域 -->
+            <div class="main-area">
+                <!-- 水质监测总览 -->
+                <div class="quality-overview">
+                    <div class="flex-between mb-md">
+                        <h2 class="font-semibold">水质监测总览</h2>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-sm" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> 刷新数据
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="startTrace()">
+                                <i class="fas fa-search"></i> 开始溯源
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overview-grid">
+                        <div class="quality-metric normal">
+                            <div class="metric-icon ph">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">pH值</div>
+                                <div class="metric-value">7.2</div>
+                                <div class="metric-status text-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>正常范围</span>
+                                </div>
+                            </div>
+                            <div class="metric-trend text-success">
+                                <i class="fas fa-arrow-up"></i> 0.1
+                            </div>
+                        </div>
+
+                        <div class="quality-metric warning">
+                            <div class="metric-icon turbidity">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">浊度</div>
+                                <div class="metric-value">1.8 NTU</div>
+                                <div class="metric-status text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>轻微超标</span>
+                                </div>
+                            </div>
+                            <div class="metric-trend text-danger">
+                                <i class="fas fa-arrow-up"></i> 0.3
+                            </div>
+                        </div>
+
+                        <div class="quality-metric normal">
+                            <div class="metric-icon chlorine">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">余氯</div>
+                                <div class="metric-value">0.5 mg/L</div>
+                                <div class="metric-status text-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>符合标准</span>
+                                </div>
+                            </div>
+                            <div class="metric-trend text-muted">
+                                <i class="fas fa-minus"></i> 0.0
+                            </div>
+                        </div>
+
+                        <div class="quality-metric alert">
+                            <div class="metric-icon bacteria">
+                                <i class="fas fa-microscope"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">细菌总数</div>
+                                <div class="metric-value">120 CFU/mL</div>
+                                <div class="metric-status text-danger">
+                                    <i class="fas fa-times-circle"></i>
+                                    <span>超标告警</span>
+                                </div>
+                            </div>
+                            <div class="metric-trend text-danger">
+                                <i class="fas fa-arrow-up"></i> 25
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 溯源地图 -->
+                <div class="trace-map">
+                    <div class="map-controls">
+                        <div class="btn-group">
+                            <button class="btn btn-sm active">
+                                <i class="fas fa-map"></i> 网络图
+                            </button>
+                            <button class="btn btn-sm">
+                                <i class="fas fa-project-diagram"></i> 流向图
+                            </button>
+                            <button class="btn btn-sm">
+                                <i class="fas fa-layer-group"></i> 热力图
+                            </button>
+                        </div>
+                        <button class="btn btn-sm" onclick="exportMap()">
+                            <i class="fas fa-download"></i> 导出地图
+                        </button>
+                    </div>
+
+                    <div class="trace-controls">
+                        <h4 class="font-semibold mb-md">溯源分析</h4>
+                        <div class="trace-form">
+                            <label>检测点位</label>
+                            <select class="form-control form-select">
+                                <option>WQ001 - A区检测点</option>
+                                <option>WQ002 - B区检测点</option>
+                                <option>WQ003 - C区检测点</option>
+                                <option>WQ004 - 出厂水检测</option>
+                            </select>
+
+                            <label>检测参数</label>
+                            <select class="form-control form-select">
+                                <option>细菌总数</option>
+                                <option>浊度</option>
+                                <option>pH值</option>
+                                <option>余氯</option>
+                                <option>重金属</option>
+                            </select>
+
+                            <label>时间范围</label>
+                            <select class="form-control form-select">
+                                <option>最近1小时</option>
+                                <option>最近6小时</option>
+                                <option>最近24小时</option>
+                                <option>最近7天</option>
+                                <option>自定义时间</option>
+                            </select>
+
+                            <button class="btn btn-primary btn-block mt-md" onclick="executeTrace()">
+                                <i class="fas fa-play"></i> 执行溯源
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="trace-legend">
+                        <div class="font-semibold text-sm mb-sm">图例说明</div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--success);"></div>
+                            <span>正常水质</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--warning);"></div>
+                            <span>轻微超标</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--danger);"></div>
+                            <span>严重超标</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--primary);"></div>
+                            <span>溯源路径</span>
+                        </div>
+                    </div>
+
+                    <!-- 地图占位 -->
+                    <div style="height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                        <div class="text-center">
+                            <i class="fas fa-project-diagram" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <p>水质溯源地图</p>
+                            <p class="text-sm text-muted mt-sm">点击执行溯源查看污染传播路径</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧分析面板 -->
+            <div class="analysis-panel">
+                <!-- 监测点状态 -->
+                <div class="monitoring-points">
+                    <div class="points-header">
+                        <h4 class="font-semibold">监测点状态</h4>
+                        <span class="text-sm text-muted">共12个点位</span>
+                    </div>
+                    <div class="points-list">
+                        <div class="point-item selected" onclick="selectPoint('WQ001')">
+                            <div class="point-status alert"></div>
+                            <div class="point-info">
+                                <div class="point-name">WQ001</div>
+                                <div class="point-location">A区供水末端</div>
+                            </div>
+                            <div class="point-value text-danger">超标</div>
+                        </div>
+
+                        <div class="point-item" onclick="selectPoint('WQ002')">
+                            <div class="point-status warning"></div>
+                            <div class="point-info">
+                                <div class="point-name">WQ002</div>
+                                <div class="point-location">B区主管网</div>
+                            </div>
+                            <div class="point-value text-warning">临界</div>
+                        </div>
+
+                        <div class="point-item" onclick="selectPoint('WQ003')">
+                            <div class="point-status normal"></div>
+                            <div class="point-info">
+                                <div class="point-name">WQ003</div>
+                                <div class="point-location">C区配水点</div>
+                            </div>
+                            <div class="point-value text-success">正常</div>
+                        </div>
+
+                        <div class="point-item" onclick="selectPoint('WQ004')">
+                            <div class="point-status normal"></div>
+                            <div class="point-info">
+                                <div class="point-name">WQ004</div>
+                                <div class="point-location">水厂出水口</div>
+                            </div>
+                            <div class="point-value text-success">正常</div>
+                        </div>
+
+                        <div class="point-item" onclick="selectPoint('WQ005')">
+                            <div class="point-status normal"></div>
+                            <div class="point-info">
+                                <div class="point-name">WQ005</div>
+                                <div class="point-location">A区中继点</div>
+                            </div>
+                            <div class="point-value text-success">正常</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史对比分析 -->
+                <div class="history-analysis">
+                    <div class="analysis-tabs tabs">
+                        <button class="tab active">趋势分析</button>
+                        <button class="tab">对比分析</button>
+                        <button class="tab">异常分析</button>
+                    </div>
+                    
+                    <div class="analysis-content">
+                        <div class="chart-container">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line" style="font-size: 32px; margin-bottom: 8px;"></i>
+                                <p>细菌总数24小时趋势</p>
+                            </div>
+                        </div>
+
+                        <table class="comparison-table table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>数值</th>
+                                    <th>标准值</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>10:00</td>
+                                    <td class="value-alert">120</td>
+                                    <td>≤100</td>
+                                    <td><span class="badge badge-danger">超标</span></td>
+                                </tr>
+                                <tr>
+                                    <td>09:00</td>
+                                    <td class="value-warning">98</td>
+                                    <td>≤100</td>
+                                    <td><span class="badge badge-warning">临界</span></td>
+                                </tr>
+                                <tr>
+                                    <td>08:00</td>
+                                    <td class="value-normal">85</td>
+                                    <td>≤100</td>
+                                    <td><span class="badge badge-success">正常</span></td>
+                                </tr>
+                                <tr>
+                                    <td>07:00</td>
+                                    <td class="value-normal">78</td>
+                                    <td>≤100</td>
+                                    <td><span class="badge badge-success">正常</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 污染源分析 -->
+                <div class="pollution-analysis">
+                    <h4 class="font-semibold mb-md">潜在污染源</h4>
+                    
+                    <div class="pollution-sources">
+                        <div class="source-item high-risk">
+                            <div class="source-icon industrial">
+                                <i class="fas fa-industry"></i>
+                            </div>
+                            <div class="source-content">
+                                <div class="source-name">A区化工厂</div>
+                                <div class="source-details">距离检测点1.2km，上游位置</div>
+                            </div>
+                            <span class="source-risk high">高风险</span>
+                        </div>
+
+                        <div class="source-item medium-risk">
+                            <div class="source-icon domestic">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div class="source-content">
+                                <div class="source-name">居民区排水</div>
+                                <div class="source-details">老旧小区，管网老化</div>
+                            </div>
+                            <span class="source-risk medium">中风险</span>
+                        </div>
+
+                        <div class="source-item low-risk">
+                            <div class="source-icon agricultural">
+                                <i class="fas fa-seedling"></i>
+                            </div>
+                            <div class="source-content">
+                                <div class="source-name">农田径流</div>
+                                <div class="source-details">季节性影响，当前雨季</div>
+                            </div>
+                            <span class="source-risk low">低风险</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-lg">
+                        <button class="btn btn-primary btn-block" onclick="generatePollutionReport()">
+                            <i class="fas fa-file-alt"></i> 生成污染源分析报告
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <div class="status-bar-content">
+            <span><i class="fas fa-flask text-info"></i> 水质监测系统运行正常</span>
+            <span>监测点位: 12个</span>
+            <span>异常点位: 1个</span>
+            <span>最后更新: 2分钟前</span>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="safari-compatibility.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof NavigationManager !== 'undefined') { NavigationManager.init(); }
+            if (typeof Clock !== 'undefined') { Clock.init(); }
+            OperationLogger.log('访问页面', { page: '水质溯源' });
+        });
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

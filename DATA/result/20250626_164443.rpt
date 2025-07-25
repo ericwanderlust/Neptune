@@ -1,0 +1,134 @@
+
+  ******************************************************************
+  *                           E P A N E T                          *
+  *                   Hydraulic and Water Quality                  *
+  *                   Analysis for Pipe Networks                   *
+  *                         Version 3.0.000                        *
+  ******************************************************************
+
+  Exported by WaterDesk 5.0.0
+
+  Input Data File ............... 20250626_164443.inp
+  Number of Junctions ........... 1293
+  Number of Reservoirs .......... 1
+  Number of Tanks ............... 1
+  Number of Pipes ............... 1337
+  Number of Pumps ............... 3
+  Number of Valves .............. 15
+  Head Loss Model ............... H-W
+  Leakage Model ................. NONE
+  Demand Model .................. FIXED
+  Demand Multiplier ............. 1
+  Number of Emitters ............ 0
+  Head Tolerance ................ 0
+  Flow Tolerance ................ 0
+  Flow Change Limit ............. 0
+  Quality Model ................. AGE
+  Number of Sources ............. 0
+  Hydraulic Time Step ........... 60 minutes
+  Quality Time Step ............. 3600 seconds
+  Report Time Step .............. 60 minutes
+  Total Duration ................ 24 hours
+
+  Hour 0:00:00
+    Pipe S00679-11SE20A-S00677-11SE20A status changed to closed by elapsed time control
+  Network balanced in 5 trials.
+
+  Hour 1:00:00
+  Network balanced in 3 trials.
+
+  Hour 1:28:15  (Tank SWSR-CHAIWAN closed)
+  WARNING - network is unbalanced. Flows and pressures may not be correct.
+
+  Hour 2:00:00
+    Pipe P02828 status changed to open by elapsed time control
+  Network balanced in 8 trials.
+
+  Hour 3:00:00
+  Network balanced in 3 trials.
+
+  Hour 4:00:00
+  Network balanced in 1 trials.
+
+  Hour 5:00:00
+  Network balanced in 2 trials.
+
+  Hour 6:00:00
+    Pipe P02828 status changed to closed by elapsed time control
+  Network balanced in 4 trials.
+
+  Hour 6:16:33  (Tank SWSR-CHAIWAN closed)
+  WARNING - network is unbalanced. Flows and pressures may not be correct.
+
+  Hour 7:00:00
+    Pipe S00679-11SE20A-S00677-11SE20A status changed to open by elapsed time control
+  Network balanced in 8 trials.
+
+  Hour 8:00:00
+  Network balanced in 3 trials.
+
+  Hour 9:00:00
+  Network balanced in 3 trials.
+
+  Hour 10:00:00
+  Network balanced in 2 trials.
+
+  Hour 11:00:00
+  Network balanced in 2 trials.
+
+  Hour 12:00:00
+    Pipe S00679-11SE20A-S00677-11SE20A status changed to closed by elapsed time control
+    Pipe P02828 status changed to open by elapsed time control
+  Network balanced in 4 trials.
+
+  Hour 13:00:00
+  Network balanced in 2 trials.
+
+  Hour 14:00:00
+  Network balanced in 3 trials.
+
+  Hour 15:00:00
+  Network balanced in 2 trials.
+
+  Hour 16:00:00
+  Network balanced in 2 trials.
+
+  Hour 17:00:00
+  Network balanced in 3 trials.
+
+  Hour 18:00:00
+  Network balanced in 3 trials.
+
+  Hour 19:00:00
+    Pipe P02828 status changed to closed by elapsed time control
+  Network balanced in 4 trials.
+
+  Hour 20:00:00
+  Network balanced in 1 trials.
+
+  Hour 20:20:10  (Tank SWSR-CHAIWAN closed)
+  WARNING - network is unbalanced. Flows and pressures may not be correct.
+
+  Hour 21:00:00
+    Pipe S00679-11SE20A-S00677-11SE20A status changed to open by elapsed time control
+  Network balanced in 8 trials.
+
+  Hour 22:00:00
+  Network balanced in 3 trials.
+
+  Hour 23:00:00
+  Network balanced in 2 trials.
+
+  Hour 24:00:00
+  Network balanced in 3 trials.
+
+  Water Quality Mass Balance
+  --------------------------
+  Initial Storage           0
+  Mass Inflow               0
+  Mass Outflow              311.883
+  Mass Reacted              -1848.07
+  Final Storage             97.8338
+  Percent Imbalance         0
+
+  Simulation completed in 0.092 sec.

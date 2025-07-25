@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 建模工作台</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f5f6fa;
+            color: #2f3640;
+            overflow: hidden;
+        }
+
+        .top-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            position: relative;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .system-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .tool-btn {
+            padding: 6px 10px;
+            border: 1px solid transparent;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #57606f;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tool-btn:hover,
+        .tool-btn.active {
+            background: #4A90B8;
+            color: white;
+            border-color: #4A90B8;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #57606f;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #4A90B8;
+            background: white;
+            color: #4A90B8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .btn.primary {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background: #357abd;
+        }
+
+        .logout-btn {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252;
+            border-color: #ff5252;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            color: #57606f;
+            transition: all 0.3s;
+        }
+
+        .panel-tab.active {
+            background: white;
+            color: #4A90B8;
+            font-weight: 600;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .section {
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-header {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 12px;
+            color: #2f3640;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .section-header:hover {
+            background: #e8f4f8;
+        }
+
+        .section-content {
+            padding: 12px 15px;
+            display: none;
+        }
+
+        .section.expanded .section-content {
+            display: block;
+        }
+
+        .component-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            cursor: grab;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .component-item:hover {
+            background: #e8f4f8;
+            border-color: #4A90B8;
+        }
+
+        .component-item:active {
+            cursor: grabbing;
+        }
+
+        .component-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #4A90B8;
+        }
+
+        .component-name {
+            font-size: 11px;
+            color: #2f3640;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 11px;
+            color: #4A5568;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: #4A90B8;
+            outline: none;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #ffffff;
+        }
+
+        #modeling-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .drawing-toolbar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .draw-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #57606f;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .draw-btn:hover,
+        .draw-btn.active {
+            background: #4A90B8;
+            color: white;
+            border-color: #4A90B8;
+        }
+
+        .right-panel {
+            width: 320px;
+            background: #ffffff;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .properties-header {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            font-size: 12px;
+            color: #2f3640;
+        }
+
+        .properties-content {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .property-section {
+            margin-bottom: 20px;
+        }
+
+        .property-section h4 {
+            color: #4A90B8;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .property-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 11px;
+        }
+
+        .property-row:last-child {
+            border-bottom: none;
+        }
+
+        .property-label {
+            color: #57606f;
+        }
+
+        .property-value {
+            font-weight: 500;
+            color: #2f3640;
+        }
+
+        .status-bar {
+            height: 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 11px;
+            color: #57606f;
+            justify-content: space-between;
+        }
+
+        .calculation-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            min-width: 250px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+
+        .calc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .calc-title {
+            font-weight: 600;
+            color: #4A90B8;
+            font-size: 13px;
+        }
+
+        .calc-content {
+            font-size: 11px;
+        }
+
+        .calc-result {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .calc-result:last-child {
+            border-bottom: none;
+        }
+
+        /* 建模特有样式 */
+        .node-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .pipe-line {
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .selected-element {
+            stroke: #ff6b6b !important;
+            stroke-width: 4 !important;
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #57606f;
+        }
+
+        .close-btn:hover {
+            color: #2f3640;
+        }
+
+        @media (max-width: 1200px) {
+            .left-panel, .right-panel {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div class="system-title">
+                <i class="fas fa-drafting-compass" style="color: #4A90B8; margin-right: 8px;"></i>
+                在线水力模型系统 - 建模工作台
+            </div>
+            
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button class="tool-btn" onclick="newModel()">
+                        <i class="fas fa-file"></i> 新建
+                    </button>
+                    <button class="tool-btn" onclick="openModel()">
+                        <i class="fas fa-folder-open"></i> 打开
+                    </button>
+                    <button class="tool-btn" onclick="saveModel()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="tool-btn" onclick="runCalculation()">
+                        <i class="fas fa-calculator"></i> 计算
+                    </button>
+                    <button class="tool-btn" onclick="showResults()">
+                        <i class="fas fa-chart-line"></i> 结果
+                    </button>
+                    <button class="tool-btn" onclick="validateModel()">
+                        <i class="fas fa-check-circle"></i> 验证
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="tool-btn" onclick="importData()">
+                        <i class="fas fa-file-import"></i> 导入
+                    </button>
+                    <button class="tool-btn" onclick="exportModel()">
+                        <i class="fas fa-file-export"></i> 导出
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-right">
+            <button class="btn primary" onclick="deployToOnline()">
+                <i class="fas fa-cloud-upload-alt"></i> 部署到在线系统
+            </button>
+            <a href="dashboard_overview.html" class="btn">
+                <i class="fas fa-home"></i> 运营总览
+            </a>
+            <a href="monitor_realtime_map.html" class="btn">
+                <i class="fas fa-map"></i> 实时监控
+            </a>
+            <a href="login.html" class="btn logout-btn">
+                <i class="fas fa-sign-out-alt"></i> 退出登录
+            </a>
+            <span><i class="fas fa-user" style="color: #4A90B8; margin-right: 5px;"></i>建模工程师 - 刘工</span>
+            <span>|</span>
+            <span><i class="fas fa-circle" style="color: #2ed573; margin-right: 5px;"></i>在线</span>
+            <span>|</span>
+            <span id="currentTime">2024-01-15 14:30:25</span>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- 左侧工具面板 -->
+        <aside class="left-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchPanel('components')">组件</button>
+                <button class="panel-tab" onclick="switchPanel('layers')">图层</button>
+                <button class="panel-tab" onclick="switchPanel('scenarios')">方案</button>
+            </div>
+            
+            <div class="panel-content">
+                <!-- 组件库 -->
+                <div id="componentsPanel">
+                    <div class="section expanded">
+                        <div class="section-header" onclick="toggleSection(this)">
+                            <span><i class="fas fa-circle"></i> 节点</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="section-content">
+                            <div class="component-item" draggable="true" data-type="junction" data-icon="fa-circle">
+                                <div class="component-icon"><i class="fas fa-circle"></i></div>
+                                <div class="component-name">节点</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-type="reservoir" data-icon="fa-square">
+                                <div class="component-icon"><i class="fas fa-square"></i></div>
+                                <div class="component-name">水库</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-type="tank" data-icon="fa-square-full">
+                                <div class="component-icon"><i class="fas fa-square-full"></i></div>
+                                <div class="component-name">水塔</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-type="pump" data-icon="fa-cog">
+                                <div class="component-icon"><i class="fas fa-cog"></i></div>
+                                <div class="component-name">泵站</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section expanded">
+                        <div class="section-header" onclick="toggleSection(this)">
+                            <span><i class="fas fa-minus"></i> 管道</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="section-content">
+                            <div class="component-item" draggable="true" data-type="pipe" data-icon="fa-minus">
+                                <div class="component-icon"><i class="fas fa-minus"></i></div>
+                                <div class="component-name">管道</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-type="valve" data-icon="fa-stop">
+                                <div class="component-icon"><i class="fas fa-stop"></i></div>
+                                <div class="component-name">阀门</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-header" onclick="toggleSection(this)">
+                            <span><i class="fas fa-tools"></i> 设备</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="section-content">
+                            <div class="component-item" draggable="true" data-type="meter" data-icon="fa-gauge">
+                                <div class="component-icon"><i class="fas fa-gauge"></i></div>
+                                <div class="component-name">流量计</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-type="sensor" data-icon="fa-thermometer">
+                                <div class="component-icon"><i class="fas fa-thermometer"></i></div>
+                                <div class="component-name">传感器</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 图层管理 -->
+                <div id="layersPanel" style="display: none;">
+                    <div class="section expanded">
+                        <div class="section-header">
+                            <span><i class="fas fa-layer-group"></i> 可见图层</span>
+                        </div>
+                        <div class="section-content">
+                            <div style="margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked> 管网节点
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked> 管道
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked> 阀门
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox"> 流向箭头
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox"> 标签
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 方案管理 -->
+                <div id="scenariosPanel" style="display: none;">
+                    <div class="section expanded">
+                        <div class="section-header">
+                            <span><i class="fas fa-project-diagram"></i> 模拟方案</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label class="form-label">当前方案</label>
+                                <select class="form-select">
+                                    <option>基础方案</option>
+                                    <option>应急方案</option>
+                                    <option>扩建方案</option>
+                                </select>
+                            </div>
+                            <button class="btn" style="width: 100%; margin-bottom: 8px;">
+                                <i class="fas fa-plus"></i> 新建方案
+                            </button>
+                            <button class="btn" style="width: 100%;">
+                                <i class="fas fa-copy"></i> 复制方案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 地图绘制区域 -->
+        <main class="map-container">
+            <div class="drawing-toolbar">
+                <button class="draw-btn active" data-tool="select" onclick="selectTool(this, 'select')">
+                    <i class="fas fa-mouse-pointer"></i> 选择
+                </button>
+                <button class="draw-btn" data-tool="node" onclick="selectTool(this, 'node')">
+                    <i class="fas fa-circle"></i> 节点
+                </button>
+                <button class="draw-btn" data-tool="pipe" onclick="selectTool(this, 'pipe')">
+                    <i class="fas fa-minus"></i> 管道
+                </button>
+                <button class="draw-btn" data-tool="pan" onclick="selectTool(this, 'pan')">
+                    <i class="fas fa-hand-paper"></i> 平移
+                </button>
+                <button class="draw-btn" data-tool="zoom" onclick="selectTool(this, 'zoom')">
+                    <i class="fas fa-search-plus"></i> 缩放
+                </button>
+            </div>
+            
+            <div id="modeling-map"></div>
+            
+            <!-- 计算结果面板 -->
+            <div class="calculation-panel" id="calculationPanel" style="display: none;">
+                <div class="calc-header">
+                    <div class="calc-title">水力计算结果</div>
+                    <button class="close-btn" onclick="hideCalculationPanel()">&times;</button>
+                </div>
+                <div class="calc-content">
+                    <div class="calc-result">
+                        <span>总流量</span>
+                        <span>2,350 L/s</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>平均压力</span>
+                        <span>0.32 MPa</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>最大流速</span>
+                        <span>1.85 m/s</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>水头损失</span>
+                        <span>12.5 m</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>计算时间</span>
+                        <span>0.8 秒</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧属性面板 -->
+        <aside class="right-panel">
+            <div class="properties-header">
+                <i class="fas fa-cog"></i> 属性设置
+            </div>
+            <div class="properties-content" id="propertiesContent">
+                <div class="property-section">
+                    <h4>选择元素以查看属性</h4>
+                    <p style="font-size: 11px; color: #57606f; line-height: 1.4;">
+                        在地图上点击节点、管道或其他元素来查看和编辑其属性。您也可以从左侧组件库拖拽新元素到地图上。
+                    </p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <div>
+            <span>节点: 125 | 管道: 98 | 阀门: 23</span>
+        </div>
+        <div>
+            <span id="coordinates">坐标: 114.1694, 22.3193</span>
+        </div>
+        <div>
+            <span id="modelStatus">模型状态: 未计算</span>
+        </div>
+    </div>
+
+    <!-- 元素属性编辑模态框 -->
+    <div class="modal" id="elementModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">元素属性</div>
+                <button class="close-btn" onclick="closeElementModal()">&times;</button>
+            </div>
+            <div id="modalContent">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let currentTool = 'select';
+        let selectedElement = null;
+        let modelElements = {
+            nodes: [],
+            pipes: [],
+            valves: []
+        };
+
+        // 初始化应用
+        function initializeApp() {
+            initMap();
+            initDragAndDrop();
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        // 初始化地图
+        function initMap() {
+            map = L.map('modeling-map').setView([22.3193, 114.1694], 12);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // 添加点击事件监听器
+            map.on('click', handleMapClick);
+            map.on('mousemove', updateCoordinates);
+        }
+
+        // 处理地图点击
+        function handleMapClick(e) {
+            if (currentTool === 'node') {
+                addNode(e.latlng);
+            } else if (currentTool === 'select') {
+                // 取消之前的选择
+                if (selectedElement) {
+                    selectedElement.setStyle({color: '#4A90B8'});
+                }
+                selectedElement = null;
+                showElementProperties(null);
+            }
+        }
+
+        // 添加节点
+        function addNode(latlng) {
+            const nodeId = `N${modelElements.nodes.length + 1}`;
+            const node = L.circleMarker(latlng, {
+                radius: 6,
+                fillColor: '#4A90B8',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+
+            node.nodeData = {
+                id: nodeId,
+                type: 'junction',
+                elevation: 100,
+                demand: 0,
+                pressure: 0
+            };
+
+            node.on('click', function(e) {
+                L.DomEvent.stopPropagation(e);
+                selectElement(node);
+            });
+
+            modelElements.nodes.push(node);
+            updateModelStatus();
+        }
+
+        // 选择元素
+        function selectElement(element) {
+            // 取消之前的选择
+            if (selectedElement) {
+                selectedElement.setStyle({color: '#4A90B8'});
+            }
+            
+            // 选择新元素
+            selectedElement = element;
+            element.setStyle({color: '#ff6b6b'});
+            
+            showElementProperties(element);
+        }
+
+        // 显示元素属性
+        function showElementProperties(element) {
+            const content = document.getElementById('propertiesContent');
+            
+            if (!element) {
+                content.innerHTML = `
+                    <div class="property-section">
+                        <h4>选择元素以查看属性</h4>
+                        <p style="font-size: 11px; color: #57606f; line-height: 1.4;">
+                            在地图上点击节点、管道或其他元素来查看和编辑其属性。
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (element.nodeData) {
+                showNodeProperties(element.nodeData);
+            } else if (element.pipeData) {
+                showPipeProperties(element.pipeData);
+            }
+        }
+
+        // 显示节点属性
+        function showNodeProperties(nodeData) {
+            const content = document.getElementById('propertiesContent');
+            content.innerHTML = `
+                <div class="property-section">
+                    <h4>节点属性</h4>
+                    <div class="form-group">
+                        <label class="form-label">节点ID</label>
+                        <input type="text" class="form-input" value="${nodeData.id}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">类型</label>
+                        <select class="form-select">
+                            <option value="junction" ${nodeData.type === 'junction' ? 'selected' : ''}>节点</option>
+                            <option value="reservoir" ${nodeData.type === 'reservoir' ? 'selected' : ''}>水库</option>
+                            <option value="tank" ${nodeData.type === 'tank' ? 'selected' : ''}>水塔</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">高程 (m)</label>
+                        <input type="number" class="form-input" value="${nodeData.elevation}" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">需水量 (L/s)</label>
+                        <input type="number" class="form-input" value="${nodeData.demand}" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">压力 (MPa)</label>
+                        <input type="number" class="form-input" value="${nodeData.pressure}" step="0.01" readonly>
+                    </div>
+                    <button class="btn" style="width: 100%; margin-top: 10px;" onclick="applyNodeChanges()">
+                        应用更改
+                    </button>
+                </div>
+            `;
+        }
+
+        // 工具栏功能
+        function selectTool(button, tool) {
+            document.querySelectorAll('.draw-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            currentTool = tool;
+            
+            // 更改鼠标样式
+            const mapContainer = document.getElementById('modeling-map');
+            mapContainer.style.cursor = tool === 'select' ? 'default' : 
+                                       tool === 'pan' ? 'move' : 'crosshair';
+        }
+
+        // 面板切换
+        function switchPanel(panel) {
+            document.querySelectorAll('.panel-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('componentsPanel').style.display = panel === 'components' ? 'block' : 'none';
+            document.getElementById('layersPanel').style.display = panel === 'layers' ? 'block' : 'none';
+            document.getElementById('scenariosPanel').style.display = panel === 'scenarios' ? 'block' : 'none';
+        }
+
+        // 展开/折叠节
+        function toggleSection(header) {
+            const section = header.parentElement;
+            section.classList.toggle('expanded');
+            
+            const icon = header.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (icon) {
+                icon.className = section.classList.contains('expanded') ? 
+                    'fas fa-chevron-down' : 'fas fa-chevron-up';
+            }
+        }
+
+        // 初始化拖拽
+        function initDragAndDrop() {
+            const componentItems = document.querySelectorAll('.component-item');
+            componentItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+            });
+
+            const mapContainer = document.getElementById('modeling-map');
+            mapContainer.addEventListener('dragover', handleDragOver);
+            mapContainer.addEventListener('drop', handleDrop);
+        }
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.type);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const componentType = e.dataTransfer.getData('text/plain');
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 转换为地图坐标
+            const latlng = map.containerPointToLatLng([x, y]);
+            
+            if (componentType === 'junction' || componentType === 'reservoir' || componentType === 'tank') {
+                addNode(latlng);
+            }
+        }
+
+        // 工具栏功能
+        function newModel() {
+            if (confirm('确定要创建新模型吗？当前未保存的更改将丢失。')) {
+                // 清空地图
+                map.eachLayer(layer => {
+                    if (layer !== map._layers[Object.keys(map._layers)[0]]) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                modelElements = { nodes: [], pipes: [], valves: [] };
+                updateModelStatus();
+                alert('新模型已创建');
+            }
+        }
+
+        function saveModel() {
+            // 模拟保存
+            const modelData = {
+                nodes: modelElements.nodes.map(n => n.nodeData),
+                pipes: modelElements.pipes.map(p => p.pipeData),
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('保存模型数据:', modelData);
+            alert('模型已保存');
+        }
+
+        function runCalculation() {
+            document.getElementById('modelStatus').textContent = '模型状态: 计算中...';
+            
+            // 模拟计算过程
+            setTimeout(() => {
+                document.getElementById('modelStatus').textContent = '模型状态: 计算完成';
+                document.getElementById('calculationPanel').style.display = 'block';
+            }, 2000);
+        }
+
+        function hideCalculationPanel() {
+            document.getElementById('calculationPanel').style.display = 'none';
+        }
+
+        function validateModel() {
+            const issues = [];
+            
+            if (modelElements.nodes.length === 0) {
+                issues.push('模型中没有节点');
+            }
+            
+            if (modelElements.pipes.length === 0) {
+                issues.push('模型中没有管道');
+            }
+            
+            if (issues.length > 0) {
+                alert('模型验证失败:\n' + issues.join('\n'));
+            } else {
+                alert('模型验证通过！');
+            }
+        }
+
+        function deployToOnline() {
+            if (confirm('确定要将当前模型部署到在线系统吗？')) {
+                alert('模型部署成功！现在可以在实时监控系统中使用。');
+            }
+        }
+
+        function updateCoordinates(e) {
+            const coords = document.getElementById('coordinates');
+            coords.textContent = `坐标: ${e.latlng.lng.toFixed(4)}, ${e.latlng.lat.toFixed(4)}`;
+        }
+
+        function updateModelStatus() {
+            const status = document.getElementById('modelStatus');
+            const nodeCount = modelElements.nodes.length;
+            const pipeCount = modelElements.pipes.length;
+            const valveCount = modelElements.valves.length;
+            
+            document.querySelector('.status-bar div').innerHTML = 
+                `<span>节点: ${nodeCount} | 管道: ${pipeCount} | 阀门: ${valveCount}</span>`;
+        }
+
+        function updateTime() {
+            const currentTimeEl = document.getElementById('currentTime');
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html> 

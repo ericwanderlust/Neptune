@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="水力模型系统">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 用户登录</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: auto;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            position: relative;
+            transition: background var(--transition-base);
+        }
+
+        /* 深色主题背景 */
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        /* 精致的背景网格效果 */
+        .background-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: 
+                linear-gradient(rgba(74, 144, 184, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74, 144, 184, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: backgroundMove 60s linear infinite;
+        }
+
+        @keyframes backgroundMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* 浮动几何装饰 */
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(74, 144, 184, 0.1), rgba(107, 163, 199, 0.05));
+            animation: floatShape 20s ease-in-out infinite;
+        }
+
+        .shape:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 10%;
+            left: 15%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 7s;
+        }
+
+        .shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 14s;
+        }
+
+        @keyframes floatShape {
+            0%, 100% { 
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0.5;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg);
+                opacity: 0.8;
+            }
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左侧品牌展示区域 */
+        .brand-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 60px 50px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+        }
+
+        [data-theme="dark"] .brand-section {
+            background: rgba(0, 0, 0, 0.1);
+            border-right-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-content {
+            max-width: 450px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .logo-container {
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .logo-icon {
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, var(--primary, #4A90B8) 0%, var(--primary-dark, #3a7ca8) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 
+                0 20px 40px rgba(74, 144, 184, 0.25),
+                0 10px 25px rgba(74, 144, 184, 0.15),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            font-size: 30px;
+            color: white;
+            position: relative;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .logo-icon:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .brand-title {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--text-primary, #333);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            line-height: 1.3;
+            position: relative;
+            z-index: 10;
+        }
+
+        .brand-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary, #666);
+            margin-bottom: 35px;
+            line-height: 1.6;
+            font-weight: 300;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 75px;
+        }
+
+        [data-theme="dark"] .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary, #4A90B8), var(--primary-dark, #3a7ca8));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 6px 18px rgba(74, 144, 184, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-item:hover .feature-icon {
+            transform: scale(1.05);
+        }
+
+        .feature-text {
+            font-size: 11px;
+            color: var(--text-primary);
+            font-weight: 500;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        /* 系统亮点数据 */
+        .system-highlights {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+            padding: 18px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .system-highlights {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .highlight-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .highlight-number {
+            display: block;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary, #4A90B8);
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, var(--primary, #4A90B8), var(--primary-dark, #3a7ca8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .highlight-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* 入口引导容器 */
+        .entry-guide-container {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 入口引导 */
+        .entry-guide,
+        .quick-experience-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(74, 144, 184, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .entry-guide {
+            background: linear-gradient(135deg, rgba(74, 144, 184, 0.1), rgba(107, 163, 199, 0.08));
+        }
+
+        .quick-experience-btn {
+            background: linear-gradient(135deg, rgba(46, 213, 115, 0.1), rgba(0, 210, 211, 0.08));
+            border-color: rgba(46, 213, 115, 0.2);
+        }
+
+        .entry-guide:hover {
+            background: linear-gradient(135deg, rgba(74, 144, 184, 0.15), rgba(107, 163, 199, 0.12));
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(74, 144, 184, 0.15);
+        }
+
+        .quick-experience-btn:hover {
+            background: linear-gradient(135deg, rgba(46, 213, 115, 0.15), rgba(0, 210, 211, 0.12));
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(46, 213, 115, 0.15);
+        }
+
+        .quick-experience-btn .guide-icon {
+            background: linear-gradient(135deg, #2ed573, #00d2d3);
+        }
+
+        [data-theme="dark"] .entry-guide {
+            background: linear-gradient(135deg, rgba(74, 144, 184, 0.15), rgba(107, 163, 199, 0.1));
+        }
+
+        [data-theme="dark"] .quick-experience-btn {
+            background: linear-gradient(135deg, rgba(46, 213, 115, 0.15), rgba(0, 210, 211, 0.1));
+        }
+
+        .guide-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary, #4A90B8), var(--primary-dark, #3a7ca8));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 15px;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .entry-guide:hover .guide-icon {
+            transform: translateX(3px);
+        }
+
+        .guide-text h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .guide-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        /* 系统信息 */
+        .system-info {
+            margin-top: 25px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        [data-theme="dark"] .system-info {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .info-value {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* 右侧登录表单区域 */
+        .login-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(30px);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        [data-theme="dark"] .login-section {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg-primary, #ffffff);
+            padding: 30px 25px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg, 0 1rem 3rem rgba(0, 0, 0, 0.175));
+            border: 1px solid var(--border-color, #dee2e6);
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            position: relative;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        .login-form:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 40px 100px rgba(0, 0, 0, 0.15),
+                0 20px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .form-title {
+            font-size: 26px;
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .input-container {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: 15px;
+            transition: color 0.3s ease;
+            z-index: 1;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 52px;
+            padding: 0 22px 0 48px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(74, 144, 184, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input:focus ~ .input-icon {
+            color: var(--primary);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        /* 用户角色选择 */
+        .role-selection {
+            margin-bottom: 30px;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 14px;
+        }
+        
+        @media (max-width: 1024px) {
+            .role-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .role-option {
+            position: relative;
+        }
+
+        .role-input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .role-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-primary);
+            text-align: center;
+            min-height: 110px;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .role-card:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(74, 144, 184, 0.15);
+        }
+
+        .role-input:checked + .role-card {
+            border-color: var(--primary);
+            background: rgba(74, 144, 184, 0.1);
+            box-shadow: 0 8px 24px rgba(74, 144, 184, 0.15);
+        }
+
+        [data-theme="dark"] .role-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="dark"] .role-input:checked + .role-card {
+            background: rgba(74, 144, 184, 0.15);
+        }
+
+        .role-icon {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .role-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 3px;
+        }
+
+        .role-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .forgot-password {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+        }
+
+        .forgot-password:hover {
+            color: var(--primary-dark, #3a7ca8);
+            text-decoration: underline;
+        }
+        
+        /* 确保所有颜色变量都有fallback */
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary, #4A90B8);
+            box-shadow: 0 0 0 4px rgba(74, 144, 184, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .form-input:focus ~ .input-icon {
+            color: var(--primary, #4A90B8);
+        }
+        
+        .role-card:hover {
+            border-color: var(--primary, #4A90B8);
+            background: var(--bg-secondary, #f8f9fa);
+        }
+        
+        .role-input:checked + .role-card {
+            border-color: var(--primary, #4A90B8);
+            background: rgba(74, 144, 184, 0.1);
+            box-shadow: 0 2px 8px rgba(74, 144, 184, 0.08);
+        }
+        
+        .role-icon {
+            font-size: 20px;
+            color: var(--primary, #4A90B8);
+            margin-bottom: 8px;
+        }
+        
+        .quick-btn {
+            padding: 8px 16px;
+            background: rgba(74, 144, 184, 0.08);
+            border: 1px solid rgba(74, 144, 184, 0.2);
+            border-radius: 20px;
+            color: var(--primary, #4A90B8);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 400;
+            transform-style: preserve-3d;
+        }
+
+        .login-button {
+            width: 100%;
+            height: 52px;
+            background: linear-gradient(135deg, var(--primary, #4A90B8) 0%, var(--primary-dark, #3a7ca8) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(74, 144, 184, 0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(74, 144, 184, 0.25);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(74, 144, 184, 0.2);
+        }
+
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-button .spinner {
+            display: none;
+            margin-right: 8px;
+        }
+
+        .login-button.loading .spinner {
+            display: inline-block;
+        }
+
+        .quick-login {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .quick-login-title {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .quick-login-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 8px 12px;
+            background: rgba(74, 144, 184, 0.08);
+            border: 1px solid rgba(74, 144, 184, 0.2);
+            border-radius: 20px;
+            color: var(--primary);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 400;
+            transform-style: preserve-3d;
+            white-space: nowrap;
+            flex: 1 1 auto;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .quick-btn:hover {
+            background: rgba(74, 144, 184, 0.15);
+            transform: translateY(-2px) rotateX(5deg);
+            box-shadow: 0 6px 20px rgba(74, 144, 184, 0.2);
+        }
+
+        /* 错误提示 */
+        .error-message {
+            background: rgba(255, 56, 56, 0.1);
+            border: 1px solid rgba(255, 56, 56, 0.2);
+            color: var(--danger);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* 版本信息 */
+        .version-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+
+        /* 主题切换按钮样式 */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            font-size: 16px;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2) !important;
+            transform: scale(1.05);
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: rgba(0,0,0,0.2) !important;
+            border-color: rgba(255,255,255,0.1) !important;
+        }
+
+        [data-theme="dark"] .theme-toggle:hover {
+            background: rgba(0,0,0,0.3) !important;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .login-container {
+                flex-direction: column;
+            }
+            
+            .brand-section {
+                flex: none;
+                height: 35vh;
+                min-height: 350px;
+                padding: 40px 30px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .brand-content {
+                max-width: 400px;
+            }
+            
+            .brand-title {
+                font-size: 28px;
+                margin-bottom: 20px;
+            }
+            
+            .brand-subtitle {
+                font-size: 15px;
+                margin-bottom: 35px;
+            }
+            
+            .system-highlights {
+                margin: 30px 0;
+                padding: 20px 18px;
+            }
+            
+            .feature-grid {
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+            
+            .entry-guide {
+                margin-top: 25px;
+                padding: 18px 20px;
+            }
+            
+            .system-info {
+                margin-top: 25px;
+                padding: 16px 18px;
+            }
+            
+            .login-section {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                min-height: 100vh;
+            }
+            
+            .brand-section {
+                padding: 25px 20px;
+                height: auto;
+                min-height: 280px;
+                flex: none;
+            }
+            
+            .brand-content {
+                max-width: 100%;
+            }
+            
+            .logo-container {
+                margin-bottom: 25px;
+            }
+            
+            .logo-icon {
+                width: 65px;
+                height: 65px;
+                font-size: 26px;
+            }
+
+            .brand-title {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+            
+            .brand-subtitle {
+                font-size: 14px;
+                margin-bottom: 25px;
+                max-width: 280px;
+                line-height: 1.5;
+            }
+            
+            .system-highlights {
+                margin: 20px 0;
+                padding: 15px 12px;
+            }
+            
+            .highlight-number {
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+            
+            .highlight-text {
+                font-size: 10px;
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 20px;
+                max-width: 260px;
+            }
+            
+            .feature-item {
+                padding: 12px 8px;
+                min-height: 70px;
+            }
+            
+            .feature-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 13px;
+                margin-bottom: 6px;
+            }
+            
+            .feature-text {
+                font-size: 10px;
+            }
+            
+            .entry-guide-container {
+                margin-top: 20px;
+                max-width: 260px;
+                gap: 12px;
+            }
+            
+            .entry-guide,
+            .quick-experience-btn {
+                padding: 14px 16px;
+                gap: 12px;
+            }
+            
+            .guide-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            
+            .guide-text h3 {
+                font-size: 13px;
+                margin-bottom: 2px;
+            }
+            
+            .guide-text p {
+                font-size: 10px;
+            }
+            
+            .system-info {
+                margin-top: 15px;
+                padding: 12px 14px;
+                max-width: 260px;
+            }
+            
+            .info-row {
+                padding: 4px 0;
+            }
+            
+            .info-label,
+            .info-value {
+                font-size: 10px;
+            }
+            
+            .login-section {
+                padding: 20px 15px;
+                flex: 1;
+            }
+            
+            .theme-toggle {
+                top: 15px !important;
+                right: 15px !important;
+                width: 36px !important;
+                height: 36px !important;
+                font-size: 14px !important;
+            }
+            
+            .login-form {
+                padding: 25px 18px;
+                max-height: none;
+            }
+
+            .form-title {
+                font-size: 22px;
+            }
+
+            .form-subtitle {
+                font-size: 13px;
+            }
+            
+            .role-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .role-card {
+                padding: 16px 12px;
+                min-height: 95px;
+            }
+            
+            .role-icon {
+                font-size: 18px;
+                margin-bottom: 6px;
+            }
+            
+            .role-name {
+                font-size: 12px;
+            }
+            
+            .role-desc {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    
+    <div class="login-container">
+        <!-- 左侧品牌展示区域 -->
+        <div class="brand-section">
+            <div class="brand-content">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                </div>
+                
+                <h1 class="brand-title">在线水力模型系统</h1>
+                <p class="brand-subtitle">
+                    基于云端的智能水务管理平台<br>
+                    为城市供水提供全方位的监控、分析和决策支持服务
+                </p>
+
+                <!-- 系统亮点介绍 -->
+                <div class="system-highlights">
+                    <div class="highlight-item">
+                        <span class="highlight-number">24/7</span>
+                        <span class="highlight-text">实时监控</span>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="highlight-number">99.9%</span>
+                        <span class="highlight-text">系统可用性</span>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="highlight-number">1000+</span>
+                        <span class="highlight-text">监控点位</span>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-text">实时监控</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="feature-text">智能调度</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="feature-text">应急响应</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="feature-text">AI辅助</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="feature-text">数据分析</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="feature-text">移动端</div>
+                    </div>
+                </div>
+                
+                <!-- 入口引导 -->
+                <div class="entry-guide-container">
+                    <div class="entry-guide" onclick="document.querySelector('.role-card').click()">
+                        <div class="guide-icon">
+                            <i class="fas fa-arrow-right"></i>
+            </div>
+                        <div class="guide-text">
+                            <h3>登录演示</h3>
+                            <p>选择右侧角色快速登录</p>
+        </div>
+                </div>
+
+                    <div class="quick-experience-btn" onclick="quickExperience()">
+                        <div class="guide-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="guide-text">
+                            <h3>快速体验</h3>
+                            <p>无需登录直接进入系统</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统信息 -->
+                <div class="system-info">
+                    <div class="info-row">
+                        <span class="info-label">系统版本：</span>
+                        <span class="info-value">v2.0.1 Pro</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">技术支持：</span>
+                        <span class="info-value">专业水务团队</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">服务热线：</span>
+                        <span class="info-value">400-888-9999</span>
+                    </div>
+                </div>
+                    </div>
+                </div>
+
+        <!-- 右侧登录表单区域 -->
+        <div class="login-section">
+            <!-- 主题切换按钮 -->
+            <button class="theme-toggle" onclick="ThemeManager.toggle()" style="position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; z-index: 10;">
+                <i class="fas fa-moon"></i>
+            </button>
+            
+            <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-header">
+                    <h2 class="form-title">演示体验登录</h2>
+                    <p class="form-subtitle">选择角色演示账户快速进入系统</p>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+
+                <!-- 角色选择 -->
+                <div class="role-selection">
+                    <label class="form-label">选择登录角色（自动填入用户名密码）</label>
+                    <div class="role-grid">
+                        <label class="role-option">
+                            <input type="radio" name="role" value="admin" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('admin')">
+                                <div class="role-icon">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <div class="role-name">系统管理员</div>
+                                <div class="role-desc">平台管理权限</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="executive" class="role-input" checked>
+                            <div class="role-card" onclick="fillDemoAccount('executive')">
+                                <div class="role-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="role-name">管理决策层</div>
+                                <div class="role-desc">决策支持督查</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="dispatcher" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('dispatcher')">
+                                <div class="role-icon">
+                                    <i class="fas fa-headset"></i>
+                                </div>
+                                <div class="role-name">调度员</div>
+                                <div class="role-desc">调度应急处置</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="engineer" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('engineer')">
+                                <div class="role-icon">
+                                    <i class="fas fa-hard-hat"></i>
+                                </div>
+                                <div class="role-name">建模工程师</div>
+                                <div class="role-desc">模型维护校核</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="service" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('service')">
+                                <div class="role-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <div class="role-name">客服专员</div>
+                                <div class="role-desc">工单事件处理</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="analyst" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('analyst')">
+                                <div class="role-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div class="role-name">数据分析师</div>
+                                <div class="role-desc">数据挖掘分析</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 用户名 -->
+                <div class="form-group">
+                    <label class="form-label" for="username">用户名</label>
+                    <div class="input-container">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" name="username" class="form-input" 
+                               placeholder="请输入用户名" required>
+                    </div>
+                </div>
+
+                <!-- 密码 -->
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <div class="input-container">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" class="form-input" 
+                               placeholder="请输入密码" required>
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword()"></i>
+                    </div>
+                </div>
+
+                <!-- 登录选项 -->
+                <div class="login-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <span>记住密码</span>
+                    </label>
+                    <a href="#" class="forgot-password" onclick="showForgotPassword()">忘记密码？</a>
+                </div>
+
+                <!-- 登录按钮 -->
+                <button type="submit" class="login-button" id="loginBtn">
+                    <span class="spinner"></span>
+                    登录系统
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="version-info">
+        <p>© 2024 在线水力模型系统 v2.0.1 | 建议使用现代浏览器访问</p>
+    </div>
+
+    <script src="common.js"></script>
+    
+    <!-- Safari兼容性JavaScript修复 -->
+    <script>
+        // Safari兼容性修复
+        (function() {
+            // 检测Safari浏览器
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            if (isSafari) {
+                // 修复Safari中的CSS变量兼容性
+                if (!CSS || !CSS.supports || !CSS.supports('color', 'var(--fake-var)')) {
+                    console.warn('Safari版本较低，某些样式可能显示异常');
+                }
+                
+                // 修复Safari中的flexbox问题
+                document.documentElement.style.webkitBoxSizing = 'border-box';
+                
+                // 修复Safari中的transition兼容性
+                const style = document.createElement('style');
+                style.textContent = `
+                    * {
+                        -webkit-transition-property: all;
+                        -webkit-transition-duration: inherit;
+                        -webkit-transition-timing-function: inherit;
+                    }
+                    input, select, textarea {
+                        -webkit-appearance: none;
+                        -webkit-border-radius: 0;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // 修复Safari中的form输入问题
+                document.addEventListener('DOMContentLoaded', function() {
+                    const inputs = document.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        input.addEventListener('focus', function() {
+                            this.style.webkitTransform = 'translateZ(0)';
+                        });
+                    });
+                });
+            }
+            
+            // 修复Safari中的viewport问题
+            if (window.screen && window.screen.width <= 768) {
+                const viewport = document.querySelector('meta[name="viewport"]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+                }
+            }
+        })();
+    </script>
+    
+    <script>
+        // 密码显示/隐藏
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.password-toggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // 填充演示账户
+        function fillDemoAccount(type) {
+            const accounts = {
+                admin: { username: 'admin', password: '123456', role: 'admin' },
+                executive: { username: 'executive', password: '123456', role: 'executive' },
+                dispatcher: { username: 'dispatcher', password: '123456', role: 'dispatcher' },
+                engineer: { username: 'engineer', password: '123456', role: 'engineer' },
+                service: { username: 'service', password: '123456', role: 'service' },
+                analyst: { username: 'analyst', password: '123456', role: 'analyst' }
+            };
+            
+            const roleNames = {
+                admin: '系统管理员',
+                executive: '管理决策层',
+                dispatcher: '调度员',
+                engineer: '建模工程师',
+                service: '客服专员',
+                analyst: '数据分析师'
+            };
+            
+            const account = accounts[type];
+            if (account) {
+                document.getElementById('username').value = account.username;
+                document.getElementById('password').value = account.password;
+                document.querySelector(`input[value="${account.role}"]`).checked = true;
+                showMessage(`已填入${roleNames[type]}账户信息`, 'success');
+            }
+        }
+
+        // 登录处理
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (!username || !password) {
+                showMessage('请输入用户名和密码！');
+                return;
+            }
+            
+            // 显示加载状态
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            
+            // 模拟登录验证
+            setTimeout(() => {
+                // 简单的账户验证
+                const validAccounts = {
+                    'admin': '123456',
+                    'executive': '123456', 
+                    'dispatcher': '123456',
+                    'engineer': '123456',
+                    'service': '123456',
+                    'analyst': '123456',
+                    'demo': 'demo123'
+                };
+                
+                if (validAccounts[username] && validAccounts[username] === password) {
+                    // 获取角色定义 - 登录后显示具体人名
+                    const roleDefinitions = {
+                        'admin': { 
+                            name: '系统管理员', 
+                            department: 'IT/外部运维', 
+                            permissions: ['all', 'user_management', 'system_config', 'security_audit', 'backup_recovery'],
+                            description: '平台安全与合规保障，系统配置维护'
+                        },
+                        'executive': { 
+                            name: '张总', 
+                            department: '水司中高层/管理办', 
+                            permissions: ['view', 'drill_down', 'export', 'remote_control_limited', 'meeting_mode', 'dashboard_custom'],
+                            description: '全局运营KPI监控，决策支持，督查问题闭环'
+                        },
+                        'dispatcher': { 
+                            name: '李调度', 
+                            department: '总调度中心/一线班组', 
+                            permissions: ['view', 'operate', 'dispatch', 'emergency', 'simulate', 'workflow', 'batch_operation', 'shift_handover'],
+                            description: '实时调度操作，工况模拟，异常应急响应'
+                        },
+                        'engineer': { 
+                            name: '王工程师', 
+                            department: '模型专家/系统技术支持', 
+                            permissions: ['view', 'model', 'analyze', 'calibrate', 'export', 'collaborate', 'version_control', 'api_access'],
+                            description: '模型建设维护，参数校核，数据溯源分析'
+                        },
+                        'service': { 
+                            name: '陈客服', 
+                            department: '水司客服中心/服务热线', 
+                            permissions: ['view_limited', 'ticket', 'communicate', 'report', 'trace_simple', 'customer_feedback'],
+                            description: '投诉报修登记，事件跟踪，简易溯源查询'
+                        },
+                        'analyst': { 
+                            name: '赵分析师', 
+                            department: '信息中心/大数据/BI', 
+                            permissions: ['view', 'analyze', 'report', 'export', 'custom_analysis', 'data_governance', 'api_management'],
+                            description: '数据治理标签管理，专题报表，接口对接'
+                        },
+                        'demo': { name: '演示用户', department: '演示', permissions: ['view'] }
+                    };
+                    
+                    const userInfo = roleDefinitions[role] || {
+                        name: username,
+                        role: role,
+                        department: '默认',
+                        permissions: role === 'admin' ? ['all'] : ['view']
+                    };
+                    
+                    // 补充用户信息
+                    userInfo.id = `user_${username}_${Date.now()}`;
+                    userInfo.role = role;
+                    
+                    // 保存用户信息到localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(userInfo));
+                    
+                    // 记住密码
+                    if (document.getElementById('remember').checked) {
+                        localStorage.setItem('rememberedUser', JSON.stringify({username, password, role}));
+                    }
+                    
+                    // 先设置用户信息，再记录登录日志
+                    try {
+                        if (typeof OperationLogger !== 'undefined') {
+                            OperationLogger.log('用户登录', { 
+                                username, 
+                                role, 
+                                timestamp: new Date().toISOString(),
+                                ip: '192.168.1.100'
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('日志记录失败:', e);
+                    }
+                    
+                    showMessage('登录成功！正在跳转...', 'success');
+            
+                    // 根据角色重定向到不同的默认页面
+                    const defaultPages = {
+                        'admin': 'admin.html',
+                        'executive': 'dashboard.html', 
+                        'dispatcher': 'daily_dispatch.html',
+                        'engineer': 'simulation.html',
+                        'service': 'tickets.html',
+                        'analyst': 'reports.html'
+                    };
+                    
+                    const targetPage = defaultPages[role] || 'dashboard.html';
+                    console.log(`角色 ${role} 重定向到: ${targetPage}`);
+            
+            setTimeout(() => {
+                window.location.href = targetPage;
+                    }, 1000);
+                } else {
+                    showMessage('用户名或密码错误！');
+                    loginBtn.classList.remove('loading');
+                    loginBtn.disabled = false;
+                }
+            }, 1500);
+        }
+
+        // 显示消息
+        function showMessage(message, type = 'error') {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            if (type === 'success') {
+                errorElement.style.background = 'rgba(46, 213, 115, 0.1)';
+                errorElement.style.borderColor = 'rgba(46, 213, 115, 0.2)';
+                errorElement.style.color = 'var(--success)';
+            } else {
+                errorElement.style.background = 'rgba(255, 56, 56, 0.1)';
+                errorElement.style.borderColor = 'rgba(255, 56, 56, 0.2)';
+                errorElement.style.color = 'var(--danger)';
+            }
+            
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 忘记密码
+        function showForgotPassword() {
+            alert('请联系系统管理员重置密码\n联系电话: 400-123-4567\n邮箱: admin@company.com');
+        }
+
+        // 快速体验
+        function quickExperience() {
+            // 设置演示用户
+            const demoUser = {
+                id: 'demo_user_' + Date.now(),
+                name: '演示用户',
+                role: 'executive',
+                department: '演示体验',
+                permissions: ['view', 'drill_down', 'export', 'meeting_mode'],
+                description: '快速体验用户，可查看主要功能'
+            };
+            
+            // 保存用户信息到localStorage
+            localStorage.setItem('currentUser', JSON.stringify(demoUser));
+            
+            // 显示提示
+            showMessage('正在启动快速体验模式...', 'success');
+            
+            // 显示加载效果
+            const btn = event.target.closest('.quick-experience-btn');
+            const originalIcon = btn.querySelector('.guide-icon i');
+            const originalClass = originalIcon.className;
+            
+            originalIcon.className = 'fas fa-spinner fa-spin';
+            btn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化主题
+            ThemeManager.init();
+            
+            // 检查是否记住了密码
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                const user = JSON.parse(rememberedUser);
+                document.getElementById('username').value = user.username;
+                document.getElementById('password').value = user.password;
+                document.querySelector(`input[value="${user.role}"]`).checked = true;
+                document.getElementById('remember').checked = true;
+            }
+            
+            // 支持回车登录
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const activeElement = document.activeElement;
+                    if (activeElement.tagName !== 'BUTTON') {
+                        document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                    }
+                }
+            });
+            
+            // 清理之前的登录状态，确保重新登录
+            try {
+                localStorage.removeItem('currentUser');
+                console.log('登录页面: 已清理之前的用户状态');
+            } catch (e) {
+                console.warn('登录页面: 清理用户状态失败', e);
+            }
+        });
+    </script>
+</body>
+</html> 

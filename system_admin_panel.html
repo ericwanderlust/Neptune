@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 系统管理</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f5f6fa;
+            color: #2f3640;
+        }
+
+        .top-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .system-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #57606f;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #4A90B8;
+            background: white;
+            color: #4A90B8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #ff6b6b !important;
+            border-color: #ff6b6b !important;
+            color: white !important;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252 !important;
+            border-color: #ff5252 !important;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #ddd;
+        }
+
+        .menu-section {
+            border-bottom: 1px solid #eee;
+        }
+
+        .menu-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2f3640;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            color: #57606f;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: #f1f2f6;
+        }
+
+        .menu-item.active {
+            background: #e8f4f8;
+            color: #4A90B8;
+            border-left-color: #4A90B8;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .admin-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .user-table th,
+        .user-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .user-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .role-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background: #ff3838;
+            color: white;
+        }
+
+        .role-dispatcher {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .role-service {
+            background: #2ed573;
+            color: white;
+        }
+
+        .role-analyst {
+            background: #ffa502;
+            color: white;
+        }
+
+        .status-online {
+            color: #2ed573;
+        }
+
+        .status-offline {
+            color: #95a5a6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            border-color: #4A90B8;
+            outline: none;
+        }
+
+        .log-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f2f6;
+            font-size: 13px;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #57606f;
+            font-size: 11px;
+        }
+
+        .log-user {
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .log-action {
+            color: #4A90B8;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-name {
+            font-weight: 500;
+        }
+
+        .config-desc {
+            font-size: 12px;
+            color: #57606f;
+            margin-top: 2px;
+        }
+
+        .config-value {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .switch.active {
+            background: #4A90B8;
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .switch.active::after {
+            left: 22px;
+        }
+
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-green {
+            background: #2ed573;
+        }
+
+        .status-red {
+            background: #ff3838;
+        }
+
+        .status-yellow {
+            background: #ffa502;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="system-title">
+            <i class="fas fa-cogs" style="color: #4A90B8; margin-right: 8px;"></i>
+            在线水力模型系统 - 系统管理
+        </div>
+        
+        <div class="nav-right">
+            <a href="dashboard_overview.html" class="btn">
+                <i class="fas fa-home"></i> 运营总览
+            </a>
+            <a href="monitor_realtime_map.html" class="btn">
+                <i class="fas fa-map"></i> 实时监控
+            </a>
+            <span><i class="fas fa-user" style="color: #4A90B8; margin-right: 5px;"></i>系统管理员 - 陈工</span>
+            <span>|</span>
+            <span><i class="fas fa-circle" style="color: #2ed573; margin-right: 5px;"></i>在线</span>
+            <span>|</span>
+            <span id="currentTime">2024-01-15 14:30:25</span>
+            <span>|</span>
+            <a href="login.html" class="btn logout-btn" onclick="return confirm('确定要退出系统吗？')">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="menu-section">
+                <div class="menu-header">用户管理</div>
+                <div class="menu-item active" onclick="showSection('users')">
+                    <i class="fas fa-users"></i>
+                    <span>用户列表</span>
+                </div>
+                <div class="menu-item" onclick="showSection('roles')">
+                    <i class="fas fa-user-tag"></i>
+                    <span>角色权限</span>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-header">系统配置</div>
+                <div class="menu-item" onclick="showSection('config')">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>参数配置</span>
+                </div>
+                <div class="menu-item" onclick="showSection('apis')">
+                    <i class="fas fa-plug"></i>
+                    <span>接口管理</span>
+                </div>
+                <div class="menu-item" onclick="showSection('backup')">
+                    <i class="fas fa-database"></i>
+                    <span>数据备份</span>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-header">监控审计</div>
+                <div class="menu-item" onclick="showSection('logs')">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>操作日志</span>
+                </div>
+                <div class="menu-item" onclick="showSection('performance')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>性能监控</span>
+                </div>
+                <div class="menu-item" onclick="showSection('alerts')">
+                    <i class="fas fa-bell"></i>
+                    <span>系统告警</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- 用户管理 -->
+            <div id="users-section" class="admin-section">
+                <div class="section-header">
+                    <div class="section-title">用户管理</div>
+                    <button class="btn" onclick="addUser()">
+                        <i class="fas fa-plus"></i> 添加用户
+                    </button>
+                </div>
+                <div class="section-content">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>姓名</th>
+                                <th>角色</th>
+                                <th>部门</th>
+                                <th>状态</th>
+                                <th>最后登录</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>admin</td>
+                                <td>陈工</td>
+                                <td><span class="role-badge role-admin">系统管理员</span></td>
+                                <td>信息技术部</td>
+                                <td><span class="status-online">在线</span></td>
+                                <td>2024-01-15 14:30</td>
+                                <td>
+                                    <button class="btn" onclick="editUser('admin')">编辑</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>dispatcher01</td>
+                                <td>张工</td>
+                                <td><span class="role-badge role-dispatcher">调度员</span></td>
+                                <td>运行调度部</td>
+                                <td><span class="status-online">在线</span></td>
+                                <td>2024-01-15 14:25</td>
+                                <td>
+                                    <button class="btn" onclick="editUser('dispatcher01')">编辑</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>service01</td>
+                                <td>王小姐</td>
+                                <td><span class="role-badge role-service">客服</span></td>
+                                <td>客户服务部</td>
+                                <td><span class="status-online">在线</span></td>
+                                <td>2024-01-15 14:20</td>
+                                <td>
+                                    <button class="btn" onclick="editUser('service01')">编辑</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>analyst01</td>
+                                <td>赵工</td>
+                                <td><span class="role-badge role-analyst">数据分析员</span></td>
+                                <td>技术分析部</td>
+                                <td><span class="status-offline">离线</span></td>
+                                <td>2024-01-15 12:15</td>
+                                <td>
+                                    <button class="btn" onclick="editUser('analyst01')">编辑</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 系统配置 -->
+            <div id="config-section" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title">系统参数配置</div>
+                    <button class="btn" onclick="saveConfig()">
+                        <i class="fas fa-save"></i> 保存配置
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">数据更新频率</div>
+                            <div class="config-desc">系统数据自动刷新间隔</div>
+                        </div>
+                        <div class="config-value">
+                            <select class="form-input" style="width: 120px;">
+                                <option>30秒</option>
+                                <option>1分钟</option>
+                                <option selected>5分钟</option>
+                                <option>10分钟</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">告警推送</div>
+                            <div class="config-desc">启用实时告警推送功能</div>
+                        </div>
+                        <div class="config-value">
+                            <div class="switch active" onclick="toggleSwitch(this)"></div>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">数据保留期</div>
+                            <div class="config-desc">历史数据保留时间</div>
+                        </div>
+                        <div class="config-value">
+                            <select class="form-input" style="width: 120px;">
+                                <option>1个月</option>
+                                <option>3个月</option>
+                                <option selected>6个月</option>
+                                <option>1年</option>
+                                <option>永久</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">自动备份</div>
+                            <div class="config-desc">启用数据自动备份功能</div>
+                        </div>
+                        <div class="config-value">
+                            <div class="switch active" onclick="toggleSwitch(this)"></div>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">会话超时</div>
+                            <div class="config-desc">用户会话超时时间</div>
+                        </div>
+                        <div class="config-value">
+                            <input type="number" class="form-input" style="width: 80px;" value="30" min="10" max="480">
+                            <span>分钟</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 接口管理 -->
+            <div id="apis-section" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title">API接口管理</div>
+                    <button class="btn" onclick="refreshApis()">
+                        <i class="fas fa-sync-alt"></i> 刷新状态
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">
+                                <span class="status-indicator status-green"></span>
+                                实时数据接口
+                            </div>
+                            <div class="api-endpoint">GET /api/v1/realtime/facilities</div>
+                        </div>
+                        <div class="config-value">
+                            <span style="color: #2ed573; font-size: 12px;">正常</span>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">
+                                <span class="status-indicator status-green"></span>
+                                历史数据接口
+                            </div>
+                            <div class="api-endpoint">GET /api/v1/history/events</div>
+                        </div>
+                        <div class="config-value">
+                            <span style="color: #2ed573; font-size: 12px;">正常</span>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">
+                                <span class="status-indicator status-yellow"></span>
+                                水质数据接口
+                            </div>
+                            <div class="api-endpoint">GET /api/v1/quality/trace</div>
+                        </div>
+                        <div class="config-value">
+                            <span style="color: #ffa502; font-size: 12px;">延迟</span>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">
+                                <span class="status-indicator status-green"></span>
+                                用户认证接口
+                            </div>
+                            <div class="api-endpoint">POST /api/v1/auth/login</div>
+                        </div>
+                        <div class="config-value">
+                            <span style="color: #2ed573; font-size: 12px;">正常</span>
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <div>
+                            <div class="config-name">
+                                <span class="status-indicator status-red"></span>
+                                外部天气接口
+                            </div>
+                            <div class="api-endpoint">GET /api/external/weather</div>
+                        </div>
+                        <div class="config-value">
+                            <span style="color: #ff3838; font-size: 12px;">异常</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作日志 -->
+            <div id="logs-section" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title">操作日志</div>
+                    <div>
+                        <select class="form-input" style="width: auto; margin-right: 10px;">
+                            <option>今天</option>
+                            <option>最近3天</option>
+                            <option>最近7天</option>
+                        </select>
+                        <button class="btn" onclick="exportLogs()">
+                            <i class="fas fa-download"></i> 导出
+                        </button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="log-list">
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:30:25</div>
+                            <div><span class="log-user">陈工</span> <span class="log-action">登录系统</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:25:10</div>
+                            <div><span class="log-user">张工</span> <span class="log-action">查看实时监控地图</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:20:35</div>
+                            <div><span class="log-user">王小姐</span> <span class="log-action">处理工单 #T202401001</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:15:22</div>
+                            <div><span class="log-user">张工</span> <span class="log-action">触发应急调度流程</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:10:18</div>
+                            <div><span class="log-user">系统</span> <span class="log-action">检测到压力异常告警</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:05:44</div>
+                            <div><span class="log-user">赵工</span> <span class="log-action">生成水质溯源报告</span></div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">2024-01-15 14:00:12</div>
+                            <div><span class="log-user">系统</span> <span class="log-action">自动数据备份完成</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionName) {
+            // 隐藏所有section
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // 显示选中的section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+
+            // 更新菜单状态
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.menu-item').classList.add('active');
+        }
+
+        function addUser() {
+            alert('打开添加用户对话框...');
+        }
+
+        function editUser(username) {
+            alert(`编辑用户: ${username}`);
+        }
+
+        function saveConfig() {
+            alert('配置已保存');
+        }
+
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+
+        function refreshApis() {
+            alert('正在刷新API状态...');
+        }
+
+        function exportLogs() {
+            alert('正在导出日志...');
+        }
+
+        function updateTime() {
+            const currentTimeEl = document.getElementById('currentTime');
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+    </script>
+</body>
+</html> 

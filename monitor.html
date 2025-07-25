@@ -1,0 +1,3707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="水力模型监控">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 实时监控</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@2.3.0/dist/leaflet-measure.css" />
+    <!-- 聚合插件已移除 - 不再使用聚合功能 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <link rel="stylesheet" href="components/refreshController.css">
+    <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js"></script>
+    <style>
+        :root {
+            --primary-color: #4A90B8;
+            --primary-color-light: #74b9ff;
+            --primary-color-dark: #357abd;
+            --bg-main: #f5f6fa;
+            --bg-panel: #ffffff;
+            --border-color: #e1e4e8;
+            --text-dark: #2f3640;
+            --text-light: #57606f;
+            --text-muted: #6c757d;
+            --status-ok: #2ed573;
+            --status-warn: #ffa502;
+            --status-error: #ff3838;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            position: relative;
+            width: 280px;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .left-panel.collapsed { 
+            width: 0; 
+            border-right: none; 
+        }
+
+        /* 浮动面板样式 - 脱离Flex布局 */
+        .floating-panel {
+            position: fixed;
+            top: 70px;              /* 顶部预留导航条空间 */
+            right: 20px;
+            width: 380px;
+            max-height: calc(100vh - 90px);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 1200;          /* 高于Leaflet控件(1000)与粒子Canvas(400) */
+            transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        opacity 0.32s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        /* 默认隐藏在屏幕外 */
+        .floating-panel.closed {
+            transform: translateX(420px); /* = width + 余量 */
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 面板关闭按钮 */
+        .panel-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .panel-close-btn:hover {
+            background: var(--status-error);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* 移除原有的right-panel样式，只保留内容样式 */
+        .panel-content-wrapper {
+            width: 100%;
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-content-inner {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .panel-section {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-header i {
+            color: var(--primary-color);
+        }
+        
+        .section-header .fa-chevron-down {
+            transition: transform 0.3s;
+        }
+        
+        .section-header.collapsed .fa-chevron-down {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            overflow: hidden;
+            max-height: 1000px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-top-width: 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            border-right: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-secondary);
+            color: var(--text-dark);
+        }
+
+        .menu-item.active {
+            background: #e8f4f8;
+            color: var(--primary-color);
+            border-right-color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .menu-item.filter-active {
+            font-weight: 600;
+            color: var(--text-dark);
+            background: #e8f4f8;
+        }
+        
+        .menu-item.filter-inactive {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: var(--bg-primary);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            cursor: default;
+            background-color: #f0f2f5;
+        }
+        
+        .map-toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .toolbar-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+            color: var(--text-muted);
+            background: var(--bg-panel);
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent; /* Cleaner look */
+        }
+        .toolbar-btn:hover, .toolbar-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 图层透明度控制样式 */
+
+        .opacity-control-item {
+            margin-bottom: 12px;
+            padding: 0 20px;
+        }
+
+        .opacity-control-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: var(--text-dark);
+        }
+
+        .opacity-value {
+            font-weight: 600;
+            color: var(--primary-color);
+            min-width: 35px;
+            text-align: right;
+        }
+
+        .opacity-slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .opacity-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(74, 144, 184, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .opacity-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 8px rgba(74, 144, 184, 0.5);
+        }
+
+        .opacity-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(74, 144, 184, 0.3);
+        }
+
+        .layer-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .layer-icon i {
+            width: 14px;
+            color: var(--primary-color);
+        }
+
+        .opacity-reset-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .opacity-reset-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 图例样式 */
+        #map-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            max-width: 220px;
+            font-size: 12px;
+            color: var(--text-primary);
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        #map-legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-symbol {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+        }
+        
+        .legend-gradient {
+            width: 100%;
+            height: 20px;
+            margin-top: 5px;
+            border-radius: 3px;
+        }
+        
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 3px;
+            color: var(--text-muted);
+        }
+        
+        /* 现代化设施图标样式 */
+        .facility-icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .facility-icon {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 
+                0 3px 12px rgba(0, 0, 0, 0.25),
+                0 1px 3px rgba(0, 0, 0, 0.35);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 特殊形状的设施图标 */
+        .reservoir-icon {
+            border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%; /* 水滴形状 */
+        }
+        
+        .tank-icon {
+            border-radius: 15%; /* 圆角方形 */
+        }
+        
+        .pump-icon {
+            border-radius: 30%; /* 八角形效果 */
+        }
+        
+        .valve-icon {
+            border-radius: 0;
+            transform: rotate(45deg);
+        }
+        
+        .valve-icon i {
+            transform: rotate(-45deg);
+        }
+        
+        /* 图标悬停效果 */
+        .facility-icon:hover {
+            transform: scale(1.2) translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.35),
+                0 3px 8px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 1);
+        }
+        
+        /* 光泽效果 */
+        .facility-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        
+        /* 自定义设施图标容器 */
+        .custom-facility-icon {
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        /* 监测点特殊效果 */
+        .monitor-point-container {
+            position: relative;
+        }
+        
+        .monitor-point-container::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+            border-radius: 50%;
+            z-index: -1;
+            animation: monitorGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes monitorGlow {
+            0% { 
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
+                transform: scale(1);
+            }
+            100% { 
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.6);
+                transform: scale(1.05);
+            }
+        }
+        
+        /* 悬停时的z-index提升 */
+        .custom-facility-icon:hover {
+            z-index: 2000 !important;
+        }
+        
+        .monitor-marker-border {
+            border: 2px solid #FFD700 !important;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.8) !important;
+            z-index: 800 !important;
+            animation: monitorPulse 2s infinite;
+        }
+        
+        .monitor-marker-border:hover {
+            z-index: 1900 !important;
+        }
+        
+        @keyframes monitorPulse {
+            0% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+            50% { box-shadow: 0 0 15px rgba(255, 215, 0, 1), 0 0 20px rgba(255, 215, 0, 0.6); }
+            100% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+        }
+        
+        /* 设施详情样式 */
+        .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .facility-detail {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .facility-detail .facility-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            position: relative;
+        }
+        
+        .facility-header .facility-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            backdrop-filter: blur(4px);
+        }
+        
+        .facility-info h4 { margin: 0 0 5px 0; font-size: 16px; }
+        .facility-id { font-size: 12px; opacity: 0.9; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .metric-value { 
+            font-size: 18px; 
+            font-weight: 700; 
+            margin-bottom: 4px;
+        }
+        .metric-label { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+        }
+
+        /* 数据趋势弹窗 */
+        .trend-popup {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 350px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            z-index: 2000;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .trend-popup.visible {
+            transform: translateY(0);
+        }
+        
+        .trend-popup-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-secondary);
+        }
+        
+        .trend-popup-content {
+            padding: 20px;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+        }
+        
+        .trend-chart-container {
+            height: 250px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        
+        .monitor-vs-model {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-card {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+        
+        .comparison-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+        
+        .comparison-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .comparison-value.monitor { color: var(--primary-color); }
+        .comparison-value.model { color: var(--text-muted); }
+        
+        .accuracy-indicator {
+            background: var(--status-ok);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .accuracy-indicator.poor { background: var(--status-error); }
+        .accuracy-indicator.fair { background: var(--status-warn); }
+
+        /* 按钮样式优化 */
+        .trend-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+        
+        .trend-btn:hover {
+            background: var(--primary-color-dark);
+            transform: translateY(-1px);
+        }
+
+        /* 模型精度对比样式 */
+        .accuracy-comparison { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .accuracy-comparison h5 { margin: 0 0 15px 0; font-size: 14px; }
+        .accuracy-item { margin-bottom: 12px; font-size: 12px; }
+        .accuracy-item strong { display: block; margin-bottom: 5px; }
+        .accuracy-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; }
+        .accuracy-grid > div { background: var(--bg-secondary); padding: 5px; border-radius: var(--radius-sm); }
+        .accuracy-grid .label { font-size: 10px; color: var(--text-muted); }
+        .accuracy-error { font-weight: bold; }
+        .error-good { color: var(--status-ok); }
+        .error-bad { color: var(--status-error); }
+        .error-warning { color: var(--status-warn); }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* 聚合样式已移除 - 不再使用聚合功能 */
+
+        /* 性能监控指示器 */
+        .performance-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            z-index: 1000;
+            display: none;
+            box-shadow: var(--shadow-sm);
+        }
+        .performance-indicator.visible {
+            display: block;
+        }
+        .performance-indicator .fps {
+            color: var(--status-ok);
+            font-weight: 600;
+        }
+        .performance-indicator .render-time {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 右侧面板标签页 */
+        .panel-tabs { 
+            display: flex; 
+            border-bottom: 1px solid var(--border-color); 
+            background: var(--bg-primary);
+            position: relative;
+        }
+        
+        .panel-tab { 
+            flex: 1; 
+            padding: 12px; 
+            text-align: center; 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            transition: all 0.2s ease; 
+            border-bottom: 3px solid transparent; 
+        }
+        
+        .panel-tab.active { 
+            color: var(--primary-color); 
+            font-weight: 600; 
+            border-bottom-color: var(--primary-color); 
+        }
+        
+        .tab-content { 
+            display: none; 
+        }
+        
+        .tab-content.active { 
+            display: block; 
+            animation: fadeIn 0.3s; 
+        }
+
+        /* 模拟播放/刷新控制器 */
+        #refreshController {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            color: var(--text-dark);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 4px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            width: 600px;
+            height: 30px;
+            font-size: 9px;
+        }
+        
+        #playPauseBtn, .control-btn {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            border-radius: 11px;
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(74, 144, 184, 0.2);
+        }
+        #playPauseBtn:hover, .control-btn:hover { 
+            box-shadow: 0 2px 6px rgba(74, 144, 184, 0.3);
+            background: var(--primary-color-dark);
+        }
+        #playPauseBtn.paused {
+            background: #FF9800;
+            box-shadow: 0 1px 3px rgba(255, 152, 0, 0.2);
+        }
+        #playPauseBtn.paused:hover {
+            box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+            background: #F57C00;
+        }
+        .control-btn.current {
+            background: #28a745;
+        }
+        .control-btn.current:hover {
+            background: #218838;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        .status-dot { 
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.calculating { 
+            background-color: var(--status-ok); 
+            animation: pulse 1.2s infinite;
+            box-shadow: 0 0 4px rgba(46, 213, 115, 0.4);
+        }
+        .status-dot.waiting { 
+            background-color: var(--primary-color); 
+            animation: none;
+        }
+        .status-dot.error { 
+            background-color: var(--status-error); 
+            animation: blink 1s infinite;
+        }
+        .status-dot.warning { 
+            background-color: var(--status-warn); 
+            animation: pulse 1.5s infinite;
+        }
+
+        .time-info, .speed-info, .progress-info {
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .speed-selector {
+            font-size: 8px;
+            padding: 2px 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            color: var(--text-dark);
+            outline: none;
+            height: 18px;
+        }
+
+        /* 时间滑块样式 */
+        .time-slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0 8px;
+        }
+
+        .time-label {
+            font-size: 8px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            min-width: 28px;
+        }
+
+        .time-slider {
+            flex: 1;
+            position: relative;
+        }
+
+        .time-slider input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            border: none;
+        }
+
+        .time-slider input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .time-slider input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 6px rgba(74, 144, 184, 0.4);
+        }
+
+        .simulation-progress-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-color-light));
+            border-radius: 2px;
+            opacity: 0.7;
+            pointer-events: none;
+            transition: width 0.3s ease;
+        }
+
+        .current-time-display {
+            font-size: 9px;
+            color: var(--text-dark);
+            font-weight: 600;
+            white-space: nowrap;
+            min-width: 40px;
+        }
+
+        .controller-alerts {
+            position: absolute;
+            bottom: -24px;
+            left: 0;
+            width: 100%;
+            background: var(--status-warn);
+            color: white;
+            padding: 4px 12px;
+            font-size: 8px;
+            text-align: center;
+            border-radius: 0 0 15px 15px;
+            transition: all 0.3s ease;
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+            box-shadow: 0 2px 6px rgba(255, 165, 2, 0.2);
+        }
+        .controller-alerts.visible {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingIndicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Microsoft YaHei', sans-serif;">
+        <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+        <h3 id="loadingStatus" style="color: var(--text-dark);">正在初始化...</h3>
+            </div>
+
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将由NavigationManager生成 -->
+                </div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <aside class="left-panel" id="leftPanel">
+            <div class="panel-content-wrapper">
+                <div class="panel-content-inner" id="left-panel-content"></div>
+            </div>
+        </aside>
+
+        <main class="map-container">
+            <div id="map"></div>
+            <div class="map-toolbar"></div>
+            <div id="map-legend" class="leaflet-control"></div>
+            
+
+            
+            <!-- 性能监控指示器 -->
+            <div id="performanceIndicator" class="performance-indicator">
+                <div>节点: <span id="nodeCount">0</span> | 管道: <span id="pipeCount">0</span> | 渲染: <span class="render-time" id="renderTime">0ms</span> | 内存: <span id="memoryUsage">0MB</span></div>
+            </div>
+            
+                        <!-- 模拟播放/刷新控制器 -->
+            <div id="refreshController">
+                <button id="playPauseBtn"><i class="fas fa-pause"></i></button>
+                <div class="status-info">
+                    <div id="statusDot" class="status-dot calculating"></div>
+                    <span id="statusText">运行中</span>
+                    </div>
+            <div class="time-info">
+                    <span id="lastCalcTime">上次: 12:55</span>
+                    <span>|</span>
+                    <span id="nextCalcTime">下次: 13:00</span>
+            </div>
+                <span class="time-label">00:00</span>
+                <div class="time-slider-container">
+                    <div class="time-slider">
+                        <input type="range" id="timeSlider" min="0" max="1440" value="777" step="1">
+                        <div class="simulation-progress-track" id="progressTrack" style="width: 54%"></div>
+        </div>
+            </div>
+                <span class="time-label">24:00</span>
+                <div class="current-time-display" id="currentTimeDisplay">12:58:30</div>
+                <div class="progress-info">
+                    <span id="progressText">54%</span>
+                </div>
+                <div class="speed-info">
+                    <select id="speedSelector" class="speed-selector">
+                            <option value="0.5">0.5x</option>
+                            <option value="1" selected>1x</option>
+                            <option value="2">2x</option>
+                            <option value="5">5x</option>
+                </select>
+            </div>
+                <button id="currentBtn" class="control-btn current" title="回到当前"><i class="fas fa-crosshairs"></i></button>
+                <div id="controllerAlerts" class="controller-alerts"></div>
+        </div>
+
+
+        </main>
+    </div>
+
+    <!-- 浮动面板 - 脱离main-container -->
+    <aside class="floating-panel closed" id="rightPanel">
+        <div class="panel-content-wrapper" id="right-panel-wrapper">
+           <div class="panel-tabs">
+               <button class="panel-tab active" onclick="RightPanel.switchTab(event, 'properties')">属性</button>
+               <button class="panel-tab" onclick="RightPanel.switchTab(event, 'analysis')">分析</button>
+               <button class="panel-close-btn" onclick="closeRightPanel()" title="关闭面板">
+                   <i class="fas fa-times"></i>
+               </button>
+           </div>
+            <div class="panel-content">
+           <div id="propertiesPanel" class="tab-content active">
+               <div id="noSelection" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                   <i class="fas fa-mouse-pointer" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
+                   <p>点击地图上的设施查看详细信息</p>
+               </div>
+               <div id="selectedFacility" style="display: none;"></div>
+           </div>
+               <div id="analysisPanel" class="tab-content">
+                   <div class="analysis-container">
+                       <div class="analysis-no-selection" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                           <i class="fas fa-chart-line" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
+                           <p>选择设施后可查看详细分析</p>
+                           <div style="font-size: 12px; margin-top: 10px;">
+                               <div>• 实测vs模拟对比分析</div>
+                               <div>• 关阀影响分析</div>
+                               <div>• 水力特性分析</div>
+                               <div>• 供水可靠性评估</div>
+                           </div>
+                           
+                           <!-- 添加测试按钮 -->
+                           <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
+                               <button onclick="showAnalysisDemo('monitor')" style="padding: 8px 16px; border: none; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                   <i class="fas fa-satellite-dish"></i> 演示监测点分析
+                               </button>
+                               <button onclick="showAnalysisDemo('valve')" style="padding: 8px 16px; border: none; background: var(--status-warn); color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                   <i class="fas fa-adjust"></i> 演示阀门分析
+                               </button>
+                               <button onclick="showAnalysisDemo('pump')" style="padding: 8px 16px; border: none; background: var(--status-ok); color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                   <i class="fas fa-industry"></i> 演示泵站分析
+                               </button>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+        </div>
+    </aside>
+
+    <!-- 数据趋势分析弹窗 -->
+    <div id="trendPopup" class="trend-popup">
+        <div class="trend-popup-header">
+            <h3 id="trendTitle">数据趋势分析</h3>
+            <button onclick="TrendAnalysis.close()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">×</button>
+        </div>
+        <div class="trend-popup-content" id="trendContent">
+            <!-- 内容将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylinedecorator.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@2.3.0/dist/leaflet-measure.min.js"></script>
+    <!-- Deck.gl for high-performance particles -->
+    <script src="https://unpkg.com/deck.gl@^8.0.0/dist.min.js"></script>
+    <!-- 聚合插件脚本已移除 -->
+    <script src="common.js"></script>
+    
+    <!-- Safari兼容性JavaScript修复 -->
+    <script>
+        // Safari兼容性修复 - 专门针对地图和可视化
+        (function() {
+            // 检测Safari浏览器
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            if (isSafari) {
+                // 修复Safari中的CSS变量兼容性
+                if (!CSS || !CSS.supports || !CSS.supports('color', 'var(--fake-var)')) {
+                    console.warn('Safari版本较低，某些样式可能显示异常');
+                }
+                
+                // 修复Safari中的WebGL兼容性
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) {
+                    console.warn('Safari WebGL支持有限，部分可视化效果可能受影响');
+                }
+                
+                // 修复Safari中的地图渲染问题
+                document.addEventListener('DOMContentLoaded', function() {
+                    // 强制重绘地图容器
+                    setTimeout(() => {
+                        const mapContainer = document.getElementById('map');
+                        if (mapContainer && window.map) {
+                            map.invalidateSize();
+                        }
+                    }, 500);
+                    
+                    // 修复Safari中的Leaflet兼容性
+                    if (window.L) {
+                        L.Browser.safari = true;
+                        L.Browser.webkit = true;
+                    }
+                });
+                
+                // 修复Safari中的performance API
+                if (!window.performance || !window.performance.now) {
+                    window.performance = window.performance || {};
+                    window.performance.now = function() {
+                        return Date.now();
+                    };
+                }
+                
+                // 修复Safari中的requestAnimationFrame
+                if (!window.requestAnimationFrame) {
+                    window.requestAnimationFrame = function(callback) {
+                        return setTimeout(callback, 16);
+                    };
+                }
+            }
+            
+            // 修复Safari中的地图container问题
+            window.safariMapFix = function() {
+                if (window.map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            };
+            
+        })();
+    </script>
+    
+    <script src="components/leftPanel.js"></script>
+    <script src="components/rightPanel.js"></script>
+    <!-- High Performance Flow System -->
+    <script src="modules/visualization/highPerformanceFlowSystem.js"></script>
+    <script>
+// --- Globals ---
+let map, facilityLayerGroup, pipelineLayerGroup, pipelineDecoratorLayerGroup;
+let facilityData = [], pipelineData = [];
+let currentMapTheme = 'overview';
+let showMonitors = 'primary';
+let facilityTypeFilter = 'all';
+let alarmStatusFilter = null;
+
+// 全局变量：设施类型可见性控制
+let facilityVisibility = {
+    pump_station: true,
+    reservoir: true,
+    tank: true,
+    junction: true,
+    valve: true
+};
+
+// 全局变量：图层透明度控制
+let layerOpacity = {
+    facility: 1.0,
+    pipeline: 1.0,
+    decorator: 1.0,
+    basemap: 1.0
+};
+
+// 全局变量：图层叠加状态
+let layerState = {
+    nodeTheme: 'overview',      // 当前节点主题
+    pipeTheme: 'overview',      // 当前管道主题
+    flowDecorator: false        // 流向装饰器开关
+};
+
+let currentTileLayers = {}; // 存储当前的底图图层
+
+// 性能优化：新增全局变量
+let canvasRenderer;
+let facilityMarkers = new Map(); // 存储已创建的标记，避免重复创建
+let pipelineMarkers = new Map(); // 存储管线标记
+let lastViewport = null; // 缓存上次视窗
+let renderThrottle = null; // 渲染节流器
+// 移除聚合器变量：let markerCluster; // 聚合器
+
+// 保护用户状态
+let userStateProtected = false;
+function protectUserState() {
+    if (!userStateProtected) {
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            window._protectedUserState = currentUser;
+            userStateProtected = true;
+            console.log('用户状态已保护');
+        }
+    }
+}
+
+function restoreUserState() {
+    if (window._protectedUserState && (!localStorage.getItem('currentUser') || localStorage.getItem('currentUser') === 'null')) {
+        localStorage.setItem('currentUser', window._protectedUserState);
+        console.log('用户状态已恢复');
+        if (typeof NavigationManager !== 'undefined' && NavigationManager.updateNavigation) {
+            NavigationManager.updateNavigation();
+        }
+    }
+}
+
+// 全局错误处理
+window.addEventListener('error', function(event) {
+    console.error('全局错误:', event.error);
+    restoreUserState(); // 出错时恢复用户状态
+    // 防止错误影响页面功能
+    event.preventDefault();
+});
+
+// 定期检查用户状态
+setInterval(restoreUserState, 5000);
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log('开始初始化监控页面');
+        
+        // 保护用户状态
+        protectUserState();
+        
+        // 初始化基础管理器
+        if(typeof NavigationManager !== 'undefined') {
+            NavigationManager.init();
+            console.log('NavigationManager 初始化完成');
+        } else {
+            console.warn('NavigationManager not found');
+        }
+        
+        if(typeof ThemeManager !== 'undefined') {
+            ThemeManager.init();
+            console.log('ThemeManager 初始化完成');
+        } else {
+            console.warn('ThemeManager not found');
+        }
+        
+        updateLoadingStatus('正在初始化地图...');
+    initMap();
+        
+        updateLoadingStatus('正在加载水力模型...');
+    await loadEPANETData();
+        
+        updateLoadingStatus('正在初始化侧边栏...');
+        if(typeof LeftPanel !== 'undefined') {
+            LeftPanel.init();
+            console.log('LeftPanel 初始化完成');
+        } else {
+            console.warn('LeftPanel not found');
+        }
+        
+        if(typeof RightPanel !== 'undefined') {
+            RightPanel.init();
+            console.log('RightPanel 初始化完成');
+        } else {
+            console.warn('RightPanel not found');
+        }
+        
+        updateLoadingStatus('渲染地图...');
+        switchMapTheme(currentMapTheme);
+        
+        // 立即渲染一次确保地图可见
+        throttledDisplayFacilities();
+
+        updateLoadingStatus('初始化完成');
+        setTimeout(() => {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            console.log('所有功能已准备就绪');
+        }, 500);
+        
+        console.log('监控页面初始化成功');
+    } catch (error) {
+        console.error("Initialization failed:", error);
+        updateLoadingStatus(`初始化失败: ${error.message}`);
+        
+        // 显示错误但不阻止页面基本功能
+        setTimeout(() => {
+            document.getElementById('loadingIndicator').style.display = 'none';
+        }, 3000);
+    }
+});
+
+function updateLoadingStatus(message) {
+    document.getElementById('loadingStatus').textContent = message;
+    console.log(message);
+}
+
+function initMap() {
+    map = L.map('map', { zoomControl: false }).setView([22.261, 114.246], 16);
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+    // ✅ 使用标准Web Mercator (EPSG:3857) 底图，与ArcGIS Pro完全一致
+    const tileLayers = {
+        light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
+            attribution: '© CARTO (EPSG:3857)', 
+            maxZoom: 19 
+        }),
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+            attribution: '© CARTO (EPSG:3857)', 
+            maxZoom: 19 
+        })
+    };
+    
+    const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    tileLayers[currentTheme].addTo(map);
+    
+    // 存储当前底图图层引用以便透明度控制
+    currentTileLayers = tileLayers;
+
+    const themeObserver = new MutationObserver(() => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark && !map.hasLayer(tileLayers.dark)) {
+            map.removeLayer(tileLayers.light);
+            map.addLayer(tileLayers.dark);
+            // 应用当前的底图透明度设置
+            if (layerOpacity.basemap < 1.0) {
+                tileLayers.dark.setOpacity(layerOpacity.basemap);
+            }
+        } else if (!isDark && !map.hasLayer(tileLayers.light)) {
+            map.removeLayer(tileLayers.dark);
+            map.addLayer(tileLayers.light);
+            // 应用当前的底图透明度设置
+            if (layerOpacity.basemap < 1.0) {
+                tileLayers.light.setOpacity(layerOpacity.basemap);
+            }
+        }
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    
+    // 性能优化：创建 Canvas 渲染器
+    canvasRenderer = L.canvas({ padding: 0.5 });
+    
+    // 图层添加顺序：管线图层在底层，设施图层在上层
+    // 这样确保节点始终显示在管线之上
+    pipelineLayerGroup = L.layerGroup().addTo(map);
+    pipelineDecoratorLayerGroup = L.layerGroup().addTo(map);
+    facilityLayerGroup = L.layerGroup().addTo(map);
+
+    // 移除聚合功能 - 用户反馈聚合导致zoom in/out问题
+    // if (typeof L.markerClusterGroup !== 'undefined') {
+    //     markerCluster = L.markerClusterGroup({
+    //         maxClusterRadius: 50,
+    //         disableClusteringAtZoom: 15,
+    //         spiderfyOnMaxZoom: false,
+    //         showCoverageOnHover: false,
+    //         zoomToBoundsOnClick: true
+    //     });
+    //     map.addLayer(markerCluster);
+    // }
+
+    // 性能优化：节流的事件监听
+    map.on('zoomend moveend', throttledDisplayFacilities);
+}
+
+// 性能优化：节流函数
+function throttledDisplayFacilities() {
+    if (renderThrottle) {
+        cancelAnimationFrame(renderThrottle);
+    }
+    renderThrottle = requestAnimationFrame(() => {
+        displayFacilities();
+        renderThrottle = null;
+    });
+}
+
+// 性能优化：视窗变化检测
+function hasViewportChanged() {
+    const currentBounds = map.getBounds();
+    const currentZoom = map.getZoom();
+    
+    if (!lastViewport) {
+        lastViewport = { bounds: currentBounds, zoom: currentZoom };
+        return true;
+    }
+    
+    const boundsChanged = !currentBounds.equals(lastViewport.bounds);
+    const zoomChanged = Math.abs(currentZoom - lastViewport.zoom) > 0.5;
+    
+    if (boundsChanged || zoomChanged) {
+        lastViewport = { bounds: currentBounds, zoom: currentZoom };
+        return true;
+    }
+    return false;
+}
+
+async function loadEPANETData() {
+// 使用香港测绘处(SMO)官方推荐的高精度7参数 (EPSG 1825/15964)
+// 参考: geodetic.gov.hk 和 epsg.io/2326
+// ✅ ArcGIS同款坐标转换管线：+axis=ne 处理轴序 + EPSG:4326 启用七参数1825
+proj4.defs('EPSG:2326',
+  '+proj=tmerc +lat_0=22.31213333333334 +lon_0=114.178555555556 ' +
+  '+k=1 +x_0=836694.05 +y_0=819069.8 +ellps=intl +axis=ne ' +
+  '+towgs84=-162.619,-276.959,-161.764,0,0,0,0 +units=m +no_defs');
+
+// 坐标转换已优化，无需验证器
+
+        const response = await fetch('DATA/HK Example.inp');
+    if (!response.ok) throw new Error(`Cannot fetch INP file: ${response.statusText}`);
+        const inpText = await response.text();
+        
+        // 性能优化：可以考虑移到 Web Worker
+        const parsedData = await parseINPFileOptimized(inpText);
+    if (parsedData.nodes.length === 0) throw new Error("INP file parsed, but no nodes found. Check file format.");
+        
+    // Augment parsed data with simulated hydraulic data
+    // 选择真实存在的节点作为监测点
+    const primaryMonitorIds = ['SIUSAIWANSEA', 'SWSR-CHAIWAN', 'S01097-11SE19A', 'S00115-11SE19A', 'S00098-11SE19A'];
+    const otherMonitorIds = ['S00002-11SE14C', 'S01080-11SE19B', 'S00103-11SE19A', 'S00035-11SE20A', 'S01142-11SE19A', 'S00061-11SE20A', 'S00214-11SE20A', 'S01114-11SE19A', 'S00525-11SE19C', 'S00586-11SE19C'];
+    
+        facilityData = parsedData.nodes.map(node => {
+        const coords = parsedData.coordinates[node.id];
+        if (!coords) return null; // Skip nodes without coordinates
+        
+        // ✅ INP文件：X-Coord=Easting, Y-Coord=Northing
+        // +axis=ne 已正确定义轴序，按正常 [x,y] 即 [E,N] 传入即可
+        // 使用 EPSG:4326 而非 "WGS84" 以启用七参数转换
+        const [lng, lat] = proj4("EPSG:2326", "EPSG:4326", [coords.x, coords.y]);
+        
+        // 调试：打印转换结果验证精度
+        if (Math.random() < 0.001) { // 随机采样验证
+            console.log(`✅ 坐标转换验证 - HK80: E=${coords.x}, N=${coords.y} → WGS84: ${lng.toFixed(6)}°E, ${lat.toFixed(6)}°N`);
+            
+            // 检查是否在香港范围内
+            const inHongKong = lng >= 114.0 && lng <= 114.5 && lat >= 22.0 && lat <= 22.6;
+            console.log(`📍 位置检查: ${inHongKong ? '✅ 在香港范围内' : '❌ 超出香港范围'}`);
+            
+            // 特别标注关键设施
+            if (node.id === 'SWSR-CHAIWAN') {
+                console.log(`🏛️ 柴湾水库定位: ${lng.toFixed(6)}°E, ${lat.toFixed(6)}°N ${inHongKong ? '✅' : '❌ 漂移警告！'}`);
+            }
+            if (node.id === 'SIUSAIWANSEA') {
+                console.log(`🌊 小西湾海水定位: ${lng.toFixed(6)}°E, ${lat.toFixed(6)}°N ${inHongKong ? '✅' : '❌ 漂移警告！'}`);
+            }
+        }
+        
+        const isPrimary = primaryMonitorIds.includes(node.id);
+        const isOther = otherMonitorIds.includes(node.id);
+        
+        const pressure = 0.2 + Math.random() * 0.4;
+        const chlorine = 0.2 + Math.random() * 0.5;
+
+            return {
+                id: node.id, name: node.id, lat, lng,
+                type: node.type, elevation: node.elev,
+            pressure: pressure,
+            head: node.elev + pressure * 102, // Approximate conversion
+            demand: (node.type === 'junction' ? Math.random() * 50 : 0),
+            waterQuality: { chlorine, ph: 6.5 + Math.random() * 1.5 },
+            status: Math.random() > 0.95 ? 'critical' : (Math.random() > 0.9 ? 'warning' : 'normal'),
+            isMonitor: isPrimary || isOther,
+            isPrimary: isPrimary,
+            monitored: (isPrimary || isOther) ? {
+                pressure: pressure + (Math.random() - 0.5) * 0.1,
+                quality: chlorine + (Math.random() - 0.5) * 0.1
+            } : null
+        };
+    }).filter(Boolean); // Remove null entries
+
+        pipelineData = parsedData.pipes.map(pipe => ({
+            ...pipe,
+            flowRate: (Math.random() - 0.5) * 200,
+            velocity: Math.random() * 2 + 0.5,
+        headloss: Math.random() * 2
+    }));
+}
+
+// 性能优化：优化的 INP 解析函数
+async function parseINPFileOptimized(text) {
+    return new Promise((resolve) => {
+        // 使用 setTimeout 让解析过程不阻塞主线程
+        setTimeout(() => {
+            const lines = text.split(/\r?\n/);
+            const data = { nodes: [], pipes: [], coordinates: {} };
+            let currentSection = "";
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('[')) {
+                    currentSection = trimmed.toUpperCase();
+                    continue;
+                }
+                if (!trimmed || trimmed.startsWith(';')) continue;
+
+                const parts = trimmed.split(/\s+/);
+                try {
+                    switch(currentSection) {
+                        case '[JUNCTIONS]':
+                        data.nodes.push({ id: parts[0], type: 'junction', elev: parseFloat(parts[1]) });
+                            break;
+                        case '[RESERVOIRS]':
+                        data.nodes.push({ id: parts[0], type: 'reservoir', elev: parseFloat(parts[1]) });
+                            break;
+                        case '[TANKS]':
+                        data.nodes.push({ id: parts[0], type: 'tank', elev: parseFloat(parts[1]) });
+                            break;
+                        case '[PIPES]':
+                        data.pipes.push({ id: parts[0], from: parts[1], to: parts[2], diameter: parseFloat(parts[4]) || 150 });
+                            break;
+                        case '[PUMPS]':
+                            data.nodes.push({ id: parts[0], type: 'pump_station', elev: 0 }); // 泵站高程设为0
+                            break;
+                        case '[VALVES]':
+                            data.nodes.push({ id: parts[0], type: 'valve', elev: parseFloat(parts[3]) }); // Simplified
+                            break;
+                        case '[COORDINATES]':
+                        data.coordinates[parts[0]] = { x: parseFloat(parts[1]), y: parseFloat(parts[2]) };
+                            break;
+                    }
+                } catch (e) { console.warn("Parsing error on line:", line, e); }
+            }
+            resolve(data);
+        }, 0);
+    });
+}
+
+function parseINPFile(text) {
+    const lines = text.split(/\r?\n/);
+    const data = { nodes: [], pipes: [], coordinates: {} };
+    let currentSection = "";
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('[')) {
+            currentSection = trimmed.toUpperCase();
+            continue;
+        }
+        if (!trimmed || trimmed.startsWith(';')) continue;
+
+        const parts = trimmed.split(/\s+/);
+        try {
+            switch(currentSection) {
+                case '[JUNCTIONS]':
+                data.nodes.push({ id: parts[0], type: 'junction', elev: parseFloat(parts[1]) });
+                    break;
+                case '[RESERVOIRS]':
+                data.nodes.push({ id: parts[0], type: 'reservoir', elev: parseFloat(parts[1]) });
+                    break;
+                case '[TANKS]':
+                data.nodes.push({ id: parts[0], type: 'tank', elev: parseFloat(parts[1]) });
+                    break;
+                case '[PIPES]':
+                data.pipes.push({ id: parts[0], from: parts[1], to: parts[2], diameter: parseFloat(parts[4]) || 150 });
+                    break;
+                case '[PUMPS]':
+                    data.nodes.push({ id: parts[0], type: 'pump_station', elev: 0 }); // 泵站高程设为0
+                    break;
+                case '[VALVES]':
+                    data.nodes.push({ id: parts[0], type: 'valve', elev: parseFloat(parts[3]) }); // Simplified
+                    break;
+                case '[COORDINATES]':
+                data.coordinates[parts[0]] = { x: parseFloat(parts[1]), y: parseFloat(parts[2]) };
+                    break;
+            }
+        } catch (e) { console.warn("Parsing error on line:", line, e); }
+    }
+    return data;
+}
+
+// --- Display Logic ---
+// 性能优化：重构显示逻辑，避免每次都重建所有要素
+function displayFacilities() {
+    const zoom = map.getZoom();
+    // 修复按需渲染问题：使用更大的缓冲区，避免zoom in/out时元素丢失
+    const bounds = map.getBounds().pad(0.5); // 视窗裁剪：扩展50%边界，防止元素丢失
+    
+    console.log(`渲染开始 - 缩放级别: ${zoom}, 设施数: ${facilityData.length}, 管线数: ${pipelineData.length}`);
+    
+    // 移除聚合功能，直接使用优化显示
+    displayFacilitiesOptimized(bounds, zoom);
+    displayPipelinesOptimized(bounds, zoom);
+}
+
+// 性能优化：使用聚合的设施显示 - 已废弃
+// function displayFacilitiesWithCluster(bounds, zoom) {
+//     // 移除聚合相关代码
+// }
+
+// 性能优化：优化的设施显示（更新样式而非重建）
+function displayFacilitiesOptimized(bounds, zoom) {
+    const visibleFacilities = facilityData.filter(facility => {
+        if (!isInViewport(facility, bounds)) return false;
+        return facilityShouldShow(facility, zoom);
+    });
+    
+    // 移除不在视窗内的标记
+    facilityMarkers.forEach((marker, id) => {
+        const facility = facilityData.find(f => f.id === id);
+        if (!facility || !isInViewport(facility, bounds) || !facilityShouldShow(facility, zoom)) {
+            facilityLayerGroup.removeLayer(marker);
+            facilityMarkers.delete(id);
+        }
+    });
+    
+    // 添加或更新可见设施
+    visibleFacilities.forEach(facility => {
+        const existingMarker = facilityMarkers.get(facility.id);
+        
+        if (existingMarker) {
+            // 更新现有标记样式
+            updateMarkerStyle(existingMarker, facility, zoom);
+        } else {
+            // 创建新标记
+            const marker = createOptimizedMarker(facility, zoom, false);
+            facilityMarkers.set(facility.id, marker);
+            facilityLayerGroup.addLayer(marker);
+        }
+    });
+}
+
+// 性能优化：优化的管线显示
+function displayPipelinesOptimized(bounds, zoom) {
+    // 管线在低缩放级别简化显示
+    const showAllPipes = zoom > 10;
+    const visiblePipes = pipelineData.filter(pipe => {
+        const fromNode = facilityData.find(f => f.id === pipe.from);
+        const toNode = facilityData.find(f => f.id === pipe.to);
+        
+        if (!fromNode || !toNode) return false;
+        
+        // 检查管线是否在视窗内
+        if (!isInViewport(fromNode, bounds) && !isInViewport(toNode, bounds)) return false;
+        
+        return showAllPipes || facilityShouldShow(fromNode, zoom) || facilityShouldShow(toNode, zoom);
+    });
+    
+    // 移除不可见的管线
+    pipelineMarkers.forEach((marker, id) => {
+        const pipe = pipelineData.find(p => p.id === id);
+        if (!pipe || !visiblePipes.includes(pipe)) {
+            pipelineLayerGroup.removeLayer(marker);
+            pipelineMarkers.delete(id);
+        }
+    });
+    
+    // 添加或更新可见管线
+    visiblePipes.forEach(pipe => {
+        const existingMarker = pipelineMarkers.get(pipe.id);
+        
+        if (existingMarker) {
+            // 更新现有管线样式
+            updatePipelineStyle(existingMarker, pipe, zoom);
+        } else {
+            // 创建新管线
+            const marker = createOptimizedPipeline(pipe, zoom);
+            if (marker) {
+                pipelineMarkers.set(pipe.id, marker);
+                pipelineLayerGroup.addLayer(marker);
+            }
+        }
+    });
+    
+    // 更新装饰器（流向箭头）
+    updatePipelineDecorators(visiblePipes, zoom);
+}
+
+// 性能优化：视窗检测
+function isInViewport(facility, bounds) {
+    return bounds.contains([facility.lat, facility.lng]);
+}
+
+// 性能优化：设施过滤逻辑
+function facilityShouldShow(facility, zoom) {
+    // 检查设施类型是否可见（checkbox控制）
+    if (!facilityVisibility[facility.type]) return false;
+    
+        // 主要设施（水库、水塔、泵站）总是显示，不受过滤影响
+        const majorFacilities = ['reservoir', 'tank', 'pump_station'];
+    if (majorFacilities.includes(facility.type)) return true;
+        
+        // 监测点的显示控制
+    if (facility.isMonitor) {
+            if (showMonitors === 'none') return false;
+        if (showMonitors === 'primary' && !facility.isPrimary) return false;
+        // 监测点在缩放10以上显示
+            return zoom > 10;
+        }
+        
+        // 其他设施的过滤
+    if (facilityTypeFilter !== 'all' && facility.type !== facilityTypeFilter) return false;
+    if (alarmStatusFilter && facility.status !== alarmStatusFilter) return false;
+        
+    // 普通节点在较高缩放级别显示
+    if (facility.type === 'junction') return zoom > 12;
+        
+        return true;
+}
+
+// 性能优化：创建优化的标记（根据设施类型显示不同形状）
+function createOptimizedMarker(facility, zoom, forCluster = false) {
+    const majorFacilities = ['reservoir', 'tank', 'pump_station', 'valve']; // 将阀门也归为主要设施
+    const isMajor = majorFacilities.includes(facility.type);
+    const isMonitor = facility.isMonitor;
+    
+    // 根据缩放级别调整大小
+    let baseSize = isMajor ? (zoom > 15 ? 16 : 12) : (zoom > 15 ? 8 : 6);
+    
+    // 根据主题获取颜色
+    let fillColor = getFacilityColor(facility);
+    
+    // 调整z-index层级：主要设施 > 监测点 > 普通节点 > 管线
+    // 确保所有节点都明显高于管线的z-index
+    let zIndexOffset = 5000; // 普通节点基础z-index（远高于管线的0）
+    if (isMonitor) zIndexOffset = 6000; // 监测点较高
+    if (isMajor) zIndexOffset = 7000; // 主要设施最高（泵站、水库、水塔、阀门）
+    
+    let marker;
+    
+    // 根据设施类型创建不同形状的标记 - 现代化图标设计
+    switch(facility.type) {
+        case 'reservoir':
+            // 水库 - 使用水滴图标
+            marker = createCustomMarker(facility, {
+                html: `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                         <div class="facility-icon reservoir-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                           <i class="fas fa-water" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                         </div>
+                       </div>`,
+                iconSize: [baseSize, baseSize],
+                iconAnchor: [baseSize/2, baseSize/2],
+                className: 'custom-facility-icon'
+            });
+            break;
+            
+        case 'tank':
+            // 水塔 - 使用建筑图标
+            marker = createCustomMarker(facility, {
+                html: `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                         <div class="facility-icon tank-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                           <i class="fas fa-building" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                         </div>
+                       </div>`,
+                iconSize: [baseSize, baseSize],
+                iconAnchor: [baseSize/2, baseSize/2],
+                className: 'custom-facility-icon'
+            });
+            break;
+            
+        case 'pump_station':
+            // 泵站 - 使用工业图标
+            marker = createCustomMarker(facility, {
+                html: `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                         <div class="facility-icon pump-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                           <i class="fas fa-industry" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                         </div>
+                       </div>`,
+                iconSize: [baseSize, baseSize],
+                iconAnchor: [baseSize/2, baseSize/2],
+                className: 'custom-facility-icon'
+            });
+            break;
+            
+        case 'valve':
+            // 阀门 - 使用调节图标
+            marker = createCustomMarker(facility, {
+                html: `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                         <div class="facility-icon valve-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                           <i class="fas fa-adjust" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                         </div>
+                       </div>`,
+                iconSize: [baseSize, baseSize],
+                iconAnchor: [baseSize/2, baseSize/2],
+                className: 'custom-facility-icon'
+            });
+            break;
+            
+        case 'junction':
+        default:
+            // 普通节点 - 使用现代化圆形图标
+            if (isMonitor) {
+                // 监测点使用特殊的发光效果
+                marker = createCustomMarker(facility, {
+                    html: `<div class="facility-icon-container monitor-point-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                             <div class="facility-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)}); border-color: #FFD700;">
+                               <i class="fas fa-satellite-dish" style="color: white; font-size: ${Math.max(6, baseSize*0.4)}px;"></i>
+                             </div>
+                           </div>`,
+                    iconSize: [baseSize, baseSize],
+                    iconAnchor: [baseSize/2, baseSize/2],
+                    className: 'custom-facility-icon'
+                });
+            } else {
+                // 普通节点保持高性能的CircleMarker
+                const style = {
+                    radius: baseSize/2,
+                    fillColor: fillColor,
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.9,
+                    renderer: canvasRenderer,
+                    interactive: true,
+                    bubblingMouseEvents: false,
+                    zIndexOffset: zIndexOffset  // 确保CircleMarker也有正确的z-index
+                };
+                
+                marker = L.circleMarker([facility.lat, facility.lng], style);
+            }
+            break;
+    }
+    
+    // 设置z-index确保在管线之上，主要设施在最上层
+    if (marker.options) {
+        marker.options.zIndexOffset = zIndexOffset;
+    }
+    
+    // 添加监测点特殊边框效果
+    if (isMonitor && marker.getElement) {
+        setTimeout(() => {
+            const element = marker.getElement();
+            if (element) {
+                element.classList.add('monitor-marker-border');
+            }
+        }, 100);
+    }
+    
+    // 添加点击事件
+                marker.on('click', () => {
+                showRightPanel(); // 显示浮动面板
+                RightPanel.showFacility(facility);
+            });
+    
+    // 添加工具提示
+    const tooltipContent = getTooltipText(facility);
+    if (tooltipContent) {
+        marker.bindTooltip(tooltipContent, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -10]
+        });
+    }
+    
+    return marker;
+}
+
+// 创建自定义形状标记的辅助函数
+function createCustomMarker(facility, iconOptions) {
+    const icon = L.divIcon({
+        html: iconOptions.html,
+        iconSize: iconOptions.iconSize,
+        iconAnchor: iconOptions.iconAnchor,
+        className: iconOptions.className || 'custom-facility-icon'
+    });
+    
+    return L.marker([facility.lat, facility.lng], { icon: icon });
+}
+
+// 颜色调整辅助函数 - 用于创建渐变效果
+function adjustColor(color, percent) {
+    // 简单的颜色亮度调整
+    const num = parseInt(color.replace("#",""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000
+        + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100
+        + (B < 255 ? B < 1 ? 0 : B : 255))
+        .toString(16).slice(1);
+}
+
+// 性能优化：创建优化的管线
+function createOptimizedPipeline(pipe, zoom) {
+    const fromNode = facilityData.find(f => f.id === pipe.from);
+    const toNode = facilityData.find(f => f.id === pipe.to);
+    if (!fromNode || !toNode) return null;
+    
+    const style = getPipelineStyle(pipe, zoom);
+    const polyline = L.polyline([[fromNode.lat, fromNode.lng], [toNode.lat, toNode.lng]], {
+        ...style,
+        renderer: canvasRenderer,
+        interactive: true,
+        bubblingMouseEvents: false
+    });
+    
+    // 设置管线的z-index为最低值（0），确保所有节点设施（5000+）都显示在管线之上
+    polyline.options.zIndexOffset = 0;
+    
+                polyline.on('click', () => {
+                showRightPanel(); // 显示浮动面板
+                RightPanel.showFacility(pipe, true);
+            });
+    
+    return polyline;
+}
+
+// 性能优化：更新标记样式
+function updateMarkerStyle(marker, facility, zoom) {
+    const majorFacilities = ['reservoir', 'tank', 'pump_station', 'valve'];
+    const isMajor = majorFacilities.includes(facility.type);
+    const isMonitor = facility.isMonitor;
+    
+    let baseSize = isMajor ? (zoom > 15 ? 16 : 12) : (zoom > 15 ? 8 : 6);
+    let fillColor = getFacilityColor(facility);
+    
+    // 检查标记类型
+    if (marker.setStyle && typeof marker.setStyle === 'function') {
+        // CircleMarker - 用于普通节点
+        marker.setStyle({
+            radius: baseSize/2,
+            fillColor: fillColor,
+            color: isMonitor ? '#FFD700' : 'transparent',
+            weight: isMonitor ? 2 : 0,
+            fillOpacity: 0.8
+        });
+    } else if (marker.getIcon && marker.setIcon) {
+        // DivIcon标记 - 用于主要设施
+        let iconHtml;
+        
+        switch(facility.type) {
+            case 'reservoir':
+                iconHtml = `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                             <div class="facility-icon reservoir-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                               <i class="fas fa-water" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                             </div>
+                           </div>`;
+                break;
+            case 'tank':
+                iconHtml = `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                             <div class="facility-icon tank-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                               <i class="fas fa-building" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                             </div>
+                           </div>`;
+                break;
+            case 'pump_station':
+                iconHtml = `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                             <div class="facility-icon pump-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                               <i class="fas fa-industry" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                             </div>
+                           </div>`;
+                break;
+            case 'valve':
+                iconHtml = `<div class="facility-icon-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                             <div class="facility-icon valve-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)});">
+                               <i class="fas fa-adjust" style="color: white; font-size: ${Math.max(8, baseSize*0.5)}px;"></i>
+                             </div>
+                           </div>`;
+                break;
+            case 'junction':
+                if (isMonitor) {
+                    iconHtml = `<div class="facility-icon-container monitor-point-container" style="width: ${baseSize}px; height: ${baseSize}px;">
+                                 <div class="facility-icon" style="background: linear-gradient(135deg, ${fillColor}, ${adjustColor(fillColor, -20)}); border-color: #FFD700;">
+                                   <i class="fas fa-satellite-dish" style="color: white; font-size: ${Math.max(6, baseSize*0.4)}px;"></i>
+                                 </div>
+                               </div>`;
+                }
+                break;
+        }
+        
+        if (iconHtml) {
+            const newIcon = L.divIcon({
+                html: iconHtml,
+                iconSize: [baseSize, baseSize],
+                iconAnchor: [baseSize/2, baseSize/2],
+                className: 'custom-facility-icon'
+            });
+            marker.setIcon(newIcon);
+        }
+    }
+}
+
+// 性能优化：更新管线样式
+function updatePipelineStyle(marker, pipe, zoom) {
+    const style = getPipelineStyle(pipe, zoom);
+    marker.setStyle(style);
+}
+
+// 获取设施颜色（支持图层叠加）
+function getFacilityColor(facility) {
+    const defaultColors = {
+        junction: '#3498db',
+        reservoir: '#2ecc71',
+        tank: '#ff8c00',
+        pump_station: '#9b59b6',
+        valve: '#e74c3c'
+    };
+    
+    // 根据节点主题确定颜色
+    switch(layerState.nodeTheme) {
+        case 'pressure':
+            const pressureRange = getDataRange(facilityData, 'pressure');
+            return getColorForValue(facility.pressure, pressureRange[0], pressureRange[1], ['#2ecc71', '#f1c40f', '#e74c3c']);
+        case 'elevation':
+            const elevRange = getDataRange(facilityData, 'elevation');
+            return getColorForValue(facility.elevation, elevRange[0], elevRange[1], ['#3498db', '#9b59b6', '#e74c3c']);
+        case 'head':
+            const headRange = getDataRange(facilityData, 'head');
+            return getColorForValue(facility.head, headRange[0], headRange[1], ['#1abc9c', '#3498db', '#9b59b6']);
+        case 'demand':
+            const demandRange = getDataRange(facilityData, 'demand');
+            return getColorForValue(facility.demand, demandRange[0], demandRange[1], ['#74b9ff', '#0984e3', '#2d3436']);
+        case 'quality':
+            if (facility.waterQuality) {
+                const qualityRange = getDataRange(facilityData.filter(f=>f.waterQuality), 'waterQuality.chlorine');
+                return getColorForValue(facility.waterQuality.chlorine, qualityRange[0], qualityRange[1], ['#e74c3c', '#f1c40f', '#2ecc71']);
+            }
+            break;
+        default:
+            return defaultColors[facility.type] || '#3498db';
+    }
+    
+    return defaultColors[facility.type] || '#3498db';
+}
+
+// 获取管线样式（支持图层叠加）
+function getPipelineStyle(pipe, zoom) {
+    let baseWeight = zoom < 10 ? 1.5 : (zoom < 12 ? 2 : 3);
+    let baseOpacity = zoom < 10 ? 0.5 : (zoom < 12 ? 0.6 : 0.7);
+    
+    let color = '#4A90B8', weight = baseWeight, opacity = baseOpacity;
+    
+    // 根据管道主题确定样式
+    switch(layerState.pipeTheme) {
+        case 'pipe_flow':
+            const flowRange = getDataRange(pipelineData, 'flowRate');
+            color = getColorForValue(Math.abs(pipe.flowRate), flowRange[0], flowRange[1], ['#E3F2FD', '#2196F3', '#0D47A1']);
+            weight = baseWeight + (Math.abs(pipe.flowRate) / flowRange[1]) * (zoom < 12 ? 3 : 6);
+            break;
+        case 'pipe_diameter':
+            const diaRange = getDataRange(pipelineData, 'diameter');
+            color = getColorForValue(pipe.diameter, diaRange[0], diaRange[1], ['#FFF3E0', '#FF9800', '#E65100']);
+            weight = baseWeight + (pipe.diameter / diaRange[1]) * (zoom < 12 ? 3 : 7);
+            break;
+        case 'pipe_velocity':
+            const velRange = getDataRange(pipelineData, 'velocity');
+            color = getColorForValue(pipe.velocity, velRange[0], velRange[1], ['#E8F5E9', '#4CAF50', '#1B5E20']);
+            weight = baseWeight + (pipe.velocity / velRange[1]) * (zoom < 12 ? 3 : 6);
+            break;
+        case 'pipe_headloss':
+            const lossRange = getDataRange(pipelineData, 'headloss');
+            color = getColorForValue(pipe.headloss, lossRange[0], lossRange[1], ['#FFEBEE', '#FF5722', '#BF360C']);
+            weight = baseWeight + (pipe.headloss / lossRange[1]) * (zoom < 12 ? 3 : 6);
+            break;
+    }
+
+    return { color, weight, opacity };
+}
+
+// 全局高性能流向系统实例（使用外部模块）
+let particleFlowSystem = null;
+
+// 更新管线装饰器 - 基于装饰器开关状态（高性能箭头粒子版本）
+function updatePipelineDecorators(visiblePipes, zoom) {
+    // 使用新的高性能流向系统（WebGL箭头粒子）
+    const shouldShowFlow = layerState.flowDecorator && zoom > 11;
+    
+    if (shouldShowFlow) {
+        // 启动高性能WebGL流向系统
+        if (!particleFlowSystem) {
+            particleFlowSystem = new HighPerformanceFlowSystem(map);
+        }
+        particleFlowSystem.start();
+        
+        // 应用当前的透明度设置
+        const decoratorOpacity = layerOpacity.decorator || 1.0;
+        particleFlowSystem.setOpacity(decoratorOpacity);
+        
+        console.log(`🚀 高性能箭头粒子系统启动 - ${visiblePipes.length}条管线, zoom=${zoom}`);
+    } else {
+        // 停止系统
+        if (particleFlowSystem) {
+            particleFlowSystem.stop();
+        }
+    }
+}
+
+function createMarker(facility, zoom) {
+    // 向后兼容，调用优化版本
+    return createOptimizedMarker(facility, zoom);
+}
+
+function createPipeline(pipe) {
+    // 向后兼容，调用优化版本
+    const pipeline = createOptimizedPipeline(pipe, map.getZoom());
+    if (pipeline) {
+        // 确保旧版调用也有正确的z-index（管线在最底层）
+        pipeline.options.zIndexOffset = 0;
+    }
+    return pipeline;
+}
+
+// --- Theming & Filtering ---
+// 性能优化：只更新样式的主题切换
+function switchMapTheme(theme) {
+    try {
+        console.log('切换地图主题到:', theme);
+        const startTime = performance.now();
+        
+        const oldTheme = currentMapTheme;
+        currentMapTheme = theme;
+        
+        if (typeof LeftPanel !== 'undefined') {
+            LeftPanel.setActiveMenuItem(theme);
+        }
+        
+        // 只有当主题实际发生变化时才更新
+        if (oldTheme !== theme) {
+            // 更新现有标记的样式而不重建
+            updateAllMarkerStyles();
+            updateAllPipelineStyles();
+            updatePipelineDecorators(getVisiblePipes(), map.getZoom());
+            
+            // 更新粒子流系统主题
+            if (particleFlowSystem && particleFlowSystem.isRunning) {
+                particleFlowSystem.updateTheme();
+            }
+        }
+        
+        updateLegend(theme);
+        
+        const endTime = performance.now();
+        console.log(`主题切换完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+    } catch (error) {
+        console.error('切换地图主题错误:', error);
+    }
+}
+
+// 性能优化：更新所有标记样式
+function updateAllMarkerStyles() {
+    const zoom = map.getZoom();
+    
+    // 更新普通标记
+    facilityMarkers.forEach((marker, id) => {
+        const facility = facilityData.find(f => f.id === id);
+        if (facility) {
+            updateMarkerStyle(marker, facility, zoom);
+        }
+    });
+    
+    // 聚合功能已移除
+}
+
+// 性能优化：更新所有管线样式
+function updateAllPipelineStyles() {
+    const zoom = map.getZoom();
+    
+    pipelineMarkers.forEach((marker, id) => {
+        const pipe = pipelineData.find(p => p.id === id);
+        if (pipe) {
+            updatePipelineStyle(marker, pipe, zoom);
+        }
+    });
+}
+
+// 性能优化：获取可见管线
+function getVisiblePipes() {
+    const bounds = map.getBounds().pad(0.5); // 与displayFacilities保持一致的缓冲区
+    const zoom = map.getZoom();
+    
+    return pipelineData.filter(pipe => {
+        const fromNode = facilityData.find(f => f.id === pipe.from);
+        const toNode = facilityData.find(f => f.id === pipe.to);
+        
+        if (!fromNode || !toNode) return false;
+        return isInViewport(fromNode, bounds) || isInViewport(toNode, bounds);
+    });
+}
+
+// 兼容性函数 - 左侧面板使用
+function switchMapLayer(theme) {
+    switchMapTheme(theme);
+}
+
+// --- 新的图层叠加系统 ---
+
+// 切换节点主题
+function switchNodeTheme(theme) {
+    try {
+        console.log('切换节点主题到:', theme);
+        layerState.nodeTheme = theme;
+        
+        // 更新节点主题UI状态
+        updateThemeUI('node', theme);
+        
+        // 重新渲染地图
+        refreshMapLayers();
+        
+        console.log('节点主题切换完成');
+    } catch (error) {
+        console.error('切换节点主题错误:', error);
+    }
+}
+
+// 切换管道主题
+function switchPipeTheme(theme) {
+    try {
+        console.log('切换管道主题到:', theme);
+        layerState.pipeTheme = theme;
+        
+        // 更新管道主题UI状态
+        updateThemeUI('pipe', theme);
+        
+        // 重新渲染地图
+        refreshMapLayers();
+        
+        console.log('管道主题切换完成');
+    } catch (error) {
+        console.error('切换管道主题错误:', error);
+    }
+}
+
+// 切换流向装饰器（高性能箭头粒子版本）
+function toggleFlowDirectionDecorator(enabled) {
+    try {
+        console.log('🚀 切换高性能流向装饰器:', enabled);
+        layerState.flowDecorator = enabled;
+        
+        const zoom = map.getZoom();
+        if (enabled && zoom > 11) {
+            if (!particleFlowSystem) {
+                particleFlowSystem = new HighPerformanceFlowSystem(map);
+            }
+            particleFlowSystem.start();
+            
+            // 应用当前的透明度设置
+            const decoratorOpacity = layerOpacity.decorator || 1.0;
+            particleFlowSystem.setOpacity(decoratorOpacity);
+        } else {
+            if (particleFlowSystem) {
+                particleFlowSystem.stop();
+            }
+        }
+        
+        console.log('🚀 高性能箭头粒子装饰器切换完成');
+    } catch (error) {
+        console.error('切换高性能流向装饰器错误:', error);
+    }
+}
+
+// 更新主题UI状态
+function updateThemeUI(type, theme) {
+    const selectorPrefix = type === 'node' ? 'switchNodeTheme' : 'switchPipeTheme';
+    
+    document.querySelectorAll(`[onclick*="${selectorPrefix}"]`).forEach(item => {
+        const isActive = item.getAttribute('onclick').includes(`'${theme}'`);
+        item.classList.toggle('active', isActive);
+    });
+}
+
+// 刷新地图图层
+function refreshMapLayers() {
+    // 构建组合主题
+    const combinedTheme = getCombinedTheme();
+    
+    // 更新现有标记的样式
+    updateAllMarkerStyles();
+    updateAllPipelineStyles();
+    
+    // 更新图例
+    updateLegend(combinedTheme);
+    
+    console.log('地图图层已刷新，当前状态:', layerState);
+}
+
+// 获取组合主题（用于兼容现有逻辑）
+function getCombinedTheme() {
+    // 优先级：管道主题 > 节点主题 > 总览
+    if (layerState.pipeTheme !== 'overview') {
+        return layerState.pipeTheme;
+    } else if (layerState.nodeTheme !== 'overview') {
+        return layerState.nodeTheme;
+    } else {
+        return 'overview';
+    }
+}
+
+// 性能优化：节流的监测点切换
+function toggleMonitors(level) {
+    try {
+        console.log('切换监测点显示:', level);
+        const startTime = performance.now();
+        
+        const oldLevel = showMonitors;
+        showMonitors = level;
+        
+        document.querySelectorAll('#monitors-section .menu-item').forEach(item => {
+            item.classList.toggle('active', item.getAttribute('onclick').includes(`'${level}'`));
+        });
+        
+        // 只有当级别实际变化时才重新渲染
+        if (oldLevel !== level) {
+            throttledDisplayFacilities();
+        }
+        
+        const endTime = performance.now();
+        console.log(`监测点切换完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+    } catch (error) {
+        console.error('切换监测点错误:', error);
+    }
+}
+
+// 性能优化：节流的设施过滤 - 已废弃，改用checkbox控制
+// function filterFacilities(type) {
+//     // 此功能已被checkbox控制替代
+// }
+
+// 性能优化：节流的报警过滤
+function filterByAlarm(status) {
+    try {
+        console.log('过滤报警状态:', status);
+        const startTime = performance.now();
+        
+        const oldStatus = alarmStatusFilter;
+        alarmStatusFilter = status;
+        
+        if (typeof LeftPanel !== 'undefined') {
+            LeftPanel.setFilterActiveState('alarms-section', status);
+        }
+        
+        // 只有当过滤条件实际变化时才重新渲染
+        if (oldStatus !== status) {
+            throttledDisplayFacilities();
+        }
+        
+        const endTime = performance.now();
+        console.log(`报警过滤完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+    } catch (error) {
+        console.error('过滤报警错误:', error);
+    }
+}
+
+
+// --- UI Helpers ---
+function getFacilityIcon(type) {
+    const icons = {
+        junction: 'fa-circle', 
+        reservoir: 'fa-water', 
+        tank: 'fa-building',  // 水塔用建筑图标更直观
+        pump_station: 'fa-industry', 
+        valve: 'fa-adjust'
+    };
+    return icons[type] || 'fa-question-circle';
+}
+
+function getTooltipText(facility) {
+    let text = `<strong>${facility.name}</strong><br>${getFacilityTypeName(facility.type)}`;
+    switch(currentMapTheme) {
+        case 'pressure': text += `<br>压力: ${facility.pressure.toFixed(2)} MPa`; break;
+        case 'elevation': text += `<br>高程: ${facility.elevation.toFixed(1)} m`; break;
+        case 'head': text += `<br>水头: ${facility.head.toFixed(1)} m`; break;
+        case 'demand': text += `<br>需水: ${facility.demand.toFixed(1)} L/s`; break;
+        case 'quality': text += `<br>余氯: ${facility.waterQuality.chlorine.toFixed(2)} mg/L`; break;
+    }
+    return text;
+}
+
+function getFacilityTypeName(type) {
+    const names = { junction: '节点', pump_station: '泵站', reservoir: '水库', tank: '水塔', valve: '阀门' };
+    return names[type] || '未知设施';
+}
+
+// 更新图例以显示设施类型（支持图层叠加）
+function updateLegend(theme) {
+    const legend = document.getElementById('map-legend');
+    
+    // 检查是否有激活的图层（节点主题、管道主题、装饰器）
+    const hasActiveLayer = layerState.nodeTheme !== 'overview' || 
+                          layerState.pipeTheme !== 'overview' || 
+                          layerState.flowDecorator;
+    
+    if (!hasActiveLayer) {
+        legend.style.display = 'none';
+        return;
+    }
+    
+    // 如果有多个激活图层，显示组合图例
+    if ((layerState.nodeTheme !== 'overview' && layerState.pipeTheme !== 'overview') ||
+        (hasActiveLayer && layerState.flowDecorator)) {
+        theme = 'combined_legend';
+    }
+    
+    const schemes = {
+        pressure: { title: '压力 (MPa)', data: facilityData, prop: 'pressure', colors: ['#2ecc71', '#f1c40f', '#e74c3c'] },
+        elevation: { title: '高程 (m)', data: facilityData, prop: 'elevation', colors: ['#3498db', '#9b59b6', '#e74c3c'] },
+        head: { title: '总水头 (m)', data: facilityData, prop: 'head', colors: ['#1abc9c', '#3498db', '#9b59b6'] },
+        demand: { title: '需水量 (L/s)', type: 'size', data: facilityData, prop: 'demand' },
+        quality: { title: '余氯 (mg/L)', data: facilityData.filter(f=>f.waterQuality), prop: 'waterQuality.chlorine', colors: ['#e74c3c', '#f1c40f', '#2ecc71'] },
+        pipe_flow: { title: '流量 (L/s)', data: pipelineData, prop: 'flowRate', colors: ['#E3F2FD', '#2196F3', '#0D47A1'] },
+        pipe_velocity: { title: '流速 (m/s)', data: pipelineData, prop: 'velocity', colors: ['#E8F5E9', '#4CAF50', '#1B5E20'] },
+        pipe_headloss: { title: '水损 (m/km)', data: pipelineData, prop: 'headloss', colors: ['#FFEBEE', '#FF5722', '#BF360C'] },
+        pipe_diameter: { title: '管径 (mm)', data: pipelineData, prop: 'diameter', colors: ['#FFF3E0', '#FF9800', '#E65100'] },
+        pipe_flow_direction: { title: '管道流向', type: 'direction' },
+        combined_legend: { title: '图层组合', type: 'combined' }
+    };
+    
+    const s = schemes[theme];
+    if (!s) {
+        legend.style.display = 'none';
+        return;
+    }
+
+    legend.style.display = 'block';
+    let content = `<h4>${s.title}</h4>`;
+    if (s.type === 'size') {
+        content += `<div class="legend-item"><div class="legend-symbol" style="width:8px;height:8px;background:#3498db;"></div><span>小</span></div>
+                    <div class="legend-item"><div class="legend-symbol" style="width:16px;height:16px;background:#3498db;"></div><span>大</span></div>`;
+    } else if (s.type === 'direction') {
+        const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+        const particleColor = isDarkTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(50, 50, 50, 0.9)';
+        
+        content += `<div class="legend-item"><div class="legend-symbol" style="background:${particleColor};border-radius:50%;width:12px;height:12px;border:1px solid #ccc;"></div><span>流向粒子</span></div>
+                    <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">
+                        <div style="margin-bottom:3px;"><i class="fas fa-circle" style="font-size:8px;color:${particleColor};"></i> 圆点+箭头显示水流方向</div>
+                        <div style="margin-bottom:3px;"><i class="fas fa-arrows-alt-h" style="font-size:8px;color:var(--primary-color);"></i> 流向由flowRate正负值决定（矢量）</div>
+                        <div><i class="fas fa-tachometer-alt" style="font-size:8px;color:var(--primary-color);"></i> 流速越快，粒子速度越快</div>
+                    </div>`;
+    } else if (s.type === 'combined') {
+        // 显示当前激活的图层组合
+        let layersInfo = [];
+        if (layerState.nodeTheme !== 'overview') {
+            const nodeScheme = schemes[layerState.nodeTheme];
+            if (nodeScheme) layersInfo.push(`节点: ${nodeScheme.title}`);
+        }
+        if (layerState.pipeTheme !== 'overview') {
+            const pipeScheme = schemes[layerState.pipeTheme];
+            if (pipeScheme) layersInfo.push(`管道: ${pipeScheme.title}`);
+        }
+        if (layerState.flowDecorator) {
+            layersInfo.push('装饰: 流向粒子');
+        }
+        
+        if (layersInfo.length > 0) {
+            content += `<div style="margin-bottom:10px;">
+                <strong>当前激活图层:</strong>
+            </div>`;
+            layersInfo.forEach(info => {
+                content += `<div class="legend-item" style="padding:3px 0;"><i class="fas fa-layer-group" style="color:var(--primary-color);margin-right:8px;"></i>${info}</div>`;
+            });
+        } else {
+            content += `<div class="legend-item"><i class="fas fa-map" style="color:var(--text-muted);margin-right:8px;"></i>普通视图模式</div>`;
+        }
+    } else {
+        const range = getDataRange(s.data, s.prop);
+        content += `<div class="legend-gradient" style="background: linear-gradient(to right, ${s.colors.join(', ')});"></div>
+                    <div class="legend-labels"><span>${range[0].toFixed(1)}</span><span>${range[1].toFixed(1)}</span></div>`;
+    }
+    legend.innerHTML = content;
+}
+
+function getDataRange(data, property) {
+    const values = data.map(item => {
+        let val = item;
+        if (typeof property === 'string' && property.includes('.')) {
+            property.split('.').forEach(p => { val = val ? val[p] : undefined; });
+        } else {
+            val = item[property];
+        }
+        return typeof val === 'number' ? Math.abs(val) : 0;
+    }).filter(v => v !== undefined && !isNaN(v)).sort((a, b) => a - b);
+    
+    if (values.length < 2) return [0, 1];
+    
+    const p15 = values[Math.floor(values.length * 0.15)];
+    const p85 = values[Math.floor(values.length * 0.85)];
+    return [p15, p85];
+}
+
+function getColorForValue(value, min, max, colors) {
+    const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const index = Math.min(colors.length - 1, Math.floor(ratio * colors.length));
+    return colors[index];
+}
+
+// 关闭右侧浮动面板
+function closeRightPanel() {
+    const panel = document.getElementById('rightPanel');
+    if (panel) {
+        panel.classList.add('closed');
+        console.log('关闭浮动面板');
+    }
+}
+
+// 显示右侧浮动面板
+function showRightPanel() {
+    const panel = document.getElementById('rightPanel');
+    if (panel) {
+        panel.classList.remove('closed');
+        console.log('显示浮动面板');
+    }
+}
+
+function togglePanel(panelId) {
+    // 处理右侧浮动面板
+    if (panelId === 'rightPanel') {
+        const panel = document.getElementById(panelId);
+        if (panel.classList.contains('closed')) {
+            showRightPanel();
+        } else {
+            closeRightPanel();
+        }
+        return;
+    }
+    
+    // 左侧面板的原有逻辑保持不变
+    const panel = document.getElementById(panelId);
+    if (panel) {
+        panel.classList.toggle('collapsed');
+    }
+}
+
+// ESC键关闭浮动面板
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeRightPanel();
+    }
+});
+
+// 页面加载完成后初始化右侧浮动面板状态
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        // 右侧面板默认为关闭状态（浮动窗口形式）
+        const rightPanel = document.getElementById('rightPanel');
+        if (rightPanel) {
+            rightPanel.classList.add('closed');
+        }
+    }, 100);
+});
+
+
+
+// 确保所有全局函数都已定义
+window.switchMapLayer = switchMapLayer;
+window.switchMapTheme = switchMapTheme;
+window.switchNodeTheme = switchNodeTheme;
+window.switchPipeTheme = switchPipeTheme;
+window.toggleFlowDirectionDecorator = toggleFlowDirectionDecorator;
+window.toggleMonitors = toggleMonitors;
+window.toggleFacilityType = toggleFacilityType;
+window.filterByAlarm = filterByAlarm;
+window.closeRightPanel = closeRightPanel;
+window.showRightPanel = showRightPanel;
+
+// 分析功能演示函数
+function showAnalysisDemo(type) {
+    console.log('展示分析演示:', type);
+    
+    // 创建模拟设施数据
+    let mockFacility;
+    
+    switch(type) {
+        case 'monitor':
+            mockFacility = {
+                id: 'DEMO_MONITOR_001',
+                name: '小西湾监测点',
+                type: 'junction',
+                pressure: 0.35,
+                elevation: 15.5,
+                head: 50.2,
+                demand: 25.8,
+                waterQuality: { chlorine: 0.65, ph: 7.2 },
+                status: 'normal',
+                isMonitor: true,
+                isPrimary: true,
+                monitored: {
+                    pressure: 0.33,
+                    quality: 0.68
+                }
+            };
+            break;
+            
+        case 'valve':
+            mockFacility = {
+                id: 'DEMO_VALVE_001',
+                name: '主控制阀V01',
+                type: 'valve',
+                pressure: 0.42,
+                elevation: 22.3,
+                head: 65.1,
+                demand: 0,
+                waterQuality: { chlorine: 0.72, ph: 7.1 },
+                status: 'normal',
+                isMonitor: false,
+                valveStatus: 'open'
+            };
+            break;
+            
+        case 'pump':
+            mockFacility = {
+                id: 'DEMO_PUMP_001',
+                name: '柴湾泵站',
+                type: 'pump_station',
+                pressure: 0.55,
+                elevation: 8.2,
+                head: 78.5,
+                demand: 0,
+                waterQuality: { chlorine: 0.85, ph: 7.0 },
+                status: 'normal',
+                isMonitor: false
+            };
+            break;
+    }
+    
+    // 显示右侧面板
+    showRightPanel();
+    
+    // 使用RightPanel显示设施分析
+    if (typeof RightPanel !== 'undefined') {
+        // 隐藏初始提示
+        const noSelectionDiv = document.querySelector('.analysis-no-selection');
+        if (noSelectionDiv) {
+            noSelectionDiv.style.display = 'none';
+        }
+        
+        // 显示分析内容
+        RightPanel.showFacilityAnalysis(mockFacility, false);
+        
+        // 切换到分析标签页
+        const analysisTab = document.querySelector('.panel-tab[onclick*="analysis"]');
+        if (analysisTab) {
+            analysisTab.click();
+        }
+    }
+    
+    console.log('分析演示已显示:', mockFacility);
+}
+
+// 确保全局可用
+window.showAnalysisDemo = showAnalysisDemo;
+
+// 坐标转换验证组件已移除 - 使用ArcGIS同款转换管线
+
+// --- 性能监控 ---
+const PerformanceMonitor = {
+    elements: {},
+    stats: {
+        frameCount: 0,
+        lastTime: performance.now(),
+        renderTimes: [],
+        nodeCount: 0,
+        pipeCount: 0
+    },
+
+    init() {
+        this.elements = {
+            indicator: document.getElementById('performanceIndicator'),
+            nodeCount: document.getElementById('nodeCount'),
+            pipeCount: document.getElementById('pipeCount'),
+            renderTime: document.getElementById('renderTime'),
+            memoryUsage: document.getElementById('memoryUsage')
+        };
+        
+        // 开发模式下显示性能指示器
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            this.elements.indicator.classList.add('visible');
+            setInterval(() => this.updateStats(), 1000);
+        }
+    },
+
+    startRender() {
+        this.renderStartTime = performance.now();
+    },
+
+    endRender(nodeCount = 0, pipeCount = 0) {
+        if (this.renderStartTime) {
+            const renderTime = performance.now() - this.renderStartTime;
+            this.stats.renderTimes.push(renderTime);
+            this.stats.nodeCount = nodeCount;
+            this.stats.pipeCount = pipeCount;
+            
+            // 保持最近10次渲染时间
+            if (this.stats.renderTimes.length > 10) {
+                this.stats.renderTimes.shift();
+            }
+            
+            this.renderStartTime = null;
+        }
+    },
+
+    updateStats() {
+        if (!this.elements.indicator.classList.contains('visible')) return;
+        
+        // 更新节点和管道数量
+        this.elements.nodeCount.textContent = this.stats.nodeCount;
+        this.elements.pipeCount.textContent = this.stats.pipeCount;
+        
+        // 更新平均渲染时间
+        if (this.stats.renderTimes.length > 0) {
+            const avgRenderTime = this.stats.renderTimes.reduce((a, b) => a + b, 0) / this.stats.renderTimes.length;
+            this.elements.renderTime.textContent = `${avgRenderTime.toFixed(1)}ms`;
+        }
+        
+        // 更新内存使用情况
+        if (performance.memory) {
+            const memory = performance.memory.usedJSHeapSize / 1024 / 1024;
+            this.elements.memoryUsage.textContent = `${memory.toFixed(1)}MB`;
+        }
+    }
+};
+
+// 性能优化：增强的显示函数，加入性能监控
+const originalDisplayFacilities = displayFacilities;
+displayFacilities = function() {
+    PerformanceMonitor.startRender();
+    
+    try {
+        const result = originalDisplayFacilities.apply(this, arguments);
+        
+        // 计算要素数量（移除聚合相关代码）
+        const facilityCount = facilityMarkers.size;
+        const pipelineCount = pipelineMarkers.size;
+        
+        PerformanceMonitor.endRender(facilityCount, pipelineCount);
+        
+        return result;
+    } catch (error) {
+        console.error('显示设施时出错:', error);
+        PerformanceMonitor.endRender(0, 0);
+        return null;
+    }
+};
+
+// 内存泄漏预防
+window.addEventListener('beforeunload', () => {
+    // 清理粒子流系统
+    if (particleFlowSystem) {
+        particleFlowSystem.destroy();
+        particleFlowSystem = null;
+    }
+    
+    // 清理所有图层
+    if (facilityLayerGroup) {
+        facilityLayerGroup.clearLayers();
+    }
+    if (pipelineLayerGroup) {
+        pipelineLayerGroup.clearLayers();
+    }
+    if (pipelineDecoratorLayerGroup) {
+        pipelineDecoratorLayerGroup.clearLayers();
+    }
+    // 聚合功能已移除
+    
+    // 清理缓存
+    facilityMarkers.clear();
+    pipelineMarkers.clear();
+    
+    console.log('页面卸载，已清理资源');
+});
+
+// 初始化性能监控
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        PerformanceMonitor.init();
+    }, 2000);
+});
+
+// --- 图层透明度控制功能 ---
+
+// 更新图层透明度
+function updateLayerOpacity(layerType, value) {
+    const opacity = value / 100;
+    layerOpacity[layerType] = opacity;
+    
+    // 更新透明度显示值
+    const valueElement = document.getElementById(`${layerType}OpacityValue`);
+    if (valueElement) {
+        valueElement.textContent = `${value}%`;
+    }
+    
+    console.log(`更新${layerType}图层透明度为: ${opacity}`);
+    
+    // 根据图层类型应用透明度
+    switch(layerType) {
+        case 'facility':
+            updateFacilityLayerOpacity(opacity);
+            break;
+        case 'pipeline':
+            updatePipelineLayerOpacity(opacity);
+            break;
+        case 'decorator':
+            updateDecoratorLayerOpacity(opacity);
+            break;
+        case 'basemap':
+            updateBasemapOpacity(opacity);
+            break;
+    }
+}
+
+// 更新设施图层透明度
+function updateFacilityLayerOpacity(opacity) {
+    if (facilityLayerGroup) {
+        facilityLayerGroup.getLayers().forEach(layer => {
+            if (layer.setOpacity) {
+                layer.setOpacity(opacity);
+            } else if (layer.setStyle) {
+                // 对于CircleMarker等矢量图层
+                const currentStyle = layer.options;
+                layer.setStyle({
+                    fillOpacity: currentStyle.fillOpacity ? currentStyle.fillOpacity * opacity : opacity,
+                    opacity: currentStyle.opacity ? currentStyle.opacity * opacity : opacity
+                });
+            } else if (layer.getElement) {
+                // 对于DivIcon标记
+                const element = layer.getElement();
+                if (element) {
+                    element.style.opacity = opacity;
+                }
+            }
+        });
+    }
+}
+
+// 更新管道图层透明度
+function updatePipelineLayerOpacity(opacity) {
+    if (pipelineLayerGroup) {
+        pipelineLayerGroup.getLayers().forEach(layer => {
+            if (layer.setStyle) {
+                const currentStyle = layer.options;
+                layer.setStyle({
+                    opacity: opacity,
+                    fillOpacity: currentStyle.fillOpacity ? currentStyle.fillOpacity * opacity : opacity
+                });
+            }
+        });
+    }
+}
+
+// 更新装饰器图层透明度
+function updateDecoratorLayerOpacity(opacity) {
+    // 更新粒子流系统透明度
+    if (particleFlowSystem) {
+        particleFlowSystem.setOpacity(opacity);
+    }
+    
+    // 更新传统装饰器透明度（如果有的话）
+    if (pipelineDecoratorLayerGroup) {
+        pipelineDecoratorLayerGroup.getLayers().forEach(layer => {
+            if (layer.setStyle) {
+                layer.setStyle({ opacity: opacity });
+            } else if (layer.getLayers) {
+                // 对于装饰器组
+                layer.getLayers().forEach(sublayer => {
+                    if (sublayer.setStyle) {
+                        sublayer.setStyle({ opacity: opacity });
+                    }
+                });
+            }
+        });
+    }
+}
+
+// 更新底图透明度
+function updateBasemapOpacity(opacity) {
+    // 遍历所有可能的底图图层
+    map.eachLayer(layer => {
+        if (layer.options && layer.options.attribution && 
+            layer.options.attribution.includes('CARTO')) {
+            if (layer.setOpacity) {
+                layer.setOpacity(opacity);
+            }
+        }
+    });
+    
+    // 也更新存储的图层引用
+    Object.values(currentTileLayers).forEach(layer => {
+        if (layer.setOpacity) {
+            layer.setOpacity(opacity);
+        }
+    });
+}
+
+// 重置所有图层透明度为100%
+function resetAllOpacity() {
+    const layerTypes = ['facility', 'pipeline', 'decorator', 'basemap'];
+    
+    layerTypes.forEach(layerType => {
+        // 重置滑块值
+        const slider = document.getElementById(`${layerType}OpacitySlider`);
+        if (slider) {
+            slider.value = 100;
+        }
+        
+        // 更新透明度
+        updateLayerOpacity(layerType, 100);
+    });
+    
+    console.log('已重置所有图层透明度为100%');
+}
+
+// 应用透明度到新创建的图层元素
+function applyOpacityToNewLayer(layer, layerType) {
+    const opacity = layerOpacity[layerType] || 1.0;
+    
+    // 特殊处理粒子流系统
+    if (layerType === 'decorator' && particleFlowSystem) {
+        particleFlowSystem.setOpacity(opacity);
+        return;
+    }
+    
+    if (opacity < 1.0) {
+        if (layer.setOpacity) {
+            layer.setOpacity(opacity);
+        } else if (layer.setStyle) {
+            const currentStyle = layer.options || {};
+            layer.setStyle({
+                opacity: opacity,
+                fillOpacity: currentStyle.fillOpacity ? currentStyle.fillOpacity * opacity : opacity
+            });
+        } else if (layer.getElement) {
+            const element = layer.getElement();
+            if (element) {
+                element.style.opacity = opacity;
+            }
+        }
+    }
+}
+
+// 修改现有的创建标记函数，应用透明度
+const originalCreateOptimizedMarker = createOptimizedMarker;
+createOptimizedMarker = function(facility, zoom, forCluster = false) {
+    const marker = originalCreateOptimizedMarker.call(this, facility, zoom, forCluster);
+    if (marker) {
+        applyOpacityToNewLayer(marker, 'facility');
+    }
+    return marker;
+};
+
+// 修改现有的创建管线函数，应用透明度
+const originalCreateOptimizedPipeline = createOptimizedPipeline;
+createOptimizedPipeline = function(pipe, zoom) {
+    const pipeline = originalCreateOptimizedPipeline.call(this, pipe, zoom);
+    if (pipeline) {
+        applyOpacityToNewLayer(pipeline, 'pipeline');
+    }
+    return pipeline;
+};
+
+// 确保全局函数可用
+window.updateLayerOpacity = updateLayerOpacity;
+window.resetAllOpacity = resetAllOpacity;
+
+// --- 模拟播放/刷新控制器逻辑 ---
+const RefreshController = {
+    elements: {},
+    state: {
+        isPlaying: true,
+        status: 'calculating', // 'calculating', 'waiting', 'error', 'warning'
+        simStartTime: new Date('2025-06-24 00:00:00'), // 仿真开始时间
+        simCurrentTime: new Date('2025-06-24 12:58:30'), // 当前仿真时间
+        realTime: new Date(), // 实际时间
+        lastCalcTime: new Date('2025-06-24 12:55:15'), // 上次计算完成时间
+        nextCalcTime: new Date('2025-06-24 13:00:00'), // 下次计算时间
+        calcInterval: 75, // 计算间隔（秒）
+        simSpeed: 1.0, // 仿真倍速
+        totalProgress: 0.54, // 总体进度（0-1）
+        dailyProgress: 0.54, // 当日进度（12:56:30 / 24小时）
+        displayTime: null, // 当前显示时间（用于历史数据查看）
+        isSliderDragging: false, // 是否正在拖动滑块
+        modelStatus: {
+            nodes: 1247,
+            pipes: 1853,
+            calculations: 18476,
+            errors: 2,
+            warnings: 5
+        }
+    },
+    timers: {
+        refresh: null,
+        simulation: null,
+        statusUpdate: null
+    },
+
+    init() {
+        this.elements = {
+            controller: document.getElementById('refreshController'),
+            playPauseBtn: document.getElementById('playPauseBtn'),
+            playPauseIcon: document.querySelector('#playPauseBtn i'),
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            currentTimeDisplay: document.getElementById('currentTimeDisplay'),
+            lastCalcTime: document.getElementById('lastCalcTime'),
+            nextCalcTime: document.getElementById('nextCalcTime'),
+            progressText: document.getElementById('progressText'),
+            progressTrack: document.getElementById('progressTrack'),
+            timeSlider: document.getElementById('timeSlider'),
+            speedSelector: document.getElementById('speedSelector'),
+            currentBtn: document.getElementById('currentBtn'),
+            alerts: document.getElementById('controllerAlerts'),
+        };
+
+        this.elements.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+        this.elements.timeSlider.addEventListener('input', (e) => this.onTimeSliderChange(e));
+        this.elements.timeSlider.addEventListener('mousedown', () => this.onSliderStart());
+        this.elements.timeSlider.addEventListener('mouseup', () => this.onSliderEnd());
+        this.elements.speedSelector.addEventListener('change', (e) => this.onSpeedChange(e));
+        this.elements.currentBtn.addEventListener('click', () => this.goToCurrent());
+
+        this.startSimulation();
+        this.updateDisplay();
+    },
+
+    togglePlayPause() {
+        this.state.isPlaying = !this.state.isPlaying;
+        this.elements.playPauseBtn.classList.toggle('paused', !this.state.isPlaying);
+        
+        if (this.state.isPlaying) {
+            this.startSimulation();
+            this.state.status = 'calculating';
+        } else {
+            this.stopSimulation();
+            this.state.status = 'waiting';
+        }
+        this.updateDisplay();
+    },
+    
+    startSimulation() {
+        this.stopSimulation();
+        this.state.isPlaying = true;
+        
+        // 模拟仿真时间推进
+        this.timers.simulation = setInterval(() => {
+            this.state.simCurrentTime.setTime(
+                this.state.simCurrentTime.getTime() + (this.state.simSpeed * 60 * 1000)
+            );
+            this.updateProgress();
+            this.updateDisplay();
+        }, 2000); // 每2秒更新一次仿真时间
+
+        // 模拟计算周期
+        this.runCalculationCycle();
+        this.timers.refresh = setInterval(() => this.runCalculationCycle(), this.state.calcInterval * 1000);
+
+        // 状态更新
+        this.timers.statusUpdate = setInterval(() => {
+            this.updateModelStatus();
+        }, 10000); // 每10秒更新一次模型状态
+    },
+
+    stopSimulation() {
+        Object.values(this.timers).forEach(timer => {
+            if (timer) clearInterval(timer);
+        });
+        this.state.isPlaying = false;
+    },
+
+    runCalculationCycle() {
+        if (!this.state.isPlaying) return;
+        
+        this.state.status = 'calculating';
+        this.updateDisplay();
+        
+        // 模拟计算时间（3-8秒）
+        const calcDuration = 3000 + Math.random() * 5000;
+        
+        setTimeout(() => {
+            if (!this.state.isPlaying) return;
+            
+            // 模拟计算结果
+            const rand = Math.random();
+            if (rand < 0.02) {
+                this.state.status = 'error';
+                this.state.modelStatus.errors++;
+            } else if (rand < 0.08) {
+                this.state.status = 'warning';
+                this.state.modelStatus.warnings++;
+            } else {
+                this.state.status = 'waiting';
+                this.state.lastCalcTime = new Date(this.state.simCurrentTime);
+                this.state.nextCalcTime = new Date(this.state.simCurrentTime.getTime() + this.state.calcInterval * 1000);
+                this.state.modelStatus.calculations++;
+            }
+            this.updateDisplay();
+        }, calcDuration);
+    },
+
+    updateProgress() {
+        // 计算当日进度
+        const dayStart = new Date(this.state.simCurrentTime);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayElapsed = this.state.simCurrentTime - dayStart;
+        this.state.dailyProgress = dayElapsed / (24 * 60 * 60 * 1000);
+        
+        // 计算总体进度（这里假设仿真24小时）
+        const totalElapsed = this.state.simCurrentTime - this.state.simStartTime;
+        this.state.totalProgress = Math.min(1, totalElapsed / (24 * 60 * 60 * 1000));
+    },
+
+    updateModelStatus() {
+        // 随机更新一些状态
+        if (Math.random() < 0.3) {
+            this.state.modelStatus.calculations += Math.floor(Math.random() * 5) + 1;
+        }
+        
+        // 偶尔添加警告
+        if (Math.random() < 0.1) {
+            this.state.modelStatus.warnings++;
+        }
+    },
+
+    updateDisplay() {
+        // 更新播放按钮
+        this.elements.playPauseIcon.className = this.state.isPlaying ? 'fas fa-pause' : 'fas fa-play';
+
+        // 更新状态
+        const statusMap = {
+            calculating: { text: '正在计算', dotClass: 'calculating' },
+            waiting: { text: `运行中 (${this.state.simSpeed}x)`, dotClass: 'waiting' },
+            error: { text: '计算出错', dotClass: 'error' },
+            warning: { text: '检测异常', dotClass: 'warning' }
+        };
+        
+        if (!this.state.isPlaying) {
+            statusMap.waiting = { text: '已暂停', dotClass: 'waiting' };
+        }
+        
+        const currentStatus = statusMap[this.state.status];
+        this.elements.statusText.textContent = currentStatus.text;
+        this.elements.statusDot.className = `status-dot ${currentStatus.dotClass}`;
+
+        // 更新当前时间显示
+        const displayTime = this.state.displayTime || this.state.simCurrentTime;
+        this.elements.currentTimeDisplay.textContent = this.formatTime(displayTime, 'time-only');
+
+        // 更新计算时间
+        const lastTime = this.formatTime(this.state.lastCalcTime, 'time-only');
+        const nextTime = this.formatTime(this.state.nextCalcTime, 'time-only');
+        this.elements.lastCalcTime.textContent = `上次: ${lastTime}`;
+        this.elements.nextCalcTime.textContent = `下次: ${nextTime}`;
+
+        // 更新进度
+        const progressPercent = Math.round(this.state.dailyProgress * 100);
+        this.elements.progressText.textContent = `${progressPercent}%`;
+        this.elements.progressTrack.style.width = `${progressPercent}%`;
+
+        // 更新时间滑块
+        if (!this.state.isSliderDragging) {
+            const currentMinutes = this.getMinutesFromTime(displayTime);
+            this.elements.timeSlider.value = currentMinutes;
+        }
+
+        // 更新速度显示
+        this.elements.speedSelector.value = this.state.simSpeed;
+
+        // 更新警告
+        this.updateAlerts();
+    },
+
+    updateAlerts() {
+        let alertMsg = '';
+        const now = new Date();
+        const timeDiff = (now - this.state.simCurrentTime) / 1000 / 60; // 分钟
+        
+        if (this.state.status === 'error') {
+            alertMsg = '计算引擎出现错误，请检查输入参数';
+        } else if (this.state.modelStatus.warnings > 10) {
+            alertMsg = `检测到 ${this.state.modelStatus.warnings} 个警告，建议检查模型配置`;
+        } else if (timeDiff > 10 && this.state.isPlaying) {
+            alertMsg = '仿真进度滞后于实时时间，建议检查系统性能';
+        } else if (this.state.totalProgress > 0.95) {
+            alertMsg = '当日仿真即将完成，系统将自动开始新一轮计算';
+        }
+
+        if (alertMsg) {
+            this.elements.alerts.textContent = alertMsg;
+            this.elements.alerts.classList.add('visible');
+        } else {
+            this.elements.alerts.classList.remove('visible');
+        }
+    },
+
+    onTimeSliderChange(event) {
+        const minutes = parseInt(event.target.value);
+        const newTime = new Date(this.state.simStartTime);
+        newTime.setTime(newTime.getTime() + minutes * 60 * 1000);
+        
+        // 只能拖动到已经计算过的时间
+        if (newTime <= this.state.simCurrentTime) {
+            this.state.displayTime = newTime;
+            this.updateDisplay();
+            this.updateMapData(); // 更新地图显示历史数据
+        } else {
+            // 如果拖动超过当前仿真时间，回退到当前时间
+            event.target.value = this.getMinutesFromTime(this.state.simCurrentTime);
+        }
+    },
+
+    onSliderStart() {
+        this.state.isSliderDragging = true;
+    },
+
+    onSliderEnd() {
+        this.state.isSliderDragging = false;
+        // 如果没有拖动到最新时间，显示提示
+        if (this.state.displayTime && this.state.displayTime < this.state.simCurrentTime) {
+            this.showHistoricalDataIndicator(true);
+        } else {
+            this.showHistoricalDataIndicator(false);
+            this.state.displayTime = null; // 重置到当前时间
+        }
+    },
+
+    getMinutesFromTime(time) {
+        const dayStart = new Date(time);
+        dayStart.setHours(0, 0, 0, 0);
+        return Math.floor((time - dayStart) / (60 * 1000));
+    },
+
+    showHistoricalDataIndicator(show) {
+        // 在状态文本中显示历史数据提示
+        const baseText = this.elements.statusText.textContent.replace(' (历史数据)', '');
+        if (show) {
+            this.elements.statusText.textContent = baseText + ' (历史数据)';
+        } else {
+            this.elements.statusText.textContent = baseText;
+        }
+    },
+
+    updateMapData() {
+        // 模拟根据时间更新地图数据
+        if (typeof displayFacilities === 'function') {
+            displayFacilities();
+        }
+    },
+
+    onSpeedChange(event) {
+        const newSpeed = parseFloat(event.target.value);
+        this.state.simSpeed = newSpeed;
+        
+        // 如果正在运行，重新启动以应用新速度
+        if (this.state.isPlaying) {
+            this.startSimulation();
+        }
+        this.updateDisplay();
+    },
+
+    goToCurrent() {
+        // 回到当前仿真时间
+        this.state.displayTime = null;
+        this.showHistoricalDataIndicator(false);
+        this.updateDisplay();
+        this.updateMapData();
+    },
+
+
+
+    formatTime(date, format = 'full') {
+        const Y = date.getFullYear();
+        const M = String(date.getMonth() + 1).padStart(2, '0');
+        const D = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+        
+        switch(format) {
+            case 'time':
+                return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+            case 'time-only':
+                return `${h}:${m}:${s}`;
+            case 'date':
+                return `${Y}-${M}-${D}`;
+            default:
+            return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+        }
+    }
+};
+
+// 初始化播放控制器
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof RefreshController !== 'undefined') {
+            RefreshController.init();
+        }
+    }, 1000);
+});
+
+// --- 数据趋势分析模块 ---
+const TrendAnalysis = {
+    currentFacility: null,
+    isOpen: false,
+    
+    show(facility) {
+        this.currentFacility = facility;
+        this.isOpen = true;
+        
+        const popup = document.getElementById('trendPopup');
+        const title = document.getElementById('trendTitle');
+        const content = document.getElementById('trendContent');
+        
+        title.textContent = `${facility.name} - 数据趋势分析`;
+        
+        if (facility.isMonitor) {
+            content.innerHTML = this.generateMonitorTrendContent(facility);
+        } else {
+            content.innerHTML = this.generateModelTrendContent(facility);
+        }
+        
+        popup.classList.add('visible');
+    },
+    
+    close() {
+        const popup = document.getElementById('trendPopup');
+        popup.classList.remove('visible');
+        this.isOpen = false;
+        this.currentFacility = null;
+    },
+    
+    generateMonitorTrendContent(facility) {
+        const accuracy = this.calculateAccuracy(facility);
+        return `
+            <div class="monitor-vs-model">
+                <div class="comparison-card">
+                    <div class="comparison-header">监测数据</div>
+                    <div class="comparison-value monitor">${facility.monitored.pressure.toFixed(2)} MPa</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">实时传感器数据</div>
+                </div>
+                <div class="comparison-card">
+                    <div class="comparison-header">模型计算</div>
+                    <div class="comparison-value model">${facility.pressure.toFixed(2)} MPa</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">水力模型预测</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span class="accuracy-indicator ${accuracy.class}">拟合精度: ${accuracy.percentage}%</span>
+            </div>
+            <div class="trend-chart-container">
+                <div style="text-align: center;">
+                    <i class="fas fa-chart-line" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>24小时压力趋势图</p>
+                    <p style="font-size: 12px; color: var(--text-muted);">蓝线：监测值 | 灰线：模型值</p>
+                </div>
+            </div>
+        `;
+    },
+    
+    generateModelTrendContent(facility) {
+        return `
+            <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+                <i class="fas fa-calculator" style="font-size: 20px; color: var(--primary-color); margin-bottom: 8px;"></i>
+                <p style="margin: 0; font-weight: 600;">模型计算数据</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--text-muted);">基于水力模型的理论计算值</p>
+            </div>
+            <div class="trend-chart-container">
+                <div style="text-align: center;">
+                    <i class="fas fa-chart-area" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>24小时压力变化趋势</p>
+                    <p style="font-size: 12px; color: var(--text-muted);">基于需水量变化的模型预测</p>
+                </div>
+            </div>
+        `;
+    },
+    
+    calculateAccuracy(facility) {
+        const monitored = facility.monitored.pressure;
+        const calculated = facility.pressure;
+        const error = Math.abs(monitored - calculated) / monitored * 100;
+        
+        if (error < 5) return { percentage: (100 - error).toFixed(1), class: 'good' };
+        if (error < 15) return { percentage: (100 - error).toFixed(1), class: 'fair' };
+        return { percentage: (100 - error).toFixed(1), class: 'poor' };
+    }
+};
+
+// --- 优化后的RightPanel模块 ---
+const RightPanel = {
+    init() {
+        console.log('RightPanel initialized');
+    },
+    
+    showFacility(facility, isPipe = false) {
+        // 展开右侧面板
+        const rightPanel = document.getElementById('rightPanel');
+        const wrapper = document.getElementById('right-panel-wrapper');
+        
+        if (rightPanel.classList.contains('collapsed')) {
+            rightPanel.classList.remove('collapsed');
+            wrapper.style.display = 'flex';
+        }
+        
+        const container = document.getElementById('selectedFacility');
+        const noSelection = document.getElementById('noSelection');
+        
+        noSelection.style.display = 'none';
+        container.style.display = 'block';
+        
+        if (isPipe) {
+            container.innerHTML = this.generatePipeContent(facility);
+        } else {
+            container.innerHTML = this.generateFacilityContent(facility);
+        }
+    },
+    
+    generateFacilityContent(facility) {
+        const typeName = this.getFacilityTypeName(facility.type);
+        const typeIcon = this.getFacilityIcon(facility.type);
+        
+        let metricsHtml = `
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">${facility.pressure.toFixed(2)}</div>
+                    <div class="metric-label">压力 (MPa)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${facility.head.toFixed(1)}</div>
+                    <div class="metric-label">水头 (m)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${facility.elevation.toFixed(1)}</div>
+                    <div class="metric-label">高程 (m)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${facility.demand.toFixed(1)}</div>
+                    <div class="metric-label">需水量 (L/s)</div>
+                </div>
+            </div>
+        `;
+        
+        // 监测点的附加信息
+        if (facility.isMonitor) {
+            metricsHtml += `
+                <div class="accuracy-comparison">
+                    <h5><i class="fas fa-satellite-dish" style="color: var(--primary-color); margin-right: 5px;"></i>监测数据对比</h5>
+                    <div class="accuracy-item">
+                        <strong>压力对比</strong>
+                        <div class="accuracy-grid">
+                            <div><div class="label">监测值</div><div class="accuracy-error error-good">${facility.monitored.pressure.toFixed(2)} MPa</div></div>
+                            <div><div class="label">模型值</div><div class="accuracy-error">${facility.pressure.toFixed(2)} MPa</div></div>
+                            <div><div class="label">误差</div><div class="accuracy-error ${this.getErrorClass(facility.monitored.pressure, facility.pressure)}">${this.calculateError(facility.monitored.pressure, facility.pressure)}%</div></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="facility-detail">
+                <div class="facility-header">
+                    <div class="facility-type-badge">
+                        <i class="fas fa-${typeIcon}"></i> ${typeName}
+                    </div>
+                    <div class="facility-info">
+                        <h4>${facility.name}</h4>
+                        <div class="facility-id">ID: ${facility.id}</div>
+                    </div>
+                </div>
+                ${metricsHtml}
+                <button class="trend-btn" onclick="TrendAnalysis.show(${JSON.stringify(facility).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-chart-line"></i> 查看数据趋势
+                </button>
+            </div>
+        `;
+    },
+    
+    generatePipeContent(pipe) {
+        return `
+            <div class="facility-detail">
+                <div class="facility-header">
+                    <div class="facility-type-badge">
+                        <i class="fas fa-minus"></i> 管道
+                    </div>
+                    <div class="facility-info">
+                        <h4>管道 ${pipe.id}</h4>
+                        <div class="facility-id">${pipe.from} → ${pipe.to}</div>
+                    </div>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${Math.abs(pipe.flowRate).toFixed(1)}</div>
+                        <div class="metric-label">流量 (L/s)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${pipe.velocity.toFixed(2)}</div>
+                        <div class="metric-label">流速 (m/s)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${pipe.diameter.toFixed(0)}</div>
+                        <div class="metric-label">管径 (mm)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${pipe.headloss.toFixed(2)}</div>
+                        <div class="metric-label">水损 (m/km)</div>
+                    </div>
+                </div>
+                <button class="trend-btn" onclick="TrendAnalysis.show(${JSON.stringify(pipe).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-chart-line"></i> 查看流量趋势
+                </button>
+            </div>
+        `;
+    },
+    
+    getFacilityTypeName(type) {
+        const names = { 
+            junction: '管道节点', 
+            pump_station: '泵站', 
+            reservoir: '水库', 
+            tank: '水塔', 
+            valve: '阀门' 
+        };
+        return names[type] || '未知设施';
+    },
+    
+    getFacilityIcon(type) {
+        const icons = {
+            junction: 'circle', 
+            reservoir: 'water', 
+            tank: 'building',
+            pump_station: 'industry', 
+            valve: 'adjust'
+        };
+        return icons[type] || 'question-circle';
+    },
+    
+    calculateError(monitored, calculated) {
+        return (Math.abs(monitored - calculated) / monitored * 100).toFixed(1);
+    },
+    
+    getErrorClass(monitored, calculated) {
+        const error = Math.abs(monitored - calculated) / monitored * 100;
+        if (error < 5) return 'error-good';
+        if (error < 15) return 'error-warning';
+        return 'error-bad';
+    },
+    
+    switchTab(event, tabName) {
+        // Tab switching logic
+        document.querySelectorAll('.panel-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById(tabName + 'Panel').classList.add('active');
+    }
+};
+
+// 设施类型可见性控制函数
+function toggleFacilityType(type, visible) {
+    try {
+        console.log(`切换设施类型显示: ${type} = ${visible}`);
+        const startTime = performance.now();
+        
+        facilityVisibility[type] = visible;
+        
+        // 重新渲染地图
+        throttledDisplayFacilities();
+        
+        const endTime = performance.now();
+        console.log(`设施类型切换完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+    } catch (error) {
+        console.error('切换设施类型错误:', error);
+    }
+}
+
+// 兼容性函数 - 左侧面板使用
+function switchMapLayer(theme) {
+    switchMapTheme(theme);
+}
+
+// 性能优化：节流的监测点切换
+function toggleMonitors(level) {
+    try {
+        console.log('切换监测点显示:', level);
+        const startTime = performance.now();
+        
+        const oldLevel = showMonitors;
+        showMonitors = level;
+        
+        document.querySelectorAll('#monitors-section .menu-item').forEach(item => {
+            item.classList.toggle('active', item.getAttribute('onclick').includes(`'${level}'`));
+        });
+        
+        // 只有当级别实际变化时才重新渲染
+        if (oldLevel !== level) {
+            throttledDisplayFacilities();
+        }
+        
+        const endTime = performance.now();
+        console.log(`监测点切换完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+    } catch (error) {
+        console.error('切换监测点错误:', error);
+    }
+}
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!--
+    ✅ 右侧分析面板功能升级完成
+    
+    新增功能包括：
+    1. 🔍 实测vs模拟对比分析
+       - 压力、水质的实测与模拟值对比
+       - 误差百分比计算与评级
+       - 模型精度评级 (A-D级)
+       - 校准建议按钮
+    
+    2. 🚰 关阀影响分析 (针对阀门设施)
+       - 阀门开关状态显示
+       - 关阀影响预测 (影响用户、范围、压力降幅)
+       - 替代供水路径分析
+       - 容量评估
+    
+    3. 🎯 影响域分析
+       - 影响半径计算
+       - 影响节点数量统计
+       - 设施关键程度评估
+       - 下游影响分析
+    
+    4. 🛡️ 供水可靠性评估
+       - 可靠性评分 (0-100分)
+       - 冗余度、稳定性、维护性指标
+       - 可视化的百分比显示
+    
+    5. 💡 智能优化建议
+       - 基于压力、需水量、监测误差的智能分析
+       - 优先级分级 (高/中/低)
+       - 具体改进措施建议
+    
+    6. 📊 增强的水力特性分析
+       - 压力状态可视化
+       - 需水负荷分析
+       - 余氯浓度分析
+    
+    7. 🔧 分析操作按钮
+       - 详细分析报告
+       - 历史趋势分析
+       - 关阀影响分析 (阀门专用)
+    
+    技术实现：
+    - 在 components/rightPanel.js 中重构了分析生成函数
+    - 添加了10+个新的辅助函数
+    - 增加了300+行CSS样式代码
+    - 实现了响应式布局和现代化UI设计
+    
+    使用方法：
+    1. 点击地图上的任意设施
+    2. 切换到右侧面板的"分析"标签页
+    3. 查看智能生成的深度分析内容
+    4. 使用底部的操作按钮进行深入分析
+    -->
+</body>
+</html>
+

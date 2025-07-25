@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 工单管理中心</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f5f6fa;
+            color: #2f3640;
+        }
+
+        .top-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .system-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #57606f;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #4A90B8;
+            background: white;
+            color: #4A90B8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #ff6b6b !important;
+            border-color: #ff6b6b !important;
+            color: white !important;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252 !important;
+            border-color: #ff5252 !important;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2f3640;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #57606f;
+            margin-top: 5px;
+        }
+
+        .tickets-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .ticket-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .ticket-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f2f6;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .ticket-item:hover {
+            background: #f8f9fa;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .ticket-id {
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .ticket-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .status-new {
+            background: #ff3838;
+            color: white;
+        }
+
+        .status-processing {
+            background: #ffa502;
+            color: white;
+        }
+
+        .status-resolved {
+            background: #2ed573;
+            color: white;
+        }
+
+        .ticket-desc {
+            font-size: 14px;
+            color: #2f3640;
+            margin-bottom: 5px;
+        }
+
+        .ticket-meta {
+            font-size: 12px;
+            color: #57606f;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            cursor: pointer;
+        }
+
+        .filter-option input[type="checkbox"] {
+            accent-color: #4A90B8;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="system-title">
+            <i class="fas fa-headset" style="color: #4A90B8; margin-right: 8px;"></i>
+            在线水力模型系统 - 工单管理中心
+        </div>
+        
+        <div class="nav-right">
+            <a href="dashboard_overview.html" class="btn">
+                <i class="fas fa-home"></i> 运营总览
+            </a>
+            <a href="monitor_realtime_map.html" class="btn">
+                <i class="fas fa-map"></i> 实时监控
+            </a>
+            <a href="quality_trace_analysis.html" class="btn">
+                <i class="fas fa-search"></i> 水质溯源
+            </a>
+            <span><i class="fas fa-user" style="color: #4A90B8; margin-right: 5px;"></i>客服 - 王小姐</span>
+            <span>|</span>
+            <span><i class="fas fa-circle" style="color: #2ed573; margin-right: 5px;"></i>在线</span>
+            <span>|</span>
+            <span id="currentTime">2024-01-15 14:30:25</span>
+            <span>|</span>
+            <a href="login.html" class="btn logout-btn" onclick="return confirm('确定要退出系统吗？')">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="filter-section">
+                <div class="filter-title">工单筛选</div>
+                
+                <div class="filter-group">
+                    <div style="font-weight: 500; margin-bottom: 8px;">状态</div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="new" checked>
+                        <label for="new">新工单</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="processing" checked>
+                        <label for="processing">处理中</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="resolved">
+                        <label for="resolved">已解决</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div style="font-weight: 500; margin-bottom: 8px;">类型</div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="pressure" checked>
+                        <label for="pressure">压力问题</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="quality" checked>
+                        <label for="quality">水质问题</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="supply" checked>
+                        <label for="supply">停水投诉</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="other" checked>
+                        <label for="other">其他问题</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div style="font-weight: 500; margin-bottom: 8px;">时间</div>
+                    <div class="filter-option">
+                        <input type="radio" name="time" id="today" checked>
+                        <label for="today">今天</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" name="time" id="week">
+                        <label for="week">本周</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" name="time" id="month">
+                        <label for="month">本月</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">待处理工单</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">156</div>
+                    <div class="stat-label">今日已处理</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">97.2%</div>
+                    <div class="stat-label">客户满意度</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2.3h</div>
+                    <div class="stat-label">平均响应时间</div>
+                </div>
+            </div>
+
+            <div class="tickets-section">
+                <div class="section-header">
+                    <div class="section-title">工单列表</div>
+                    <button class="btn">
+                        <i class="fas fa-plus"></i> 新建工单
+                    </button>
+                </div>
+
+                <div class="ticket-list">
+                    <div class="ticket-item" onclick="openTicket('T202401001')">
+                        <div class="ticket-header">
+                            <div class="ticket-id">#T202401001</div>
+                            <div class="ticket-status status-new">新工单</div>
+                        </div>
+                        <div class="ticket-desc">香港仔区域用户反映水压不足，影响正常用水</div>
+                        <div class="ticket-meta">
+                            用户：李先生 | 电话：852-1234-5678 | 地址：香港仔南风道123号 | 10分钟前
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" onclick="openTicket('T202401002')">
+                        <div class="ticket-header">
+                            <div class="ticket-id">#T202401002</div>
+                            <div class="ticket-status status-processing">处理中</div>
+                        </div>
+                        <div class="ticket-desc">柴湾区用户报告自来水浑浊，疑似水质问题</div>
+                        <div class="ticket-meta">
+                            用户：陈女士 | 电话：852-2345-6789 | 地址：柴湾道456号 | 30分钟前
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" onclick="openTicket('T202401003')">
+                        <div class="ticket-header">
+                            <div class="ticket-id">#T202401003</div>
+                            <div class="ticket-status status-new">新工单</div>
+                        </div>
+                        <div class="ticket-desc">筲箕湾区域停水，用户询问恢复时间</div>
+                        <div class="ticket-meta">
+                            用户：王先生 | 电话：852-3456-7890 | 地址：筲箕湾道789号 | 45分钟前
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" onclick="openTicket('T202401004')">
+                        <div class="ticket-header">
+                            <div class="ticket-id">#T202401004</div>
+                            <div class="ticket-status status-processing">处理中</div>
+                        </div>
+                        <div class="ticket-desc">管道维修后恢复供水，用户反馈水质有异味</div>
+                        <div class="ticket-meta">
+                            用户：张女士 | 电话：852-4567-8901 | 地址：北角英皇道321号 | 1小时前
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" onclick="openTicket('T202401005')">
+                        <div class="ticket-header">
+                            <div class="ticket-id">#T202401005</div>
+                            <div class="ticket-status status-resolved">已解决</div>
+                        </div>
+                        <div class="ticket-desc">水表读数异常咨询，已协助用户重置</div>
+                        <div class="ticket-meta">
+                            用户：刘先生 | 电话：852-5678-9012 | 地址：铜锣湾告士打道654号 | 2小时前
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTicket(ticketId) {
+            // 这里可以打开工单详情模态框或跳转到详情页
+            console.log('打开工单:', ticketId);
+            alert(`正在打开工单 ${ticketId} 的详情...`);
+        }
+
+        function updateTime() {
+            const currentTimeEl = document.getElementById('currentTime');
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+    </script>
+</body>
+</html> 

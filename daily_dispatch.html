@@ -1,0 +1,1024 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 日常调度</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .daily-dispatch-layout {
+            padding: var(--spacing-lg);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header-info h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .header-desc {
+            color: var(--text-secondary);
+            font-size: var(--font-size-lg);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        /* 功能模块网格 */
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .function-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .function-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .function-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary);
+        }
+
+        .function-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(74, 144, 184, 0.3);
+        }
+
+        .card-title {
+            flex: 1;
+        }
+
+        .card-title h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .card-content {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* 快速操作面板 */
+        .quick-actions {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .quick-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .quick-actions-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.removable {
+            position: relative;
+        }
+
+        .remove-action-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            z-index: 10;
+        }
+
+        .action-btn:hover .remove-action-btn {
+            display: flex;
+        }
+
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* 状态概览 */
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .status-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .status-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .function-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .daily-dispatch-layout {
+                padding: var(--spacing-md);
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+            
+            .function-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 配置模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .config-modal {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 600px;
+            width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .close-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .available-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .available-action {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .available-action:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+        }
+
+        .available-action.favorited {
+            background: rgba(74, 144, 184, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .available-action .action-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+        }
+
+        .action-text {
+            flex: 1;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        .favorite-indicator {
+            color: var(--primary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将由NavigationManager生成 -->
+                </div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <div class="daily-dispatch-layout">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <div class="header-info">
+                <h1>
+                    <i class="fas fa-calendar-alt"></i>
+                    日常调度中心
+                </h1>
+                <p class="header-desc">调度员专属工作台 - 日常调度计划制定、工况模拟仿真、流程编排管理</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showQuickStart()">
+                    <i class="fas fa-rocket"></i> 快速开始
+                </button>
+                <button class="btn btn-outline" onclick="showHelp()">
+                    <i class="fas fa-question-circle"></i> 帮助
+                </button>
+            </div>
+        </div>
+
+        <!-- 状态概览 -->
+        <div class="status-overview">
+            <div class="status-card">
+                <div class="status-value" id="activeSchedules">5</div>
+                <div class="status-label">活跃调度计划</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="runningSimulations">2</div>
+                <div class="status-label">运行中仿真</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="completedWorkflows">12</div>
+                <div class="status-label">已完成流程</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="systemEfficiency">96.5%</div>
+                <div class="status-label">系统效率</div>
+            </div>
+        </div>
+
+        <!-- 快速操作面板 -->
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <h2>
+                    <i class="fas fa-bolt"></i>
+                    快速操作
+                </h2>
+                <button class="btn btn-sm btn-outline" onclick="openQuickActionsConfig()">
+                    <i class="fas fa-cog"></i> 配置
+                </button>
+            </div>
+            <div class="actions-grid" id="quickActionsGrid">
+                <!-- 快速操作将由JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 核心功能模块 -->
+        <div class="function-grid">
+            <!-- 调度计划管理 -->
+            <div class="function-card" onclick="navigateToFunction('schedule_planning.html')">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>调度计划管理</h3>
+                        <p class="card-subtitle">日常调度计划制定与执行</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">制定日常供水调度计划，包括泵站排班、阀门调整、流量分配等非应急调度操作，确保供水系统高效稳定运行。</p>
+                    <ul class="feature-list">
+                        <li>泵站运行计划制定</li>
+                        <li>阀门开度调整计划</li>
+                        <li>流量压力分配方案</li>
+                        <li>调度计划执行监控</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span>系统正常运行</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 调度仿真分析 -->
+            <div class="function-card" onclick="navigateToFunction('simulation.html')">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>调度仿真分析</h3>
+                        <p class="card-subtitle">工况模拟与仿真验证</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">通过水力模型进行工况模拟，验证调度方案的可行性和效果，为调度决策提供科学依据。</p>
+                    <ul class="feature-list">
+                        <li>水力模型仿真计算</li>
+                        <li>调度方案效果预测</li>
+                        <li>工况场景对比分析</li>
+                        <li>仿真结果可视化</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span>仿真引擎就绪</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 调度流程编排 -->
+            <div class="function-card" onclick="navigateToFunction('dispatch_workflow_builder.html')">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>调度流程编排</h3>
+                        <p class="card-subtitle">工作流程设计与自动化</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">设计和配置调度工作流程，实现调度操作的标准化和自动化，提高调度效率和准确性。</p>
+                    <ul class="feature-list">
+                        <li>可视化流程设计</li>
+                        <li>调度规则配置</li>
+                        <li>自动化触发条件</li>
+                        <li>流程执行监控</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span>流程引擎运行中</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 历史工况对比 -->
+            <div class="function-card" onclick="navigateToFunction('historical_comparison.html')">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>历史工况对比</h3>
+                        <p class="card-subtitle">工况分析与场景对比</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">基于HK Example等历史数据，进行工况对比分析，总结调度经验，优化调度策略。</p>
+                    <ul class="feature-list">
+                        <li>历史数据加载分析</li>
+                        <li>工况对比可视化</li>
+                        <li>调度效果评估</li>
+                        <li>经验规则提取</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span>数据库连接正常</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 数据分析与经验总结 -->
+            <div class="function-card" onclick="navigateToFunction('analysis_summary.html')">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>数据分析与经验总结</h3>
+                        <p class="card-subtitle">智能分析与知识管理</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">深度数据分析，智能推荐生成，经验知识库管理，为调度决策提供数据支撑和智能建议。</p>
+                    <ul class="feature-list">
+                        <li>多维趋势分析</li>
+                        <li>智能推荐系统</li>
+                        <li>经验知识库</li>
+                        <li>数据可视化报告</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span>AI引擎运行中</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作配置模态框 -->
+    <div class="modal-overlay" id="configModal">
+        <div class="config-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-star"></i>
+                    配置收藏操作
+                </h3>
+                <button class="close-btn" onclick="closeQuickActionsConfig()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+                    点击下方操作添加到快速操作面板，已收藏的操作会显示星标
+                </p>
+                <div class="available-actions-grid" id="availableActionsGrid">
+                    <!-- 可选操作将由JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用脚本 -->
+    <script src="common.js"></script>
+    <script>
+        // 快速操作管理
+        const QuickActionsManager = {
+            // 所有可用的操作定义
+            allActions: [
+                {
+                    id: 'new_schedule',
+                    name: '新建调度计划',
+                    icon: 'fas fa-plus',
+                    href: 'schedule_planning.html',
+                    description: '创建新的日常调度计划'
+                },
+                {
+                    id: 'workflow_config',
+                    name: '配置自动流程',
+                    icon: 'fas fa-cog',
+                    href: 'dispatch_workflow_builder.html',
+                    description: '设计和配置调度工作流程'
+                },
+                {
+                    id: 'historical_comparison',
+                    name: '历史工况对比',
+                    icon: 'fas fa-history',
+                    href: 'historical_comparison.html',
+                    description: '对比分析历史调度方案'
+                },
+                {
+                    id: 'data_analysis',
+                    name: '数据分析总结',
+                    icon: 'fas fa-brain',
+                    href: 'analysis_summary.html',
+                    description: '智能分析与知识管理'
+                },
+                {
+                    id: 'start_simulation',
+                    name: '启动仿真计算',
+                    icon: 'fas fa-play',
+                    href: 'simulation.html',
+                    description: '运行水力模型仿真分析'
+                },
+                {
+                    id: 'real_monitor',
+                    name: '实时监控',
+                    icon: 'fas fa-eye',
+                    href: 'monitor.html',
+                    description: '查看系统实时运行状态'
+                },
+                {
+                    id: 'emergency_dispatch',
+                    name: '应急调度',
+                    icon: 'fas fa-exclamation-triangle',
+                    href: 'dispatch_emergency.html',
+                    description: '处理紧急调度事件'
+                },
+                {
+                    id: 'water_quality',
+                    name: '水质溯源',
+                    icon: 'fas fa-microscope',
+                    href: 'water_quality.html',
+                    description: '水质分析和污染溯源'
+                },
+                {
+                    id: 'reports',
+                    name: '数据报表',
+                    icon: 'fas fa-chart-bar',
+                    href: 'reports.html',
+                    description: '生成各类数据报表'
+                },
+                {
+                    id: 'tickets',
+                    name: '工单中心',
+                    icon: 'fas fa-ticket-alt',
+                    href: 'tickets.html',
+                    description: '管理和处理工单任务'
+                },
+                {
+                    id: 'model_maintenance',
+                    name: '模型维护',
+                    icon: 'fas fa-wrench',
+                    href: 'model_maintenance.html',
+                    description: '维护和管理水力模型'
+                }
+            ],
+
+            // 默认收藏的操作（用户要求的4个）
+            defaultFavorites: ['new_schedule', 'workflow_config', 'historical_comparison', 'data_analysis'],
+
+            // 获取当前收藏的操作
+            getFavorites() {
+                const saved = localStorage.getItem('quickActionsFavorites');
+                return saved ? JSON.parse(saved) : this.defaultFavorites;
+            },
+
+            // 保存收藏操作
+            saveFavorites(favorites) {
+                localStorage.setItem('quickActionsFavorites', JSON.stringify(favorites));
+            },
+
+            // 渲染快速操作面板
+            renderQuickActions() {
+                const favorites = this.getFavorites();
+                const grid = document.getElementById('quickActionsGrid');
+                
+                if (!grid) return;
+
+                grid.innerHTML = favorites.map(actionId => {
+                    const action = this.allActions.find(a => a.id === actionId);
+                    if (!action) return '';
+
+                    return `
+                        <a href="${action.href}" class="action-btn removable" title="${action.description}">
+                            <div class="action-icon">
+                                <i class="${action.icon}"></i>
+                            </div>
+                            <span>${action.name}</span>
+                            <button class="remove-action-btn" onclick="QuickActionsManager.removeFavorite('${action.id}'); event.preventDefault(); event.stopPropagation();" title="移除">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </a>
+                    `;
+                }).join('');
+            },
+
+            // 渲染配置模态框中的可选操作
+            renderAvailableActions() {
+                const favorites = this.getFavorites();
+                const grid = document.getElementById('availableActionsGrid');
+                
+                if (!grid) return;
+
+                grid.innerHTML = this.allActions.map(action => {
+                    const isFavorited = favorites.includes(action.id);
+                    return `
+                        <div class="available-action ${isFavorited ? 'favorited' : ''}" 
+                             onclick="QuickActionsManager.toggleFavorite('${action.id}')"
+                             title="${action.description}">
+                            <div class="action-icon">
+                                <i class="${action.icon}"></i>
+                            </div>
+                            <div class="action-text">${action.name}</div>
+                            ${isFavorited ? '<i class="fas fa-star favorite-indicator"></i>' : ''}
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            // 切换收藏状态
+            toggleFavorite(actionId) {
+                let favorites = this.getFavorites();
+                
+                if (favorites.includes(actionId)) {
+                    favorites = favorites.filter(id => id !== actionId);
+                } else {
+                    favorites.push(actionId);
+                }
+                
+                this.saveFavorites(favorites);
+                this.renderQuickActions();
+                this.renderAvailableActions();
+                
+                const action = this.allActions.find(a => a.id === actionId);
+                if (action) {
+                    const message = favorites.includes(actionId) 
+                        ? `已添加"${action.name}"到快速操作` 
+                        : `已从快速操作中移除"${action.name}"`;
+                    
+                    if (typeof NotificationManager !== 'undefined') {
+                        NotificationManager.show(message, 'success');
+                    }
+                }
+            },
+
+            // 移除收藏
+            removeFavorite(actionId) {
+                let favorites = this.getFavorites();
+                favorites = favorites.filter(id => id !== actionId);
+                this.saveFavorites(favorites);
+                this.renderQuickActions();
+                
+                const action = this.allActions.find(a => a.id === actionId);
+                if (action && typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show(`已移除"${action.name}"`, 'success');
+                }
+            },
+
+            // 初始化
+            init() {
+                this.renderQuickActions();
+            }
+        };
+
+        // 打开配置模态框
+        function openQuickActionsConfig() {
+            QuickActionsManager.renderAvailableActions();
+            const modal = document.getElementById('configModal');
+            modal.classList.add('show');
+            
+            if (typeof OperationLogger !== 'undefined') {
+                OperationLogger.log('打开快速操作配置', { timestamp: new Date().toISOString() });
+            }
+        }
+
+        // 关闭配置模态框
+        function closeQuickActionsConfig() {
+            const modal = document.getElementById('configModal');
+            modal.classList.remove('show');
+        }
+
+        // 点击模态框背景关闭
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('configModal');
+            if (event.target === modal) {
+                closeQuickActionsConfig();
+            }
+        });
+
+        // 确保common.js加载完成后再执行
+        function initializePage() {
+            // 检查必要的对象是否存在
+            if (typeof NavigationManager === 'undefined' || 
+                typeof OperationLogger === 'undefined' || 
+                typeof UserPermissions === 'undefined') {
+                console.log('等待common.js加载完成...');
+                setTimeout(initializePage, 100);
+                return;
+            }
+
+            try {
+                // 初始化导航
+                NavigationManager.init();
+                
+                // 初始化快速操作管理器
+                QuickActionsManager.init();
+                
+                // 模拟实时数据更新
+                updateStatusData();
+                setInterval(updateStatusData, 30000); // 每30秒更新一次
+                
+                // 记录页面访问
+                OperationLogger.log('访问日常调度中心', { 
+                    timestamp: new Date().toISOString(),
+                    userRole: UserPermissions.currentUser?.role || 'unknown'
+                });
+                
+                console.log('日常调度页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                // 降级处理 - 至少显示基本页面
+                setTimeout(initializePage, 500);
+            }
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+
+        // 导航到功能页面
+        function navigateToFunction(url) {
+            OperationLogger.log('访问调度功能', { 
+                target: url,
+                timestamp: new Date().toISOString()
+            });
+            window.location.href = url;
+        }
+
+        // 更新状态数据
+        function updateStatusData() {
+            // 模拟实时数据
+            const statusElements = {
+                activeSchedules: document.getElementById('activeSchedules'),
+                runningSimulations: document.getElementById('runningSimulations'),
+                completedWorkflows: document.getElementById('completedWorkflows'),
+                systemEfficiency: document.getElementById('systemEfficiency')
+            };
+
+            // 随机更新数据（实际项目中应该从后端API获取）
+            if (statusElements.activeSchedules) {
+                statusElements.activeSchedules.textContent = Math.floor(Math.random() * 10) + 3;
+            }
+            if (statusElements.runningSimulations) {
+                statusElements.runningSimulations.textContent = Math.floor(Math.random() * 5) + 1;
+            }
+            if (statusElements.completedWorkflows) {
+                statusElements.completedWorkflows.textContent = Math.floor(Math.random() * 20) + 10;
+            }
+            if (statusElements.systemEfficiency) {
+                const efficiency = (95 + Math.random() * 4).toFixed(1);
+                statusElements.systemEfficiency.textContent = efficiency + '%';
+            }
+        }
+
+        // 快速开始引导
+        function showQuickStart() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('快速开始功能开发中，敬请期待！', 'info');
+            } else {
+                alert('快速开始功能开发中，敬请期待！');
+            }
+        }
+
+        // 显示帮助
+        function showHelp() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('帮助文档功能开发中，如有问题请联系系统管理员。', 'info');
+            } else {
+                alert('帮助文档功能开发中，如有问题请联系系统管理员。');
+            }
+        }
+
+        // 主题切换
+        function toggleTheme() {
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.toggle();
+            } else {
+                console.warn('ThemeManager未加载');
+            }
+        }
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html>

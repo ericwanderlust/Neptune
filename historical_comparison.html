@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史工况对比 - 在线水力模型系统</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 返回按钮样式 */
+        .back-button-container {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .back-button:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .back-button i {
+            font-size: 12px;
+        }
+
+        .comparison-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            height: calc(100vh - 60px);
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .scenario-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .comparison-main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+        
+        .kpi-summary-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            min-height: 280px;
+        }
+        
+        .chart-comparison-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            min-height: 500px;
+        }
+        
+        .panel-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+        }
+        
+        .panel-header i {
+            color: var(--primary);
+            margin-right: 8px;
+        }
+        
+        .search-filter {
+            margin-bottom: 20px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .filter-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .filter-select {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .scenario-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+        
+        .scenario-item {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border: 2px solid transparent;
+            background: var(--bg-secondary);
+        }
+        
+        .scenario-item:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .scenario-item.selected {
+            background: rgba(74, 144, 184, 0.1);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .scenario-checkbox {
+            margin-top: 4px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+        
+        .scenario-content {
+            flex: 1;
+        }
+        
+        .scenario-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        
+        .scenario-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .scenario-date {
+            color: var(--text-secondary);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .scenario-type {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(74, 144, 184, 0.1);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .scenario-description {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .scenario-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        
+        .stat-item {
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .selection-summary {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .selection-count {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        
+        .selected-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .selected-tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .selected-tag .remove-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            font-size: 10px;
+        }
+        
+        .compare-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, #5a9bd4 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .compare-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 184, 0.3);
+        }
+        
+        .compare-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .kpi-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--border-color);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .kpi-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        
+        .kpi-values {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .kpi-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+        
+        .scenario-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        
+        .value-number {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .chart-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 16px;
+        }
+        
+        .chart-selector {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 14px;
+        }
+        
+        .chart-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .chart-options {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            height: 400px;
+        }
+        
+        .chart-container {
+            position: relative;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            height: 100%;
+            min-height: 200px;
+            overflow: hidden;
+        }
+        
+        .chart-container canvas {
+            max-height: calc(100% - 40px) !important;
+        }
+        
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 防止自动滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .comparison-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .chart-grid {
+                grid-template-columns: 1fr;
+                height: 800px;
+            }
+            
+            .back-button-container {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <button class="btn btn-sm btn-secondary" onclick="goBack()" style="margin-right: 16px;">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由JS生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="comparison-layout">
+        <div class="scenario-panel">
+            <div class="panel-header">
+                <span><i class="fas fa-history"></i>历史方案选择</span>
+            </div>
+            
+            <div class="search-filter">
+                <div class="filter-group">
+                    <input type="text" class="filter-input" placeholder="搜索方案名称..." id="searchInput">
+                    <select class="filter-select" id="typeFilter">
+                        <option value="">所有类型</option>
+                        <option value="emergency">应急调度</option>
+                        <option value="maintenance">维护作业</option>
+                        <option value="optimization">优化方案</option>
+                        <option value="routine">常规运行</option>
+                    </select>
+                </div>
+                <select class="filter-select" id="dateFilter" style="width: 100%;">
+                    <option value="">所有时间</option>
+                    <option value="today">今天</option>
+                    <option value="week">最近一周</option>
+                    <option value="month">最近一月</option>
+                    <option value="quarter">最近三月</option>
+                </select>
+            </div>
+            
+            <div class="selection-summary" id="selectionSummary" style="display: none;">
+                <div class="selection-count">已选择 <span id="selectionCount">0</span> 个方案</div>
+                <div class="selected-items" id="selectedItems"></div>
+            </div>
+            
+            <ul class="scenario-list" id="scenarioList">
+                <!-- 方案列表将由JS动态生成 -->
+            </ul>
+            
+            <button class="compare-btn" id="compareBtn" onclick="runComparison()" disabled>
+                <i class="fas fa-chart-line"></i>
+                开始对比分析
+            </button>
+        </div>
+        
+        <div class="comparison-main">
+            <div class="kpi-summary-panel">
+                <div class="panel-header">
+                    <span><i class="fas fa-chart-bar"></i>关键指标对比</span>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportKPIs()">
+                            <i class="fas fa-download"></i> 导出指标
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport()" style="margin-left: 8px;">
+                            <i class="fas fa-file-pdf"></i> 生成报告
+                        </button>
+                    </div>
+                </div>
+                <div class="kpi-grid" id="kpiGrid">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>选择方案开始对比</h3>
+                        <p>请从左侧选择2-4个方案进行对比分析</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-comparison-panel">
+                <div class="panel-header">
+                    <span><i class="fas fa-chart-line"></i>详细图表对比</span>
+                    <div class="chart-options">
+                        <label for="elementSelector" style="font-size: 14px; color: var(--text-secondary);">对比元件:</label>
+                        <select id="elementSelector" class="filter-select">
+                            <option value="J-22">节点 J-22</option>
+                            <option value="P-101">管道 P-101</option>
+                            <option value="PS-01">泵站 PS-01</option>
+                            <option value="T-01">水塔 T-01</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="chart-controls">
+                    <div class="chart-selector">
+                        <button class="chart-btn active" data-chart="pressure" onclick="switchChart('pressure')">压力</button>
+                        <button class="chart-btn" data-chart="flow" onclick="switchChart('flow')">流量</button>
+                        <button class="chart-btn" data-chart="velocity" onclick="switchChart('velocity')">流速</button>
+                        <button class="chart-btn" data-chart="energy" onclick="switchChart('energy')">能耗</button>
+                    </div>
+                    <div class="chart-options">
+                        <label>
+                            <input type="checkbox" id="showTrendLine" onchange="updateCharts()"> 显示趋势线
+                        </label>
+                        <label style="margin-left: 16px;">
+                            <input type="checkbox" id="normalizeData" onchange="updateCharts()"> 归一化显示
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="chart-grid" id="chartGrid">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>等待对比数据</h3>
+                        <p>选择方案后将显示详细的对比图表</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="common.js"></script>
+    <script>
+        // 全局变量
+        let selectedScenarios = new Set();
+        let currentChartType = 'pressure';
+        let charts = {};
+        let scrollLocked = false;
+        let lockedScrollPosition = 0;
+        
+        // 模拟历史方案数据
+        const mockScenarios = [
+            {
+                id: 1,
+                name: '台风"海葵"应急调度',
+                date: '2024-06-23',
+                type: 'emergency',
+                description: '应对台风强降雨，启动高水位运行模式，确保供水安全。',
+                duration: '18小时',
+                affected_areas: 'A区、B区',
+                operator: '张调度员',
+                kpi: {
+                    avg_pressure: 42.5,
+                    max_flow: 1250,
+                    energy_consumption: 890,
+                    efficiency: 87.2
+                }
+            },
+            {
+                id: 2,
+                name: '夏季高峰供水优化',
+                date: '2024-06-20',
+                type: 'optimization',
+                description: '常规夏季高峰期调度方案，优化泵站运行策略。',
+                duration: '24小时',
+                affected_areas: '全网',
+                operator: '李工程师',
+                kpi: {
+                    avg_pressure: 45.8,
+                    max_flow: 1180,
+                    energy_consumption: 750,
+                    efficiency: 92.1
+                }
+            },
+            {
+                id: 3,
+                name: 'A区主干管维护',
+                date: '2024-06-15',
+                type: 'maintenance',
+                description: 'A区主干管夜间维护，调整阀门状态和管网压力。',
+                duration: '8小时',
+                affected_areas: 'A区',
+                operator: '王技师',
+                kpi: {
+                    avg_pressure: 38.9,
+                    max_flow: 950,
+                    energy_consumption: 420,
+                    efficiency: 85.6
+                }
+            },
+            {
+                id: 4,
+                name: '节能运行测试',
+                date: '2024-06-10',
+                type: 'optimization',
+                description: '降低夜间泵站出口压力，测试节能运行效果。',
+                duration: '12小时',
+                affected_areas: 'B区、C区',
+                operator: '赵工程师',
+                kpi: {
+                    avg_pressure: 41.2,
+                    max_flow: 1080,
+                    energy_consumption: 580,
+                    efficiency: 94.3
+                }
+            },
+            {
+                id: 5,
+                name: '春节期间值守',
+                date: '2024-02-10',
+                type: 'routine',
+                description: '春节期间常规值守运行，保证基本供水需求。',
+                duration: '168小时',
+                affected_areas: '全网',
+                operator: '节假日班组',
+                kpi: {
+                    avg_pressure: 43.7,
+                    max_flow: 920,
+                    energy_consumption: 1260,
+                    efficiency: 89.4
+                }
+            },
+            {
+                id: 6,
+                name: '水质异常应急',
+                date: '2024-05-15',
+                type: 'emergency',
+                description: '检测到水质异常，紧急切换供水线路。',
+                duration: '6小时',
+                affected_areas: 'C区',
+                operator: '陈调度员',
+                kpi: {
+                    avg_pressure: 44.1,
+                    max_flow: 1150,
+                    energy_consumption: 380,
+                    efficiency: 88.7
+                }
+            }
+        ];
+        
+        // 页面初始化函数
+        function initializePage() {
+            // 检查必要的对象是否存在
+            if (typeof NavigationManager === 'undefined' || 
+                typeof NotificationManager === 'undefined' || 
+                typeof OperationLogger === 'undefined') {
+                console.log('等待common.js加载完成...');
+                setTimeout(initializePage, 100);
+                return;
+            }
+
+            try {
+                // 初始化导航和时间管理器
+                NavigationManager.init();
+                if (typeof TimeManager !== 'undefined') {
+                    TimeManager.init();
+                }
+                
+                // 初始化页面功能
+                loadScenarioList();
+                setupEventListeners();
+                
+                // 确保页面滚动正常
+                unlockScroll();
+                
+                console.log('历史工况对比页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                // 降级处理 - 至少显示基本页面
+                setTimeout(() => {
+                    loadScenarioList();
+                    setupEventListeners();
+                    unlockScroll();
+                }, 500);
+            }
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+        
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            unlockScroll();
+        });
+        
+        // 加载方案列表
+        function loadScenarioList() {
+            const listEl = document.getElementById('scenarioList');
+            if (!listEl) return;
+            
+            listEl.innerHTML = mockScenarios.map(scenario => `
+                <li class="scenario-item" data-id="${scenario.id}" onclick="toggleScenario(${scenario.id})">
+                    <input type="checkbox" class="scenario-checkbox" ${selectedScenarios.has(scenario.id) ? 'checked' : ''}>
+                    <div class="scenario-content">
+                        <div class="scenario-title">${scenario.name}</div>
+                        <div class="scenario-meta">
+                            <div class="scenario-date">
+                                <i class="fas fa-calendar"></i>
+                                ${scenario.date}
+                            </div>
+                            <div class="scenario-type">${getTypeLabel(scenario.type)}</div>
+                        </div>
+                        <div class="scenario-description">${scenario.description}</div>
+                        <div class="scenario-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                ${scenario.duration}
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                ${scenario.affected_areas}
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-user"></i>
+                                ${scenario.operator}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            `).join('');
+        }
+        
+        // 获取类型标签
+        function getTypeLabel(type) {
+            const labels = {
+                'emergency': '应急调度',
+                'maintenance': '维护作业',
+                'optimization': '优化方案',
+                'routine': '常规运行'
+            };
+            return labels[type] || type;
+        }
+        
+        // 切换方案选择
+        function toggleScenario(scenarioId) {
+            const scenario = mockScenarios.find(s => s.id === scenarioId);
+            if (!scenario) return;
+            
+            if (selectedScenarios.has(scenarioId)) {
+                selectedScenarios.delete(scenarioId);
+            } else {
+                if (selectedScenarios.size >= 4) {
+                    NotificationManager.show('最多只能选择4个方案进行对比', 'warning');
+                    return;
+                }
+                selectedScenarios.add(scenarioId);
+            }
+            
+            updateScenarioSelection();
+            updateSelectionSummary();
+            updateCompareButton();
+        }
+        
+        // 更新方案选择状态
+        function updateScenarioSelection() {
+            document.querySelectorAll('.scenario-item').forEach(item => {
+                const id = parseInt(item.dataset.id);
+                const checkbox = item.querySelector('.scenario-checkbox');
+                
+                if (selectedScenarios.has(id)) {
+                    item.classList.add('selected');
+                    checkbox.checked = true;
+                } else {
+                    item.classList.remove('selected');
+                    checkbox.checked = false;
+                }
+            });
+        }
+        
+        // 更新选择摘要
+        function updateSelectionSummary() {
+            const summaryEl = document.getElementById('selectionSummary');
+            const countEl = document.getElementById('selectionCount');
+            const itemsEl = document.getElementById('selectedItems');
+            
+            if (selectedScenarios.size === 0) {
+                summaryEl.style.display = 'none';
+                return;
+            }
+            
+            summaryEl.style.display = 'block';
+            countEl.textContent = selectedScenarios.size;
+            
+            const selectedItems = Array.from(selectedScenarios).map(id => {
+                const scenario = mockScenarios.find(s => s.id === id);
+                return `
+                    <div class="selected-tag">
+                        ${scenario.name}
+                        <button class="remove-btn" onclick="toggleScenario(${id})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            itemsEl.innerHTML = selectedItems;
+        }
+        
+        // 更新对比按钮状态
+        function updateCompareButton() {
+            const btn = document.getElementById('compareBtn');
+            btn.disabled = selectedScenarios.size < 2;
+        }
+        
+        // 锁定滚动
+        function lockScroll() {
+            scrollLocked = true;
+            lockedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // 添加滚动事件监听器
+            window.addEventListener('scroll', preventScroll, { passive: false });
+            window.addEventListener('wheel', preventScroll, { passive: false });
+            window.addEventListener('touchmove', preventScroll, { passive: false });
+            
+            // 禁用平滑滚动
+            document.documentElement.style.scrollBehavior = 'unset';
+            document.body.style.scrollBehavior = 'unset';
+        }
+        
+        // 解锁滚动
+        function unlockScroll() {
+            scrollLocked = false;
+            
+            // 移除事件监听器
+            window.removeEventListener('scroll', preventScroll);
+            window.removeEventListener('wheel', preventScroll);
+            window.removeEventListener('touchmove', preventScroll);
+            
+            // 恢复滚动行为
+            setTimeout(() => {
+                document.documentElement.style.scrollBehavior = '';
+                document.body.style.scrollBehavior = '';
+            }, 100);
+        }
+        
+        // 阻止滚动事件
+        function preventScroll(e) {
+            if (scrollLocked) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.scrollTo(0, lockedScrollPosition);
+                return false;
+            }
+        }
+
+        // 开始对比分析
+        function runComparison() {
+            if (selectedScenarios.size < 2) {
+                NotificationManager.show('请至少选择2个方案进行对比', 'warning');
+                return;
+            }
+            
+            // 锁定滚动
+            lockScroll();
+            
+            showLoadingState();
+            
+            setTimeout(() => {
+                generateKPIComparison();
+                generateChartComparison();
+                
+                NotificationManager.show(`正在对比 ${selectedScenarios.size} 个方案`, 'success');
+                OperationLogger.log('历史工况对比', { 
+                    scenarios: Array.from(selectedScenarios),
+                    count: selectedScenarios.size 
+                });
+                
+                // 延迟解锁滚动
+                setTimeout(() => {
+                    unlockScroll();
+                }, 1000);
+            }, 1500);
+        }
+        
+        // 显示加载状态
+        function showLoadingState() {
+            const kpiGrid = document.getElementById('kpiGrid');
+            const chartGrid = document.getElementById('chartGrid');
+            
+            kpiGrid.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>正在分析对比数据...</p>
+                </div>
+            `;
+            
+            chartGrid.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>正在生成对比图表...</p>
+                </div>
+            `;
+        }
+        
+        // 生成KPI对比
+        function generateKPIComparison() {
+            const kpiGrid = document.getElementById('kpiGrid');
+            const selectedData = Array.from(selectedScenarios).map(id => 
+                mockScenarios.find(s => s.id === id)
+            );
+            
+            const kpiTypes = [
+                { key: 'avg_pressure', label: '平均压力', unit: 'm' },
+                { key: 'max_flow', label: '最大流量', unit: 'm³/h' },
+                { key: 'energy_consumption', label: '能耗', unit: 'kWh' },
+                { key: 'efficiency', label: '效率', unit: '%' }
+            ];
+            
+            kpiGrid.innerHTML = kpiTypes.map(kpi => `
+                <div class="kpi-card">
+                    <div class="kpi-title">${kpi.label} (${kpi.unit})</div>
+                    <div class="kpi-values">
+                        ${selectedData.map(scenario => `
+                            <div class="kpi-value">
+                                <span class="scenario-label">${scenario.name.substring(0, 8)}...</span>
+                                <span class="value-number">${scenario.kpi[kpi.key]}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 生成图表对比
+        function generateChartComparison() {
+            const chartGrid = document.getElementById('chartGrid');
+            chartGrid.innerHTML = `
+                <div class="chart-container">
+                    <div class="chart-title">压力变化曲线</div>
+                    <canvas id="pressureChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">流量变化曲线</div>
+                    <canvas id="flowChart" width="400" height="200"></canvas>
+                </div>
+            `;
+            
+            // 延迟创建图表，确保DOM稳定
+            setTimeout(() => {
+                createCharts();
+            }, 200);
+        }
+        
+        // 创建图表
+        function createCharts() {
+            // 检查Chart.js是否可用
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js未加载');
+                return;
+            }
+            
+            // 清理现有图表
+            Object.values(charts).forEach(chart => {
+                try {
+                    chart.destroy();
+                } catch (e) {
+                    console.warn('销毁图表时出现错误:', e);
+                }
+            });
+            charts = {};
+            
+            const selectedData = Array.from(selectedScenarios).map(id => 
+                mockScenarios.find(s => s.id === id)
+            );
+            
+            const colors = ['#4A90B8', '#28a745', '#ffc107', '#dc3545'];
+            const timeLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
+            
+            // 压力图表
+            const pressureCtx = document.getElementById('pressureChart');
+            if (pressureCtx) {
+                charts.pressure = new Chart(pressureCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: timeLabels,
+                        datasets: selectedData.map((scenario, index) => ({
+                            label: scenario.name,
+                            data: generateMockTimeSeriesData(scenario.kpi.avg_pressure),
+                            borderColor: colors[index],
+                            backgroundColor: colors[index] + '20',
+                            tension: 0.4,
+                            fill: false
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: { display: true, text: '压力 (m)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        // 完全禁用动画
+                        animation: false,
+                        transitions: {
+                            active: {
+                                animation: {
+                                    duration: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 流量图表
+            const flowCtx = document.getElementById('flowChart');
+            if (flowCtx) {
+                charts.flow = new Chart(flowCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: timeLabels,
+                        datasets: selectedData.map((scenario, index) => ({
+                            label: scenario.name,
+                            data: generateMockTimeSeriesData(scenario.kpi.max_flow),
+                            borderColor: colors[index],
+                            backgroundColor: colors[index] + '20',
+                            tension: 0.4,
+                            fill: false
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: '流量 (m³/h)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        // 完全禁用动画
+                        animation: false,
+                        transitions: {
+                            active: {
+                                animation: {
+                                    duration: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // 生成模拟时间序列数据
+        function generateMockTimeSeriesData(baseValue) {
+            const variation = baseValue * 0.15; // 15%的变化幅度
+            return Array.from({ length: 6 }, () => 
+                baseValue + (Math.random() - 0.5) * variation
+            );
+        }
+        
+        // 切换图表类型
+        function switchChart(chartType) {
+            currentChartType = chartType;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-chart="${chartType}"]`).classList.add('active');
+            
+            // 重新生成图表
+            if (selectedScenarios.size >= 2) {
+                lockScroll();
+                generateChartComparison();
+                setTimeout(() => {
+                    unlockScroll();
+                }, 500);
+            }
+        }
+        
+        // 更新图表
+        function updateCharts() {
+            // 根据复选框状态更新图表
+            const showTrendLine = document.getElementById('showTrendLine').checked;
+            const normalizeData = document.getElementById('normalizeData').checked;
+            
+            // 重新创建图表以应用新设置
+            if (selectedScenarios.size >= 2) {
+                lockScroll();
+                createCharts();
+                setTimeout(() => {
+                    unlockScroll();
+                }, 300);
+            }
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 搜索功能
+            document.getElementById('searchInput').addEventListener('input', filterScenarios);
+            document.getElementById('typeFilter').addEventListener('change', filterScenarios);
+            document.getElementById('dateFilter').addEventListener('change', filterScenarios);
+            
+            // 元件选择器变化
+            document.getElementById('elementSelector').addEventListener('change', () => {
+                if (selectedScenarios.size >= 2) {
+                    updateCharts();
+                }
+            });
+        }
+        
+        // 过滤方案
+        function filterScenarios() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            const filteredScenarios = mockScenarios.filter(scenario => {
+                const matchesSearch = scenario.name.toLowerCase().includes(searchTerm) ||
+                                    scenario.description.toLowerCase().includes(searchTerm);
+                const matchesType = !typeFilter || scenario.type === typeFilter;
+                const matchesDate = filterByDate(scenario.date, dateFilter);
+                
+                return matchesSearch && matchesType && matchesDate;
+            });
+            
+            // 重新渲染列表
+            const listEl = document.getElementById('scenarioList');
+            listEl.innerHTML = filteredScenarios.map(scenario => `
+                <li class="scenario-item ${selectedScenarios.has(scenario.id) ? 'selected' : ''}" 
+                    data-id="${scenario.id}" onclick="toggleScenario(${scenario.id})">
+                    <input type="checkbox" class="scenario-checkbox" ${selectedScenarios.has(scenario.id) ? 'checked' : ''}>
+                    <div class="scenario-content">
+                        <div class="scenario-title">${scenario.name}</div>
+                        <div class="scenario-meta">
+                            <div class="scenario-date">
+                                <i class="fas fa-calendar"></i>
+                                ${scenario.date}
+                            </div>
+                            <div class="scenario-type">${getTypeLabel(scenario.type)}</div>
+                        </div>
+                        <div class="scenario-description">${scenario.description}</div>
+                        <div class="scenario-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                ${scenario.duration}
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                ${scenario.affected_areas}
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-user"></i>
+                                ${scenario.operator}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            `).join('');
+        }
+        
+        // 按日期过滤
+        function filterByDate(scenarioDate, filter) {
+            if (!filter) return true;
+            
+            const now = new Date();
+            const date = new Date(scenarioDate);
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            
+            switch (filter) {
+                case 'today': return diffDays === 0;
+                case 'week': return diffDays <= 7;
+                case 'month': return diffDays <= 30;
+                case 'quarter': return diffDays <= 90;
+                default: return true;
+            }
+        }
+        
+        // 导出KPI
+        function exportKPIs() {
+            if (selectedScenarios.size < 2) {
+                NotificationManager.show('请先进行对比分析', 'warning');
+                return;
+            }
+            
+            NotificationManager.show('正在导出KPI对比数据...', 'info');
+            setTimeout(() => {
+                NotificationManager.show('KPI数据导出成功！', 'success');
+                OperationLogger.log('导出KPI对比数据', { scenarios: Array.from(selectedScenarios) });
+            }, 1000);
+        }
+        
+        // 生成报告
+        function generateReport() {
+            if (selectedScenarios.size < 2) {
+                NotificationManager.show('请先进行对比分析', 'warning');
+                return;
+            }
+            
+            NotificationManager.show('正在生成对比分析报告...', 'info');
+            setTimeout(() => {
+                NotificationManager.show('分析报告已生成！', 'success');
+                OperationLogger.log('生成历史工况对比报告', { scenarios: Array.from(selectedScenarios) });
+            }, 2000);
+        }
+
+        // 返回功能
+        function goBack() {
+            // 检查浏览器历史记录
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // 如果没有历史记录，返回到主页
+                window.location.href = 'dashboard.html';
+            }
+        }
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

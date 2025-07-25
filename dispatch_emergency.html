@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 调度应急</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .dispatch-layout {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 60px);
+            padding: var(--spacing-lg);
+        }
+
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        .command-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        /* 应急状态栏 */
+        .emergency-status {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            font-size: 20px;
+        }
+
+        .status-icon.normal {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .status-icon.alert {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .status-icon.emergency {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .status-content {
+            flex: 1;
+        }
+
+        .status-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .status-value {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+        }
+
+        /* 预案管理 */
+        .plan-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-md);
+        }
+
+        .plan-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-weight: 500;
+        }
+
+        .plan-tab:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .plan-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .plan-list {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+
+        .plan-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .plan-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .plan-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 144, 184, 0.1);
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .plan-title {
+            font-weight: 600;
+            font-size: var(--font-size-lg);
+        }
+
+        .plan-level {
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        .plan-level.low {
+            background: rgba(0, 210, 211, 0.1);
+            color: var(--info);
+        }
+
+        .plan-level.medium {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .plan-level.high {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        .plan-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        /* 执行步骤 */
+        .execution-steps {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .step-timeline {
+            position: relative;
+            padding-left: var(--spacing-xl);
+        }
+
+        .step-timeline::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .step-item {
+            position: relative;
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+        }
+
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: -32px;
+            top: 24px;
+            width: 12px;
+            height: 12px;
+            background: var(--bg-primary);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+        }
+
+        .step-item.completed::before {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .step-item.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 144, 184, 0.1);
+        }
+
+        .step-item.active::before {
+            background: var(--primary);
+            width: 16px;
+            height: 16px;
+            left: -34px;
+            top: 22px;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .step-title {
+            font-weight: 600;
+        }
+
+        .step-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .step-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        /* 资源调配 */
+        .resource-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .resource-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .resource-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            transition: background var(--transition-fast);
+        }
+
+        .resource-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .resource-item.allocated {
+            opacity: 0.6;
+        }
+
+        .resource-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            font-size: 18px;
+        }
+
+        .resource-info {
+            flex: 1;
+        }
+
+        .resource-name {
+            font-weight: 500;
+        }
+
+        .resource-status {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        /* 通讯面板 */
+        .communication-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .comm-tabs {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .comm-content {
+            flex: 1;
+            min-height: 200px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            overflow-y: auto;
+        }
+
+        .message-item {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .message-name {
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+        }
+
+        .message-time {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        .message-text {
+            font-size: var(--font-size-sm);
+            line-height: 1.5;
+        }
+
+        .message-input {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1400px) {
+            .dispatch-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .command-panel {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+
+        <div class="dispatch-layout">
+        <!-- 主内容区 -->
+            <div class="main-area">
+            <!-- 应急状态栏 -->
+                <div class="emergency-status">
+                <h2 style="margin: 0 0 var(--spacing-md) 0; color: var(--text-primary);">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
+                    应急调度中心
+                </h2>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-icon normal">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="status-content">
+                                <div class="status-label">系统状态</div>
+                            <div class="status-value" style="color: var(--success);">正常</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="status-content">
+                            <div class="status-label">警告事件</div>
+                            <div class="status-value" style="color: var(--warning);">3个</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                        <div class="status-icon emergency">
+                            <i class="fas fa-fire"></i>
+                            </div>
+                            <div class="status-content">
+                            <div class="status-label">紧急事件</div>
+                            <div class="status-value" style="color: var(--danger);">1个</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon normal">
+                            <i class="fas fa-users"></i>
+                            </div>
+                            <div class="status-content">
+                            <div class="status-label">在岗人员</div>
+                            <div class="status-value" style="color: var(--text-primary);">8人</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- 应急预案选择 -->
+            <div class="emergency-status">
+                <h3 style="margin: 0 0 var(--spacing-md) 0;">应急预案</h3>
+                        <div class="plan-tabs">
+                    <div class="plan-tab active" onclick="switchPlanTab(this, 'all')">全部预案</div>
+                    <div class="plan-tab" onclick="switchPlanTab(this, 'high')">高级预案</div>
+                    <div class="plan-tab" onclick="switchPlanTab(this, 'medium')">中级预案</div>
+                    <div class="plan-tab" onclick="switchPlanTab(this, 'low')">低级预案</div>
+                        </div>
+                <div class="plan-list" id="plan-list">
+                    <div class="plan-card active" onclick="selectPlan(this, 'plan1')">
+                                <div class="plan-header">
+                            <div class="plan-title">管道爆裂应急预案</div>
+                            <div class="plan-level high">高级</div>
+                                </div>
+                                <div class="plan-meta">
+                            <span><i class="fas fa-clock"></i> 预计执行时间: 2-4小时</span>
+                            <span><i class="fas fa-user"></i> 负责人: 李工</span>
+                                </div>
+                            </div>
+                    <div class="plan-card" onclick="selectPlan(this, 'plan2')">
+                                <div class="plan-header">
+                            <div class="plan-title">水质污染处理预案</div>
+                            <div class="plan-level medium">中级</div>
+                                </div>
+                                <div class="plan-meta">
+                            <span><i class="fas fa-clock"></i> 预计执行时间: 1-2小时</span>
+                            <span><i class="fas fa-user"></i> 负责人: 王工</span>
+                                </div>
+                            </div>
+                    <div class="plan-card" onclick="selectPlan(this, 'plan3')">
+                                <div class="plan-header">
+                            <div class="plan-title">泵站故障应急预案</div>
+                            <div class="plan-level medium">中级</div>
+                                </div>
+                                <div class="plan-meta">
+                            <span><i class="fas fa-clock"></i> 预计执行时间: 30分钟-1小时</span>
+                            <span><i class="fas fa-user"></i> 负责人: 赵工</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 执行步骤 -->
+            <div class="emergency-status">
+                <h3 style="margin: 0 0 var(--spacing-md) 0;">执行步骤 - 管道爆裂应急预案</h3>
+                <div class="execution-steps">
+                        <div class="step-timeline">
+                            <div class="step-item completed">
+                                <div class="step-header">
+                                <div class="step-title">1. 现场确认与隔离</div>
+                                <div class="step-status">
+                                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                        <span>已完成</span>
+                                    </div>
+                                </div>
+                            <div class="step-description">确认事故位置，关闭相关阀门，设置安全警戒区域</div>
+                            <div class="step-actions">
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="fas fa-check"></i> 已完成
+                                </button>
+                                </div>
+                            </div>
+                            
+                        <div class="step-item active">
+                                <div class="step-header">
+                                <div class="step-title">2. 启动备用水源</div>
+                                <div class="step-status">
+                                    <i class="fas fa-play-circle" style="color: var(--primary);"></i>
+                                    <span>进行中</span>
+                                    </div>
+                                </div>
+                            <div class="step-description">启动备用泵站，确保受影响区域的基本供水</div>
+                            <div class="step-actions">
+                                <button class="btn btn-sm btn-primary" onclick="executeStep(2)">
+                                    <i class="fas fa-play"></i> 执行
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="skipStep(2)">
+                                    <i class="fas fa-forward"></i> 跳过
+                                </button>
+                                </div>
+                            </div>
+                            
+                        <div class="step-item">
+                                <div class="step-header">
+                                <div class="step-title">3. 通知受影响用户</div>
+                                <div class="step-status">
+                                    <i class="fas fa-pause-circle" style="color: var(--text-tertiary);"></i>
+                                    <span>等待中</span>
+                                    </div>
+                                </div>
+                            <div class="step-description">通过短信、公告等方式通知受影响区域的用户</div>
+                                <div class="step-actions">
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="fas fa-clock"></i> 等待
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="step-item">
+                                <div class="step-header">
+                                <div class="step-title">4. 维修团队调配</div>
+                                <div class="step-status">
+                                    <i class="fas fa-pause-circle" style="color: var(--text-tertiary);"></i>
+                                    <span>等待中</span>
+                                    </div>
+                                </div>
+                            <div class="step-description">调配维修人员和设备到达现场进行抢修</div>
+                            <div class="step-actions">
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="fas fa-clock"></i> 等待
+                                </button>
+                            </div>
+                            </div>
+                            
+                            <div class="step-item">
+                                <div class="step-header">
+                                <div class="step-title">5. 恢复供水服务</div>
+                                <div class="step-status">
+                                    <i class="fas fa-pause-circle" style="color: var(--text-tertiary);"></i>
+                                    <span>等待中</span>
+                                    </div>
+                                </div>
+                            <div class="step-description">维修完成后逐步恢复正常供水，进行水质检测</div>
+                            <div class="step-actions">
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="fas fa-clock"></i> 等待
+                                </button>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧指挥面板 -->
+            <div class="command-panel">
+                <!-- 资源调配 -->
+            <div class="resource-panel">
+                    <div class="resource-header">
+                    <i class="fas fa-truck"></i> 资源调配
+                    </div>
+                    <div class="resource-list">
+                    <div class="resource-item">
+                        <div class="resource-icon" style="color: var(--success);">
+                            <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="resource-info">
+                            <div class="resource-name">抢修车辆 A-001</div>
+                            <div class="resource-status">可用 - 距离现场5公里</div>
+                            </div>
+                        <button class="btn btn-sm btn-primary" onclick="allocateResource('A-001')">调配</button>
+                        </div>
+                    <div class="resource-item allocated">
+                        <div class="resource-icon" style="color: var(--warning);">
+                            <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="resource-info">
+                            <div class="resource-name">抢修车辆 A-002</div>
+                            <div class="resource-status">已调配 - 前往现场</div>
+                            </div>
+                        <button class="btn btn-sm btn-secondary" disabled>已调配</button>
+                        </div>
+                    <div class="resource-item">
+                        <div class="resource-icon" style="color: var(--success);">
+                            <i class="fas fa-users"></i>
+                            </div>
+                            <div class="resource-info">
+                            <div class="resource-name">维修队伍 T-001</div>
+                            <div class="resource-status">可用 - 3人团队</div>
+                            </div>
+                        <button class="btn btn-sm btn-primary" onclick="allocateResource('T-001')">调配</button>
+                        </div>
+                    <div class="resource-item">
+                        <div class="resource-icon" style="color: var(--success);">
+                            <i class="fas fa-tools"></i>
+                            </div>
+                            <div class="resource-info">
+                            <div class="resource-name">设备组 E-001</div>
+                            <div class="resource-status">可用 - 挖掘设备</div>
+                            </div>
+                        <button class="btn btn-sm btn-primary" onclick="allocateResource('E-001')">调配</button>
+                        </div>
+                    <div class="resource-item">
+                        <div class="resource-icon" style="color: var(--info);">
+                            <i class="fas fa-pump-medical"></i>
+                    </div>
+                        <div class="resource-info">
+                            <div class="resource-name">临时供水车</div>
+                            <div class="resource-status">待命 - 5000L容量</div>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="allocateResource('WATER-001')">调配</button>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- 通讯协调 -->
+            <div class="resource-panel">
+                <div class="resource-header">
+                    <i class="fas fa-comments"></i> 通讯协调
+                        </div>
+                <div class="communication-panel">
+                    <div class="comm-tabs">
+                        <div class="plan-tab active" onclick="switchCommTab('emergency')">应急频道</div>
+                        <div class="plan-tab" onclick="switchCommTab('team')">团队协调</div>
+                    </div>
+                    <div class="comm-content" id="comm-content">
+                            <div class="message-item">
+                                <div class="message-avatar">李</div>
+                                <div class="message-content">
+                                    <div class="message-header">
+                                        <span class="message-name">李工</span>
+                                    <span class="message-time">14:23</span>
+                                    </div>
+                                <div class="message-text">现场确认管道爆裂，直径800mm，影响约500户居民</div>
+                                    </div>
+                                </div>
+                            <div class="message-item">
+                                <div class="message-avatar">张</div>
+                                <div class="message-content">
+                                    <div class="message-header">
+                                        <span class="message-name">张总</span>
+                                    <span class="message-time">14:25</span>
+                                    </div>
+                                <div class="message-text">已启动应急预案，请按步骤执行</div>
+                                    </div>
+                                </div>
+                            <div class="message-item">
+                            <div class="message-avatar">王</div>
+                                <div class="message-content">
+                                    <div class="message-header">
+                                    <span class="message-name">王工</span>
+                                    <span class="message-time">14:26</span>
+                                    </div>
+                                <div class="message-text">备用泵站已启动，正在调配临时供水</div>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="message-input">
+                        <input type="text" class="form-control" placeholder="输入消息..." id="message-input">
+                        <button class="btn btn-primary" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+            <div class="resource-panel">
+                <div class="resource-header">
+                    <i class="fas fa-bolt"></i> 快速操作
+                </div>
+                <div style="padding: var(--spacing-md);">
+                    <button class="btn btn-danger" onclick="emergencyShutdown()" style="width: 100%; margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-stop-circle"></i> 紧急停水
+                            </button>
+                    <button class="btn btn-warning" onclick="activateBackup()" style="width: 100%; margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-power-off"></i> 启动备用系统
+                            </button>
+                    <button class="btn btn-info" onclick="notifyUsers()" style="width: 100%; margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-bullhorn"></i> 群发通知
+                            </button>
+                    <button class="btn btn-success" onclick="contactEmergency()" style="width: 100%;">
+                        <i class="fas fa-phone"></i> 联系应急部门
+                            </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!currentUser) {
+                NotificationManager.show('请先登录', 'error');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 检查页面访问权限
+            if (!UserPermissions.hasPermission('dispatch')) {
+                NotificationManager.show('您没有权限访问此页面', 'error');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            NavigationManager.init();
+            ThemeManager.init();
+            Clock.init();
+            OperationLogger.log('访问页面', { page: '应急调度' });
+        });
+
+        // 切换预案标签
+        function switchPlanTab(element, type) {
+            document.querySelectorAll('.plan-tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+            
+            // 这里可以根据类型过滤显示的预案
+            console.log('切换到预案类型:', type);
+        }
+
+        // 选择预案
+        function selectPlan(element, planId) {
+            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
+            element.classList.add('active');
+            
+            NotificationManager.show(`已选择预案: ${planId}`, 'success');
+            OperationLogger.log('选择应急预案', { planId });
+        }
+
+        // 执行步骤
+        function executeStep(stepNumber) {
+            NotificationManager.show(`正在执行步骤 ${stepNumber}...`, 'info');
+            OperationLogger.log('执行应急步骤', { step: stepNumber });
+            
+            // 模拟执行过程
+            setTimeout(() => {
+                NotificationManager.show(`步骤 ${stepNumber} 执行完成`, 'success');
+            }, 2000);
+        }
+
+        // 跳过步骤
+        function skipStep(stepNumber) {
+            if (confirm(`确定要跳过步骤 ${stepNumber} 吗？`)) {
+                NotificationManager.show(`已跳过步骤 ${stepNumber}`, 'warning');
+                OperationLogger.log('跳过应急步骤', { step: stepNumber });
+            }
+        }
+
+        // 分配资源
+        function allocateResource(resourceId) {
+            if (confirm(`确定要调配资源 ${resourceId} 吗？`)) {
+                NotificationManager.show(`资源 ${resourceId} 调配成功`, 'success');
+                OperationLogger.log('调配应急资源', { resourceId });
+            }
+        }
+
+        // 切换通讯标签
+        function switchCommTab(type) {
+            // 更新标签状态
+            event.target.parentNode.querySelectorAll('.plan-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 这里可以根据类型切换不同的通讯内容
+            console.log('切换到通讯类型:', type);
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                const commContent = document.getElementById('comm-content');
+                
+                // 添加新消息
+                const messageHTML = `
+                    <div class="message-item">
+                        <div class="message-avatar">${currentUser.name.charAt(0)}</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                <span class="message-name">${currentUser.name}</span>
+                                <span class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            <div class="message-text">${message}</div>
+                        </div>
+                            </div>
+                        `;
+                        
+                commContent.insertAdjacentHTML('beforeend', messageHTML);
+                commContent.scrollTop = commContent.scrollHeight;
+                
+                input.value = '';
+                OperationLogger.log('发送应急消息', { message });
+            }
+        }
+
+        // 监听Enter键发送消息
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 快速操作函数
+        function emergencyShutdown() {
+            if (confirm('确定要执行紧急停水操作吗？此操作将影响大范围供水服务。')) {
+                NotificationManager.show('紧急停水指令已发送', 'warning');
+                OperationLogger.log('执行紧急停水', { operator: JSON.parse(localStorage.getItem('currentUser')).name });
+            }
+        }
+
+        function activateBackup() {
+            if (confirm('确定要启动备用系统吗？')) {
+                NotificationManager.show('备用系统启动指令已发送', 'info');
+                OperationLogger.log('启动备用系统');
+            }
+        }
+
+        function notifyUsers() {
+            NotificationManager.show('正在群发用户通知...', 'info');
+            OperationLogger.log('群发用户通知');
+            setTimeout(() => {
+                NotificationManager.show('用户通知发送完成', 'success');
+            }, 1500);
+        }
+
+        function contactEmergency() {
+            NotificationManager.show('正在联系应急部门...', 'info');
+            OperationLogger.log('联系应急部门');
+            setTimeout(() => {
+                NotificationManager.show('已联系应急部门，等待响应', 'success');
+            }, 1000);
+        }
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

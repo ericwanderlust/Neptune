@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="系统管理">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 系统管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 120px);
+            padding: var(--spacing-lg);
+        }
+
+        .admin-sidebar {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .admin-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 侧边栏菜单 */
+        .admin-menu {
+            padding: var(--spacing-md);
+        }
+
+        .menu-section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .menu-title {
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            margin-bottom: var(--spacing-sm);
+            padding: 0 var(--spacing-sm);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: 2px;
+            color: var(--text-secondary);
+        }
+
+        .menu-item:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .menu-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .menu-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 内容区头部 */
+        .content-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        /* 用户管理 */
+        .users-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .users-table {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .user-email {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .role-badge.admin {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .role-badge.executive {
+            background: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        .role-badge.dispatcher {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .role-badge.engineer {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .role-badge.service {
+            background: rgba(26, 188, 156, 0.1);
+            color: #1abc9c;
+            border: 1px solid rgba(26, 188, 156, 0.2);
+        }
+
+        .role-badge.analyst {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f1c40f;
+            border: 1px solid rgba(241, 196, 15, 0.2);
+        }
+
+        .role-badge.manager {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .role-badge.operator {
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+        }
+
+        /* 权限配置 */
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .permission-group {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .permission-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .permission-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: var(--radius-lg);
+            font-size: 18px;
+        }
+
+        .permission-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .permission-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .permission-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+        }
+
+        .permission-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--gray-400);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .permission-switch.active {
+            background: var(--success);
+        }
+
+        .permission-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform var(--transition-fast);
+        }
+
+        .permission-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        /* 系统设置 */
+        .settings-sections {
+            display: grid;
+            gap: var(--spacing-lg);
+        }
+
+        .setting-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .setting-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--info);
+            color: white;
+            border-radius: var(--radius-lg);
+            font-size: 18px;
+        }
+
+        .setting-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        /* 日志审计 */
+        .log-filters {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .log-table {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            width: 120px;
+        }
+
+        .log-user {
+            width: 80px;
+            font-weight: 500;
+        }
+
+        .log-action {
+            flex: 1;
+        }
+
+        .log-level {
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .log-level.info {
+            background: rgba(0, 210, 211, 0.1);
+            color: var(--info);
+        }
+
+        .log-level.warning {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .log-level.error {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        /* 系统状态 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .status-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--success);
+            color: white;
+            border-radius: 50%;
+            font-size: 24px;
+            margin: 0 auto var(--spacing-md);
+        }
+
+        .status-icon.warning {
+            background: var(--warning);
+        }
+
+        .status-icon.error {
+            background: var(--danger);
+        }
+
+        .status-value {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .status-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .admin-layout {
+                grid-template-columns: 280px 1fr; /* 保持侧边栏可见 */
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 250px 1fr; /* 移动端稍微缩小侧边栏 */
+            }
+            
+            .admin-sidebar {
+                z-index: 1001; /* 确保侧边栏在最上层 */
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .admin-layout {
+                display: flex; /* 超小屏幕使用flex布局 */
+                flex-direction: column;
+            }
+            
+            .admin-sidebar {
+                width: 100%;
+                max-height: 200px;
+                overflow-y: auto;
+                order: 1;
+            }
+            
+            .admin-content {
+                order: 2;
+                flex: 1;
+            }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        /* 状态栏样式 */
+        .status-bar {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .status-bar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        /* 角色管理样式 */
+        .roles-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .role-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .role-header {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .role-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            background: var(--primary);
+        }
+
+        .admin-role .role-icon { background: #e74c3c; }
+        .executive-role .role-icon { background: #9b59b6; }
+        .dispatcher-role .role-icon { background: #e74c3c; }
+        .engineer-role .role-icon { background: #3498db; }
+        .analyst-role .role-icon { background: #f1c40f; }
+        .service-role .role-icon { background: #1abc9c; }
+
+        .role-info {
+            flex: 1;
+        }
+
+        .role-info h4 {
+            margin: 0 0 var(--spacing-xs) 0;
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .role-info p {
+            margin: 0;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .role-status {
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .role-status.active {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .role-status.inactive {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--danger);
+        }
+
+        .role-stats {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        .role-permissions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .permission-tag {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .permission-tag.active {
+            background: rgba(74, 144, 184, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(74, 144, 184, 0.2);
+        }
+
+        .permission-tag.view {
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .permission-tag.disabled {
+            background: rgba(108, 117, 125, 0.1);
+            color: var(--text-tertiary);
+            border: 1px solid rgba(108, 117, 125, 0.2);
+        }
+
+        .role-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="admin-layout">
+        <!-- 左侧管理菜单 -->
+        <div class="admin-sidebar">
+            <div class="admin-menu">
+                <div class="menu-section">
+                    <div class="menu-title">用户管理</div>
+                    <div class="menu-item active" onclick="showSection('users')">
+                        <i class="fas fa-users menu-icon"></i>
+                        <span>用户列表</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('roles')">
+                        <i class="fas fa-user-tag menu-icon"></i>
+                        <span>角色管理</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('permissions')">
+                        <i class="fas fa-key menu-icon"></i>
+                        <span>权限配置</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">系统配置</div>
+                    <div class="menu-item" onclick="showSection('settings')">
+                        <i class="fas fa-cog menu-icon"></i>
+                        <span>系统设置</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('backup')">
+                        <i class="fas fa-database menu-icon"></i>
+                        <span>数据备份</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('security')">
+                        <i class="fas fa-shield-alt menu-icon"></i>
+                        <span>安全配置</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">监控审计</div>
+                    <div class="menu-item" onclick="showSection('logs')">
+                        <i class="fas fa-list-alt menu-icon"></i>
+                        <span>操作日志</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('status')">
+                        <i class="fas fa-chart-line menu-icon"></i>
+                        <span>系统状态</span>
+                    </div>
+                    <div class="menu-item" onclick="showSection('alerts')">
+                        <i class="fas fa-bell menu-icon"></i>
+                        <span>告警配置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧内容区 -->
+        <div class="admin-content">
+            <div class="content-header">
+                <h2 id="sectionTitle" class="font-semibold">用户管理</h2>
+                <p id="sectionDesc" class="text-muted mt-xs">管理系统用户账户、角色分配和权限设置</p>
+            </div>
+
+            <div class="content-body">
+                <!-- 用户管理区域 -->
+                <div id="users-section" class="admin-section">
+                    <div class="users-toolbar">
+                        <div class="flex gap-md align-center">
+                            <div class="flex gap-sm">
+                                <input type="text" class="form-control" placeholder="搜索用户..." style="width: 200px;">
+                                <select class="form-control form-select" style="width: 120px;">
+                                    <option>全部角色</option>
+                                    <option>管理员</option>
+                                    <option>经理</option>
+                                    <option>操作员</option>
+                                    <option>查看者</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-sm" onclick="exportUsers()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="addUser()">
+                                <i class="fas fa-plus"></i> 添加用户
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="users-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th width="50"><input type="checkbox" data-select-all></th>
+                                    <th>用户</th>
+                                    <th>角色</th>
+                                    <th>部门</th>
+                                    <th>权限</th>
+                                    <th>状态</th>
+                                    <th>最后登录</th>
+                                    <th width="120">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 系统管理员 -->
+                                <tr data-batch-id="admin">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #f39c12, #e67e22);">管</div>
+                                            <div class="user-details">
+                                                <div class="user-name">系统管理员</div>
+                                                <div class="user-email">admin@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge admin">系统管理员</span></td>
+                                    <td>IT/外部运维</td>
+                                    <td><span class="badge badge-success">最高权限</span></td>
+                                    <td><span class="badge badge-success">在线</span></td>
+                                    <td>1分钟前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('admin')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('admin')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 管理决策层 -->
+                                <tr data-batch-id="executive">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">张</div>
+                                            <div class="user-details">
+                                                <div class="user-name">张总</div>
+                                                <div class="user-email">executive@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge executive">管理决策层</span></td>
+                                    <td>水司中高层/管理办</td>
+                                    <td><span class="badge badge-info">管理权限</span></td>
+                                    <td><span class="badge badge-success">在线</span></td>
+                                    <td>3分钟前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('executive')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('executive')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 调度员 -->
+                                <tr data-batch-id="dispatcher">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">李</div>
+                                            <div class="user-details">
+                                                <div class="user-name">李调度</div>
+                                                <div class="user-email">dispatcher@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge dispatcher">调度员</span></td>
+                                    <td>总调度中心/一线班组</td>
+                                    <td><span class="badge badge-warning">调度权限</span></td>
+                                    <td><span class="badge badge-success">在线</span></td>
+                                    <td>5分钟前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('dispatcher')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('dispatcher')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 建模工程师 -->
+                                <tr data-batch-id="engineer">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #3498db, #2980b9);">王</div>
+                                            <div class="user-details">
+                                                <div class="user-name">王工程师</div>
+                                                <div class="user-email">engineer@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge engineer">建模工程师</span></td>
+                                    <td>模型专家/系统技术支持</td>
+                                    <td><span class="badge badge-primary">技术权限</span></td>
+                                    <td><span class="badge badge-secondary">离线</span></td>
+                                    <td>2小时前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('engineer')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('engineer')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 客服专员 -->
+                                <tr data-batch-id="service">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #1abc9c, #16a085);">陈</div>
+                                            <div class="user-details">
+                                                <div class="user-name">陈客服</div>
+                                                <div class="user-email">service@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge service">客服专员</span></td>
+                                    <td>水司客服中心/服务热线</td>
+                                    <td><span class="badge badge-light">有限权限</span></td>
+                                    <td><span class="badge badge-success">在线</span></td>
+                                    <td>10分钟前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('service')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('service')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 数据分析师 -->
+                                <tr data-batch-id="analyst">
+                                    <td><input type="checkbox" data-batch-checkbox></td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #f1c40f, #f39c12);">赵</div>
+                                            <div class="user-details">
+                                                <div class="user-name">赵分析师</div>
+                                                <div class="user-email">analyst@watermodel.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge analyst">数据分析师</span></td>
+                                    <td>信息中心/大数据/BI</td>
+                                    <td><span class="badge badge-info">分析权限</span></td>
+                                    <td><span class="badge badge-secondary">离线</span></td>
+                                    <td>1天前</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-icon" onclick="editUser('analyst')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-icon" onclick="viewUserPermissions('analyst')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 角色管理区域 -->
+                <div id="roles-section" class="admin-section" style="display: none;">
+                    <div class="roles-toolbar">
+                        <div class="flex gap-md align-center">
+                            <div class="flex gap-sm">
+                                <input type="text" class="form-control" placeholder="搜索角色..." style="width: 200px;">
+                                <select class="form-control form-select" style="width: 150px;">
+                                    <option>全部状态</option>
+                                    <option>启用</option>
+                                    <option>禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-sm" onclick="exportRoles()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="addRole()">
+                                <i class="fas fa-plus"></i> 添加角色
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="roles-grid">
+                        <!-- 系统管理员角色 -->
+                        <div class="role-card admin-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>系统管理员</h4>
+                                    <p>拥有系统最高权限，负责系统配置和用户管理</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">100%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag active">所有权限</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('admin')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('admin')">详情</button>
+                            </div>
+                        </div>
+
+                        <!-- 管理决策层角色 -->
+                        <div class="role-card executive-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>管理决策层</h4>
+                                    <p>高层管理人员，拥有全局查看权限和决策分析功能</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">80%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag view">全局只读</span>
+                                <span class="permission-tag active">运营总览</span>
+                                <span class="permission-tag active">数据报表</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('executive')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('executive')">详情</button>
+                            </div>
+                        </div>
+
+                        <!-- 调度员角色 -->
+                        <div class="role-card dispatcher-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-broadcast-tower"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>调度员</h4>
+                                    <p>负责日常调度操作和应急响应的一线调度人员</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">70%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag active">日常调度</span>
+                                <span class="permission-tag active">调度应急</span>
+                                <span class="permission-tag active">模拟仿真</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('dispatcher')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('dispatcher')">详情</button>
+                            </div>
+                        </div>
+
+                        <!-- 建模工程师角色 -->
+                        <div class="role-card engineer-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-project-diagram"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>建模工程师</h4>
+                                    <p>负责水力模型建设、仿真分析和技术支持</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">65%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag active">模拟仿真</span>
+                                <span class="permission-tag active">运营总览</span>
+                                <span class="permission-tag view">调度查看</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('engineer')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('engineer')">详情</button>
+                            </div>
+                        </div>
+
+                        <!-- 数据分析师角色 -->
+                        <div class="role-card analyst-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>数据分析师</h4>
+                                    <p>负责数据分析、报表生成和商业智能</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">40%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag active">数据报表</span>
+                                <span class="permission-tag active">运营总览</span>
+                                <span class="permission-tag disabled">其他功能</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('analyst')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('analyst')">详情</button>
+                            </div>
+                        </div>
+
+                        <!-- 客服专员角色 -->
+                        <div class="role-card service-role">
+                            <div class="role-header">
+                                <div class="role-icon">
+                                    <i class="fas fa-headset"></i>
+                                </div>
+                                <div class="role-info">
+                                    <h4>客服专员</h4>
+                                    <p>负责客户服务、工单处理和问题反馈</p>
+                                </div>
+                                <div class="role-status active">启用</div>
+                            </div>
+                            <div class="role-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1</span>
+                                    <span class="stat-label">用户数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">25%</span>
+                                    <span class="stat-label">权限覆盖</span>
+                                </div>
+                            </div>
+                            <div class="role-permissions">
+                                <span class="permission-tag active">工单中心</span>
+                                <span class="permission-tag view">水质查看</span>
+                                <span class="permission-tag disabled">其他功能</span>
+                            </div>
+                            <div class="role-actions">
+                                <button class="btn btn-sm" onclick="editRole('service')">编辑</button>
+                                <button class="btn btn-sm" onclick="viewRoleDetails('service')">详情</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 权限配置区域 -->
+                <div id="permissions-section" class="admin-section" style="display: none;">
+                    <div class="permissions-grid">
+                        <div class="permission-group">
+                            <div class="permission-header">
+                                <div class="permission-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div>
+                                    <div class="permission-title">运营管理</div>
+                                    <div class="text-sm text-muted">运营总览和监控相关权限</div>
+                                </div>
+                            </div>
+                            <div class="permission-list">
+                                <div class="permission-item">
+                                    <span>查看运营总览</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>查看实时监控</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>远程控制设备</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>修改运行参数</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="permission-group">
+                            <div class="permission-header">
+                                <div class="permission-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div>
+                                    <div class="permission-title">应急调度</div>
+                                    <div class="text-sm text-muted">应急响应和调度权限</div>
+                                </div>
+                            </div>
+                            <div class="permission-list">
+                                <div class="permission-item">
+                                    <span>查看应急预案</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>启动应急响应</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>资源调配</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>通讯协调</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="permission-group">
+                            <div class="permission-header">
+                                <div class="permission-icon">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="permission-title">工单管理</div>
+                                    <div class="text-sm text-muted">工单处理和管理权限</div>
+                                </div>
+                            </div>
+                            <div class="permission-list">
+                                <div class="permission-item">
+                                    <span>查看工单列表</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>创建工单</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>分配工单</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>关闭工单</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="permission-group">
+                            <div class="permission-header">
+                                <div class="permission-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div>
+                                    <div class="permission-title">数据报表</div>
+                                    <div class="text-sm text-muted">报表生成和导出权限</div>
+                                </div>
+                            </div>
+                            <div class="permission-list">
+                                <div class="permission-item">
+                                    <span>查看报表</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>生成报表</span>
+                                    <div class="permission-switch active" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>导出数据</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                                <div class="permission-item">
+                                    <span>自定义报表</span>
+                                    <div class="permission-switch" onclick="togglePermission(this)"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统设置区域 -->
+                <div id="settings-section" class="admin-section" style="display: none;">
+                    <div class="settings-sections">
+                        <div class="setting-section">
+                            <div class="setting-header">
+                                <div class="setting-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">基础设置</h3>
+                                    <p class="text-muted text-sm">系统基础配置选项</p>
+                                </div>
+                            </div>
+                            <div class="setting-content">
+                                <div class="form-group">
+                                    <label class="form-label">系统名称</label>
+                                    <input type="text" class="form-control" value="在线水力模型系统">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">系统Logo</label>
+                                    <input type="file" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">时区设置</label>
+                                    <select class="form-control form-select">
+                                        <option>Asia/Shanghai (UTC+8)</option>
+                                        <option>Asia/Beijing (UTC+8)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">语言设置</label>
+                                    <select class="form-control form-select">
+                                        <option>简体中文</option>
+                                        <option>English</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-section">
+                            <div class="setting-header">
+                                <div class="setting-icon">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">通知设置</h3>
+                                    <p class="text-muted text-sm">系统通知和告警配置</p>
+                                </div>
+                            </div>
+                            <div class="setting-content">
+                                <div class="form-group">
+                                    <label class="form-label">邮件服务器</label>
+                                    <input type="text" class="form-control" value="smtp.company.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">发送邮箱</label>
+                                    <input type="email" class="form-control" value="system@company.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">短信接口</label>
+                                    <input type="text" class="form-control" placeholder="短信服务商API地址">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">微信推送</label>
+                                    <input type="text" class="form-control" placeholder="微信企业号配置">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作日志区域 -->
+                <div id="logs-section" class="admin-section" style="display: none;">
+                    <div class="log-filters">
+                        <select class="form-control form-select" style="width: 120px;">
+                            <option>全部用户</option>
+                            <option>张总</option>
+                            <option>李工</option>
+                            <option>王工</option>
+                        </select>
+                        <select class="form-control form-select" style="width: 120px;">
+                            <option>全部操作</option>
+                            <option>登录</option>
+                            <option>查看</option>
+                            <option>编辑</option>
+                            <option>删除</option>
+                        </select>
+                        <input type="date" class="form-control" style="width: 150px;">
+                        <button class="btn btn-sm btn-primary">
+                            <i class="fas fa-search"></i> 搜索
+                        </button>
+                        <button class="btn btn-sm" onclick="exportLogs()">
+                            <i class="fas fa-download"></i> 导出日志
+                        </button>
+                    </div>
+
+                    <div class="log-table">
+                        <div class="log-item">
+                            <div class="log-time">10:35:20</div>
+                            <div class="log-user">张总</div>
+                            <div class="log-action">访问页面: 系统管理</div>
+                            <div class="log-level info">信息</div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">10:33:15</div>
+                            <div class="log-user">李工</div>
+                            <div class="log-action">远程启动设备: PS001</div>
+                            <div class="log-level warning">警告</div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">10:30:08</div>
+                            <div class="log-user">系统</div>
+                            <div class="log-action">自动备份数据库</div>
+                            <div class="log-level info">信息</div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">10:25:33</div>
+                            <div class="log-user">王工</div>
+                            <div class="log-action">创建工单: T001</div>
+                            <div class="log-level info">信息</div>
+                        </div>
+                        <div class="log-item">
+                            <div class="log-time">10:20:12</div>
+                            <div class="log-user">张总</div>
+                            <div class="log-action">修改用户权限: user002</div>
+                            <div class="log-level warning">警告</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统状态区域 -->
+                <div id="status-section" class="admin-section" style="display: none;">
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="status-value">99.9%</div>
+                            <div class="status-label">系统可用性</div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon warning">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div class="status-value">76%</div>
+                            <div class="status-label">内存使用率</div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-hdd"></i>
+                            </div>
+                            <div class="status-value">45%</div>
+                            <div class="status-label">磁盘使用率</div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="status-value">正常</div>
+                            <div class="status-label">数据同步</div>
+                        </div>
+                    </div>
+
+                    <div class="setting-section">
+                        <div class="setting-header">
+                            <div class="setting-icon">
+                                <i class="fas fa-chart-area"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">性能监控</h3>
+                                <p class="text-muted text-sm">系统性能实时监控图表</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; background: var(--bg-secondary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line" style="font-size: 48px; color: var(--text-tertiary);"></i>
+                                <p class="mt-md text-muted">系统性能监控图表</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <div class="status-bar-content">
+            <span><i class="fas fa-shield-alt text-success"></i> 系统安全状态正常</span>
+            <span>数据同步: 正常</span>
+            <span>数据库: 正常</span>
+            <span>最后备份: 2小时前</span>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="safari-compatibility.js"></script>
+    <script>
+        // 显示不同管理区域
+        function showSection(sectionName) {
+            // 更新菜单状态
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // 隐藏所有区域
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // 显示选中区域
+            const section = document.getElementById(`${sectionName}-section`);
+            if (section) {
+                section.style.display = 'block';
+            }
+            
+            // 更新标题
+            const titles = {
+                users: '用户管理',
+                roles: '角色管理',
+                permissions: '权限配置',
+                settings: '系统设置',
+                backup: '数据备份',
+                security: '安全配置',
+                logs: '操作日志',
+                status: '系统状态',
+                alerts: '告警配置'
+            };
+            
+            const descriptions = {
+                users: '管理系统用户账户、角色分配和权限设置',
+                roles: '定义和管理用户角色类型',
+                permissions: '配置不同模块的访问权限',
+                settings: '系统基础配置和参数设置',
+                backup: '数据备份策略和恢复管理',
+                security: '系统安全策略和防护配置',
+                logs: '查看和分析系统操作审计日志',
+                status: '监控系统运行状态和性能指标',
+                alerts: '配置系统告警规则和通知方式'
+            };
+            
+            document.getElementById('sectionTitle').textContent = titles[sectionName];
+            document.getElementById('sectionDesc').textContent = descriptions[sectionName];
+            
+            OperationLogger.log('访问管理模块', { section: sectionName });
+        }
+
+        // 用户管理功能
+        function addUser() {
+            OperationLogger.log('添加用户');
+            NotificationManager.show('用户添加功能开发中...', 'info');
+        }
+
+        function editUser(userId) {
+            OperationLogger.log('编辑用户', { userId });
+            NotificationManager.show(`正在编辑用户 ${userId}`, 'info');
+        }
+
+        function deleteUser(userId) {
+            if (confirm('确定要删除这个用户吗？')) {
+                OperationLogger.log('删除用户', { userId });
+                NotificationManager.show(`用户 ${userId} 已删除`, 'success');
+            }
+        }
+
+        function exportUsers() {
+            OperationLogger.log('导出用户列表');
+            ExportManager.exportToExcel([], '用户列表.xlsx');
+        }
+
+        // 权限配置
+        function togglePermission(switchEl) {
+            switchEl.classList.toggle('active');
+            const isActive = switchEl.classList.contains('active');
+            const permissionName = switchEl.previousElementSibling.textContent;
+            
+            OperationLogger.log('修改权限', { 
+                permission: permissionName, 
+                status: isActive ? '启用' : '禁用' 
+            });
+            
+            NotificationManager.show(`${permissionName} 已${isActive ? '启用' : '禁用'}`, 'success');
+        }
+
+        // 导出日志
+        function exportLogs() {
+            OperationLogger.log('导出操作日志');
+            ExportManager.exportToExcel([], '操作日志.xlsx');
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 记录页面访问
+            OperationLogger.log('访问页面', { page: '系统管理' });
+            
+            // 检查管理员权限
+            if (!UserPermissions.hasPermission('admin')) {
+                NotificationManager.show('您没有权限访问此页面', 'error');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            // 模拟实时状态更新
+            setInterval(() => {
+                // 更新内存使用率
+                const memoryCard = document.querySelector('.status-card:nth-child(2) .status-value');
+                if (memoryCard) {
+                    const usage = (70 + Math.random() * 15).toFixed(1);
+                    memoryCard.textContent = usage + '%';
+                    
+                    const icon = memoryCard.previousElementSibling;
+                    if (usage > 85) {
+                        icon.classList.add('error');
+                        icon.classList.remove('warning');
+                    } else if (usage > 75) {
+                        icon.classList.add('warning');
+                        icon.classList.remove('error');
+                    } else {
+                        icon.classList.remove('warning', 'error');
+                    }
+                }
+                
+                // 更新在线用户数
+                const usersCard = document.querySelector('.status-card:nth-child(4) .status-value');
+                if (usersCard) {
+                    usersCard.textContent = Math.floor(20 + Math.random() * 10);
+                }
+            }, 5000);
+        });
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="仿真模拟">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 仿真模拟</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gojs/release/go.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/build/sha256.min.js"></script>
+    <style>
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            gap: 16px;
+            height: calc(100vh - 60px);
+            padding: 16px;
+        }
+
+        .sidebar {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .main-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .panel-header {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .section-title {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            padding: var(--spacing-md);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .file-input-display:hover {
+            border-color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .file-input-display.has-file {
+            border-color: var(--success);
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success);
+        }
+
+        .model-info {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .simulation-toolbar {
+            padding: var(--spacing-lg);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .diagram-container {
+            flex: 1;
+            position: relative;
+            min-height: 500px;
+        }
+
+        #networkDiagram {
+            width: 100%;
+            height: 100%;
+        }
+
+        .parameter-group {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .parameter-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-sm);
+        }
+
+        .parameter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .parameter-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .parameter-input {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+        }
+
+        .results-section {
+            margin-top: var(--spacing-lg);
+        }
+
+        .result-item {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .result-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-slow);
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--spacing-md);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+
+            .right-panel {
+                order: 2;
+            }
+
+            .main-content {
+                order: 3;
+            }
+        }
+
+        /* 二级导航样式 */
+        .sub-navigation {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+        }
+
+        .sub-nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .sub-nav-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .sub-nav-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .sub-nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sub-nav-tab:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .sub-nav-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .sub-nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Tab内容样式 */
+        .tab-content-container {
+            height: calc(100vh - 60px - 56px);
+            overflow: hidden;
+        }
+
+        .tab-content {
+            height: 100%;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            gap: 16px;
+            height: 100%;
+            padding: 16px;
+        }
+
+        /* 模型运维布局 */
+        .ops-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 280px;
+            gap: 16px;
+            height: 100%;
+            padding: 16px;
+        }
+
+        .ops-file-panel,
+        .ops-viewer-container,
+        .ops-info-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .ops-panel-header {
+            padding: var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-management-section {
+            padding: var(--spacing-lg);
+            height: calc(100% - 60px);
+            overflow-y: auto;
+        }
+
+        .file-list {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .file-upload-section h4 {
+            font-size: var(--font-size-md);
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--text-secondary);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .file-upload-area i {
+            font-size: 24px;
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .ops-viewer-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ops-viewer-header {
+            padding: var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .viewer-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .viewer-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .ops-viewer-content {
+            flex: 1;
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            margin: 0;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .ops-info-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .model-stats,
+        .model-validation,
+        .model-history {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .model-history:last-child {
+            border-bottom: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* 数据分析布局 */
+        .analysis-layout {
+            padding: var(--spacing-lg);
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .analysis-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 权限相关样式 */
+        .permission-required {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: var(--warning);
+            color: white;
+            font-size: 10px;
+            border-radius: var(--radius-sm);
+            margin-left: 8px;
+        }
+
+        /* 模型运维专用样式 */
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 2px solid transparent;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .file-item:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+        }
+
+        .file-item.active {
+            background: rgba(74, 144, 184, 0.1);
+            border-color: var(--primary);
+        }
+
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .file-size {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.loaded {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .status-indicator.validated {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--primary);
+        }
+
+        .status-indicator.uploading {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .status-indicator.error {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--danger);
+        }
+
+        /* 拖拽上传效果 */
+        .file-upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(74, 144, 184, 0.05);
+            transform: scale(1.02);
+        }
+
+        /* 代码查看器样式 */
+        .code-line {
+            display: block;
+            padding: 2px 0;
+            position: relative;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .line-number {
+            display: inline-block;
+            width: 40px;
+            color: #858585;
+            margin-right: 16px;
+            text-align: right;
+            user-select: none;
+        }
+
+        .keyword {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .comment {
+            color: #6a9955;
+            font-style: italic;
+        }
+
+        .section {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .number {
+            color: #b5cea8;
+        }
+
+        /* 加载动画 */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+
+        /* 信息项样式 */
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--font-size-sm);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .ops-layout {
+                grid-template-columns: 280px 1fr 260px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .ops-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .ops-file-panel {
+                order: 1;
+            }
+            
+            .ops-info-panel {
+                order: 2;
+            }
+            
+            .ops-viewer-container {
+                order: 3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 二级导航栏 -->
+    <div class="sub-navigation">
+        <div class="sub-nav-container">
+            <div class="sub-nav-title">
+                <i class="fas fa-play-circle"></i>
+                仿真模拟
+            </div>
+            <div class="sub-nav-tabs" id="subNavTabs">
+                <button class="sub-nav-tab active" data-tab="simulation" onclick="switchTab('simulation')">
+                    <i class="fas fa-rocket"></i>
+                    <span>实时仿真</span>
+                </button>
+                <button class="sub-nav-tab" data-tab="model-ops" onclick="switchTab('model-ops')" id="modelOpsTab">
+                    <i class="fas fa-wrench"></i>
+                    <span>模型维护</span>
+                </button>
+                <button class="sub-nav-tab" data-tab="data-analysis" onclick="switchTab('data-analysis')" id="dataAnalysisTab" style="display: none;">
+                    <i class="fas fa-chart-line"></i>
+                    <span>数据分析</span>
+                </button>
+            </div>
+            <div class="sub-nav-actions">
+                <button class="btn btn-sm btn-secondary" onclick="showHelp()">
+                    <i class="fas fa-question-circle"></i>
+                    帮助
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab内容容器 -->
+    <div class="tab-content-container">
+        <!-- 实时仿真Tab -->
+        <div class="tab-content active" id="simulation-tab">
+            <div class="main-layout">
+                <!-- 左侧面板：模型加载 -->
+                <div class="sidebar">
+                    <div class="panel-header">
+                        <i class="fas fa-database"></i> 模型加载
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">数据源</div>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="inp-file" class="file-input" accept=".inp,.txt" onchange="handleFileLoad(this)">
+                            <div class="file-input-display" id="file-display">
+                                <i class="fas fa-file-upload"></i>
+                                <div>点击选择 INP 文件</div>
+                                <div style="font-size: 12px; margin-top: 4px;">支持 .inp 和 .txt 格式</div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="loadDefaultModel()" style="width: 100%; margin-bottom: var(--spacing-md);">
+                            <i class="fas fa-download"></i> 加载默认模型 (HKExample.inp)
+                        </button>
+                        
+                        <!-- 模型信息 -->
+                        <div class="model-info" id="model-info" style="display: none;">
+                            <div class="info-item">
+                                <span class="info-label">文件名</span>
+                                <span class="info-value" id="model-name">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">节点数</span>
+                                <span class="info-value" id="node-count">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">管道数</span>
+                                <span class="info-value" id="pipe-count">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">泵站数</span>
+                                <span class="info-value" id="pump-count">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">水塔数</span>
+                                <span class="info-value" id="tank-count">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">图层控制</div>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">显示节点</span>
+                            <input type="checkbox" id="show-nodes" checked onchange="toggleLayer('nodes', this.checked)">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">显示管道</span>
+                            <input type="checkbox" id="show-pipes" checked onchange="toggleLayer('pipes', this.checked)">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">显示泵站</span>
+                            <input type="checkbox" id="show-pumps" checked onchange="toggleLayer('pumps', this.checked)">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">显示水塔</span>
+                            <input type="checkbox" id="show-tanks" checked onchange="toggleLayer('tanks', this.checked)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 中间主体：网络图 -->
+                <div class="main-content">
+                    <div class="simulation-toolbar">
+                        <button class="btn btn-secondary" onclick="resetView()">
+                            <i class="fas fa-search-minus"></i> 重置视图
+                        </button>
+                        <button class="btn btn-secondary" onclick="fitDiagram()">
+                            <i class="fas fa-expand-arrows-alt"></i> 适合视图
+                        </button>
+                        <button class="btn btn-success" onclick="runSimulation()">
+                            <i class="fas fa-play"></i> 运行仿真
+                        </button>
+                        <button class="btn btn-warning" onclick="pauseSimulation()">
+                            <i class="fas fa-pause"></i> 暂停
+                        </button>
+                        <button class="btn btn-danger" onclick="stopSimulation()">
+                            <i class="fas fa-stop"></i> 停止
+                        </button>
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
+                            <span class="parameter-label">仿真状态: </span>
+                            <span id="simulation-status" style="font-weight: 600; color: var(--text-secondary);">就绪</span>
+                            <button class="btn btn-primary" id="uploadModelBtn" onclick="showUploadModelDialog()">
+                                <i class="fas fa-cloud-upload-alt"></i> 上传模型
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <div id="networkDiagram"></div>
+                        <!-- 加载动画 -->
+                        <div class="loading-overlay" id="loading-overlay">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">正在加载模型数据...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧面板：参数设置和结果 -->
+                <div class="right-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-cogs"></i> 仿真参数
+                    </div>
+
+                    <div class="parameter-group">
+                        <div class="parameter-title">基本设置</div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">仿真时长 (小时)</span>
+                            <input type="number" class="parameter-input" value="24" min="1" max="168" id="sim-duration">
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">时间步长 (分钟)</span>
+                            <input type="number" class="parameter-input" value="15" min="1" max="60" id="sim-timestep">
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">计算方法</span>
+                            <select class="parameter-input" style="width: auto;" id="sim-method">
+                                <option value="gradient">梯度法</option>
+                                <option value="newton">牛顿法</option>
+                                <option value="linear">线性化</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="parameter-group">
+                        <div class="parameter-title">求解器设置</div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">精度</span>
+                            <input type="number" class="parameter-input" value="0.001" step="0.001" id="sim-accuracy">
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">最大迭代</span>
+                            <input type="number" class="parameter-input" value="100" min="10" max="1000" id="sim-iterations">
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-label">阻尼系数</span>
+                            <input type="number" class="parameter-input" value="1.0" step="0.1" id="sim-damping">
+                        </div>
+                    </div>
+
+                    <div class="parameter-group">
+                        <div class="parameter-title">输出选项</div>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">节点压力</span>
+                            <input type="checkbox" checked id="output-pressure">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">管道流量</span>
+                            <input type="checkbox" checked id="output-flow">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">水质参数</span>
+                            <input type="checkbox" id="output-quality">
+                        </label>
+                        <label class="parameter-item" style="cursor: pointer;">
+                            <span class="parameter-label">能耗分析</span>
+                            <input type="checkbox" id="output-energy">
+                        </label>
+                    </div>
+
+                    <div class="results-section" id="simulation-results" style="display: none;">
+                        <div class="section-title">仿真结果</div>
+                        <div class="result-item">
+                            <span class="result-label">总体积流量</span>
+                            <span class="result-value" id="result-total-flow">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">平均压力</span>
+                            <span class="result-value" id="result-avg-pressure">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">最大流速</span>
+                            <span class="result-value" id="result-max-velocity">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">总能耗</span>
+                            <span class="result-value" id="result-energy">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">计算时间</span>
+                            <span class="result-value" id="result-calc-time">-</span>
+                        </div>
+                        
+                        <button class="btn btn-secondary" onclick="exportResults()" style="width: 100%; margin-top: var(--spacing-md);">
+                            <i class="fas fa-download"></i> 导出结果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模型运维Tab -->
+        <div class="tab-content" id="model-ops-tab">
+            <div class="ops-layout">
+                <!-- 左侧文件面板 -->
+                <div class="ops-file-panel">
+                    <div class="ops-panel-header">
+                        <i class="fas fa-folder-open"></i> 模型文件管理
+                    </div>
+                    <div class="file-management-section">
+                        <div class="file-list" id="modelFileList">
+                            <!-- 文件列表将动态加载 -->
+                        </div>
+                        <div class="file-upload-section">
+                            <h4><i class="fas fa-upload"></i> 上传新模型</h4>
+                            <div class="file-upload-area" onclick="document.getElementById('modelFileInput').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>点击或拖拽 INP 文件到此处</p>
+                                <input type="file" id="modelFileInput" accept=".inp,.txt" style="display: none;" onchange="handleModelFileUpload(this)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中间文件查看器 -->
+                <div class="ops-viewer-container">
+                    <div class="ops-viewer-header">
+                        <div class="viewer-title">
+                            <i class="fas fa-file-code"></i>
+                            <span id="currentModelFileName">选择文件查看</span>
+                        </div>
+                        <div class="viewer-controls">
+                            <button class="btn btn-sm" onclick="validateModelFile()">
+                                <i class="fas fa-check"></i> 验证模型
+                            </button>
+                            <button class="btn btn-sm" onclick="compareModelVersions()">
+                                <i class="fas fa-code-branch"></i> 版本对比
+                            </button>
+                            <button class="btn btn-sm" onclick="exportModelFile()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ops-viewer-content" id="modelFileContent">
+                        <div class="empty-state">
+                            <i class="fas fa-file-code" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+                            <h3>选择模型文件</h3>
+                            <p>请从左侧选择一个INP文件来查看其内容</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧信息面板 -->
+                <div class="ops-info-panel">
+                    <div class="ops-panel-header">
+                        <i class="fas fa-info-circle"></i> 模型信息
+                    </div>
+                    <div class="model-stats" id="modelStats">
+                        <!-- 模型统计信息 -->
+                    </div>
+                    <div class="model-validation" id="modelValidation">
+                        <!-- 验证结果 -->
+                    </div>
+                    <div class="model-history" id="modelHistory">
+                        <!-- 历史版本 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据分析Tab -->
+        <div class="tab-content" id="data-analysis-tab">
+            <div class="analysis-layout">
+                <div class="analysis-content">
+                    <h2>历史工况数据分析</h2>
+                    <p>数据分析功能正在开发中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="uploadModelDialog" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:2000; align-items:center; justify-content:center;">
+      <div style="background:#fff; border-radius:8px; min-width:340px; max-width:90vw; padding:24px 28px; box-shadow:0 4px 24px rgba(0,0,0,0.12); position:relative;">
+        <div style="font-size:18px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-cloud-upload-alt"></i> 上传/替换模型（.inp）
+          <button onclick="closeUploadModelDialog()" style="position:absolute; right:16px; top:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888;">&times;</button>
+        </div>
+        <input type="file" id="uploadInpFile" accept=".inp" style="margin-bottom:12px;">
+        <div id="uploadModelLog" style="font-size:13px; color:#555; margin-bottom:10px;"></div>
+        <div id="uploadModelSha" style="font-size:13px; color:#888; margin-bottom:10px;"></div>
+        <label style="font-size:14px; color:#333; display:flex; align-items:center; gap:6px; margin-bottom:12px;">
+          <input type="checkbox" id="uploadModelChecked"> 已人工校核
+        </label>
+        <button class="btn btn-primary" id="confirmUploadModelBtn" disabled style="width:100%;">确认上传并替换模型</button>
+      </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="safari-compatibility.js"></script>
+    <script>
+        let diagram = null;
+        let model = null;
+        let simulationTimer = null;
+
+        // 全局变量
+        let myDiagram;
+        let currentData = null;
+        let simulationRunning = false;
+
+        // 初始化GoJS图表和其他基础功能
+        function initializeBasicFeatures() {
+            initDiagram();
+            console.log('基础功能初始化完成');
+        }
+
+        // 初始化GoJS图表
+        function initDiagram() {
+            const $ = go.GraphObject.make;
+
+            myDiagram = $(go.Diagram, "networkDiagram", {
+                "undoManager.isEnabled": true,
+                initialContentAlignment: go.Spot.Center,
+                layout: $(go.ForceDirectedLayout, {
+                    springLength: 100,
+                    springStiffness: 0.05,
+                    electricalCharge: 150,
+                    iterations: 100
+                })
+            });
+
+            // 节点模板
+            myDiagram.nodeTemplate = $(go.Node, "Auto",
+                $(go.Shape, "Circle", {
+                    fill: "lightblue",
+                    stroke: "navy",
+                    strokeWidth: 2
+                }, new go.Binding("fill", "type", function(type) {
+                    switch(type) {
+                        case "junction": return "lightblue";
+                        case "tank": return "orange";
+                        case "reservoir": return "green";
+                        default: return "lightblue";
+                    }
+                })),
+                $(go.TextBlock, {
+                    margin: 8,
+                    font: "10px sans-serif",
+                    color: "black"
+                }, new go.Binding("text", "id"))
+            );
+
+            // 管道模板
+            myDiagram.linkTemplate = $(go.Link,
+                $(go.Shape, {
+                    strokeWidth: 3,
+                    stroke: "blue"
+                }, new go.Binding("stroke", "status", function(status) {
+                    switch(status) {
+                        case "normal": return "blue";
+                        case "warning": return "orange";
+                        case "critical": return "red";
+                        default: return "blue";
+                    }
+                })),
+                $(go.TextBlock, {
+                    segmentIndex: 0,
+                    segmentFraction: 0.5,
+                    font: "8px sans-serif",
+                    background: "white",
+                    margin: 2
+                }, new go.Binding("text", "id"))
+            );
+        }
+
+        // 加载默认模型
+        function loadDefaultModel() {
+            showLoading();
+            
+            fetch('HKExample.inp')
+                .then(response => response.text())
+                .then(data => {
+                    parseInpFile(data, 'HKExample.inp');
+                })
+                .catch(error => {
+                    console.error('加载默认模型失败:', error);
+                    if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('加载默认模型失败，将使用示例数据', 'warning');
+            }
+                    // 使用示例数据
+                    createExampleNetwork();
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // 处理文件加载
+        function handleFileLoad(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            showLoading();
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parseInpFile(e.target.result, file.name);
+                    
+                    // 更新文件显示
+                    const display = document.getElementById('file-display');
+                    display.classList.add('has-file');
+                    display.innerHTML = `
+                        <i class="fas fa-file-check"></i>
+                        <div>${file.name}</div>
+                        <div style="font-size: 12px; margin-top: 4px;">文件已加载</div>
+                    `;
+                } catch (error) {
+                    console.error('解析文件失败:', error);
+                    if (typeof NotificationManager !== 'undefined') {
+                        NotificationManager.show('文件解析失败', 'error');
+                    }
+                } finally {
+                    hideLoading();
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 解析INP文件
+        function parseInpFile(content, filename) {
+            const data = {
+                filename: filename,
+                nodes: [],
+                links: []
+            };
+
+            const lines = content.split('\n');
+            let currentSection = '';
+            const nodeMap = {};
+
+            for (let line of lines) {
+                line = line.trim();
+                if (line.startsWith('[') && line.endsWith(']')) {
+                    currentSection = line.toLowerCase();
+                    continue;
+                }
+                
+                if (!line || line.startsWith(';')) continue;
+
+                const parts = line.split(/\s+/);
+                
+                switch (currentSection) {
+                    case '[junctions]':
+                        if (parts.length >= 2) {
+                            const node = {
+                                key: parts[0],
+                                id: parts[0],
+                                type: 'junction',
+                                elevation: parseFloat(parts[1]) || 0,
+                                demand: parseFloat(parts[2]) || 0
+                            };
+                            data.nodes.push(node);
+                            nodeMap[parts[0]] = node;
+                        }
+                        break;
+                    
+                    case '[reservoirs]':
+                        if (parts.length >= 2) {
+                            const node = {
+                                key: parts[0],
+                                id: parts[0],
+                                type: 'reservoir',
+                                head: parseFloat(parts[1]) || 0
+                            };
+                            data.nodes.push(node);
+                            nodeMap[parts[0]] = node;
+                        }
+                        break;
+                        
+                    case '[tanks]':
+                        if (parts.length >= 4) {
+                            const node = {
+                                key: parts[0],
+                                id: parts[0],
+                                type: 'tank',
+                                elevation: parseFloat(parts[1]) || 0,
+                                initLevel: parseFloat(parts[2]) || 0,
+                                minLevel: parseFloat(parts[3]) || 0,
+                                maxLevel: parseFloat(parts[4]) || 0
+                            };
+                            data.nodes.push(node);
+                            nodeMap[parts[0]] = node;
+                        }
+                        break;
+                    
+                    case '[pipes]':
+                        if (parts.length >= 6) {
+                            data.links.push({
+                                key: parts[0],
+                                id: parts[0],
+                                from: parts[1],
+                                to: parts[2],
+                                length: parseFloat(parts[3]),
+                                diameter: parseFloat(parts[4]),
+                                roughness: parseFloat(parts[5]),
+                                status: Math.random() > 0.9 ? 'warning' : 'normal'
+                            });
+                        }
+                        break;
+                        
+                    case '[pumps]':
+                        if (parts.length >= 3) {
+                            data.links.push({
+                                key: parts[0],
+                                id: parts[0],
+                                from: parts[1],
+                                to: parts[2],
+                                type: 'pump',
+                                status: 'normal'
+                            });
+                        }
+                        break;
+                        
+                    case '[valves]':
+                        if (parts.length >= 5) {
+                            data.links.push({
+                                key: parts[0],
+                                id: parts[0],
+                                from: parts[1],
+                                to: parts[2],
+                                diameter: parseFloat(parts[3]),
+                                type: parts[4],
+                                status: 'normal'
+                            });
+                        }
+                        break;
+                }
+            }
+
+            currentData = data;
+            updateModelInfo(data);
+            renderNetwork(data);
+            
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show(`模型 ${filename} 加载成功`, 'success');
+            }
+        }
+
+        // 创建示例网络
+        function createExampleNetwork() {
+            const data = {
+                filename: 'Example Network',
+                nodes: [
+                    { key: "N1", id: "N1", type: "reservoir" },
+                    { key: "N2", id: "N2", type: "junction" },
+                    { key: "N3", id: "N3", type: "junction" },
+                    { key: "N4", id: "N4", type: "junction" },
+                    { key: "T1", id: "T1", type: "tank" }
+                ],
+                links: [
+                    { key: "P1", id: "P1", from: "N1", to: "N2", status: "normal" },
+                    { key: "P2", id: "P2", from: "N2", to: "N3", status: "normal" },
+                    { key: "P3", id: "P3", from: "N3", to: "N4", status: "warning" },
+                    { key: "P4", id: "P4", from: "N2", to: "T1", status: "normal" }
+                ]
+            };
+
+            currentData = data;
+            updateModelInfo(data);
+            renderNetwork(data);
+            
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('已加载示例网络', 'info');
+            }
+        }
+
+        // 更新模型信息
+        function updateModelInfo(data) {
+            document.getElementById('model-name').textContent = data.filename;
+            document.getElementById('node-count').textContent = data.nodes.length;
+            document.getElementById('pipe-count').textContent = data.links.filter(l => !l.type || l.type === 'pipe').length;
+            document.getElementById('pump-count').textContent = data.links.filter(l => l.type === 'pump').length;
+            document.getElementById('tank-count').textContent = data.nodes.filter(n => n.type === 'tank').length;
+            document.getElementById('model-info').style.display = 'block';
+        }
+
+        // 渲染网络
+        function renderNetwork(data) {
+            if (!myDiagram) return;
+
+            myDiagram.model = new go.GraphLinksModel(data.nodes, data.links);
+            fitDiagram();
+        }
+
+        // 切换图层显示
+        function toggleLayer(layerName, visible) {
+            if (!myDiagram || !currentData) return;
+
+            // 这里可以实现图层控制逻辑
+            switch (layerName) {
+                case 'nodes':
+                    myDiagram.nodes.each(node => {
+                        node.visible = visible;
+                    });
+                    break;
+                case 'pipes':
+                    myDiagram.links.each(link => {
+                        if (!link.data.type || link.data.type === 'pipe') {
+                            link.visible = visible;
+                        }
+                    });
+                    break;
+                case 'pumps':
+                    myDiagram.links.each(link => {
+                        if (link.data.type === 'pump') {
+                            link.visible = visible;
+                        }
+                    });
+                    break;
+                case 'tanks':
+                    myDiagram.nodes.each(node => {
+                        if (node.data.type === 'tank') {
+                            node.visible = visible;
+                        }
+                    });
+                    break;
+            }
+        }
+
+        // 重置视图
+        function resetView() {
+            if (myDiagram) {
+                myDiagram.zoomToFit();
+                myDiagram.centerRect(myDiagram.documentBounds);
+            }
+        }
+
+        // 适合视图
+        function fitDiagram() {
+            if (myDiagram) {
+                myDiagram.zoomToFit();
+            }
+        }
+
+        // 运行仿真
+        function runSimulation() {
+            if (simulationRunning) return;
+
+            simulationRunning = true;
+            document.getElementById('simulation-status').textContent = '运行中...';
+            document.getElementById('simulation-status').style.color = 'var(--success)';
+            
+            // 模拟仿真过程
+            let progress = 0;
+            simulationTimer = setInterval(() => {
+                progress += Math.random() * 10;
+                
+                if (progress >= 100) {
+                    stopSimulation();
+                    showResults();
+                } else {
+                    document.getElementById('simulation-status').textContent = `运行中... ${progress.toFixed(1)}%`;
+                }
+            }, 500);
+
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('仿真已开始', 'success');
+            }
+        }
+
+        // 暂停仿真
+        function pauseSimulation() {
+            if (simulationTimer) {
+                clearInterval(simulationTimer);
+                simulationTimer = null;
+                document.getElementById('simulation-status').textContent = '已暂停';
+                document.getElementById('simulation-status').style.color = 'var(--warning)';
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('仿真已暂停', 'info');
+                }
+            }
+        }
+
+        // 停止仿真
+        function stopSimulation() {
+            simulationRunning = false;
+            if (simulationTimer) {
+                clearInterval(simulationTimer);
+                simulationTimer = null;
+            }
+            document.getElementById('simulation-status').textContent = '已完成';
+            document.getElementById('simulation-status').style.color = 'var(--text-secondary)';
+        }
+
+        // 显示结果
+        function showResults() {
+            const results = {
+                totalFlow: (Math.random() * 1000 + 500).toFixed(1) + ' L/s',
+                avgPressure: (Math.random() * 20 + 30).toFixed(1) + ' m',
+                maxVelocity: (Math.random() * 3 + 1).toFixed(2) + ' m/s',
+                energy: (Math.random() * 100 + 50).toFixed(1) + ' kWh',
+                calcTime: (Math.random() * 10 + 5).toFixed(1) + ' s'
+            };
+
+            document.getElementById('result-total-flow').textContent = results.totalFlow;
+            document.getElementById('result-avg-pressure').textContent = results.avgPressure;
+            document.getElementById('result-max-velocity').textContent = results.maxVelocity;
+            document.getElementById('result-energy').textContent = results.energy;
+            document.getElementById('result-calc-time').textContent = results.calcTime;
+            
+            document.getElementById('simulation-results').style.display = 'block';
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('仿真完成，查看结果', 'success');
+            }
+        }
+
+        // 导出结果
+        function exportResults() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('结果导出功能开发中...', 'info');
+            }
+        }
+
+        // 显示加载动画
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('show');
+        }
+
+        // 隐藏加载动画
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+
+        // ====== 模型运维入口相关 ======
+        // 打开上传弹窗
+        function showUploadModelDialog() {
+          document.getElementById('uploadModelDialog').style.display = 'flex';
+          document.getElementById('uploadInpFile').value = '';
+          document.getElementById('uploadModelLog').textContent = '';
+          document.getElementById('uploadModelSha').textContent = '';
+          document.getElementById('confirmUploadModelBtn').disabled = true;
+          document.getElementById('uploadModelChecked').checked = getModelCheckedFlag();
+        }
+        // 关闭上传弹窗
+        function closeUploadModelDialog() {
+          document.getElementById('uploadModelDialog').style.display = 'none';
+        }
+        // 获取人工校核标记
+        function getModelCheckedFlag() {
+          return localStorage.getItem('model_checked_flag') === 'true';
+        }
+        // 设置人工校核标记
+        function setModelCheckedFlag(flag) {
+          localStorage.setItem('model_checked_flag', flag ? 'true' : 'false');
+        }
+        // 监听人工校核勾选
+        document.getElementById('uploadModelChecked').addEventListener('change', function(e) {
+          setModelCheckedFlag(e.target.checked);
+        });
+        // 监听文件选择，计算SHA256并展示
+        document.getElementById('uploadInpFile').addEventListener('change', async function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (!file.name.endsWith('.inp')) {
+            document.getElementById('uploadModelLog').textContent = '仅支持 .inp 格式文件';
+            document.getElementById('confirmUploadModelBtn').disabled = true;
+            return;
+          }
+          document.getElementById('uploadModelLog').textContent = `文件名: ${file.name}`;
+          // 计算SHA256
+          const arrayBuffer = await file.arrayBuffer();
+          const hash = sha256(arrayBuffer);
+          document.getElementById('uploadModelSha').textContent = `SHA256: ${hash}`;
+          document.getElementById('confirmUploadModelBtn').disabled = false;
+          // 记录日志
+          const now = new Date();
+          const log = `上传时间: ${now.toLocaleString()}\nSHA256: ${hash}`;
+          document.getElementById('uploadModelLog').textContent += `\n${log}`;
+          // 保存到本地日志
+          localStorage.setItem('model_update_log', JSON.stringify({
+            filename: file.name,
+            time: now.toISOString(),
+            sha: hash,
+            checked: getModelCheckedFlag()
+          }));
+        });
+        // 确认上传并替换模型
+        document.getElementById('confirmUploadModelBtn').addEventListener('click', function() {
+          const fileInput = document.getElementById('uploadInpFile');
+          const file = fileInput.files[0];
+          if (!file) return;
+          // 读取并加载模型
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              parseInpFile(e.target.result, file.name);
+              if (typeof NotificationManager !== 'undefined') {
+                  NotificationManager.show('新模型已上传并替换', 'success');
+              }
+              closeUploadModelDialog();
+            } catch (err) {
+                              if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('模型解析失败', 'error');
+                }
+            }
+          };
+          reader.readAsText(file);
+        });
+        // 页面加载时显示最新模型日志
+        function showLatestModelLog() {
+          const log = localStorage.getItem('model_update_log');
+          if (log) {
+            const info = JSON.parse(log);
+            let msg = `最新模型: ${info.filename}\n上传时间: ${new Date(info.time).toLocaleString()}\nSHA256: ${info.sha}`;
+            if (info.checked) msg += '\n[已人工校核]';
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show(msg, 'info', 6000);
+            }
+          }
+        }
+
+        // ===========================
+        // 新增：二级导航和tab管理
+        // ===========================
+        
+        // Tab切换功能
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.sub-nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 激活选中的tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // 根据tab执行相应的初始化
+            switch(tabName) {
+                case 'simulation':
+                    initSimulationTab();
+                    break;
+                case 'model-ops':
+                    initModelOpsTab();
+                    break;
+                case 'data-analysis':
+                    initDataAnalysisTab();
+                    break;
+            }
+            
+            // 记录操作日志
+            if (typeof OperationLogger !== 'undefined') {
+                OperationLogger.log('切换Tab', { tab: tabName });
+            }
+        }
+        
+        // 权限检查和tab显示控制
+        function initializeTabPermissions() {
+            // 检查必要的权限管理对象是否存在
+            if (typeof UserPermissions === 'undefined') {
+                console.log('UserPermissions未加载，使用默认tab设置');
+                // 默认只显示实时仿真tab
+                const modelOpsTab = document.getElementById('modelOpsTab');
+                const dataAnalysisTab = document.getElementById('dataAnalysisTab');
+                if (modelOpsTab) modelOpsTab.style.display = 'none';
+                if (dataAnalysisTab) dataAnalysisTab.style.display = 'none';
+                return;
+            }
+
+            const userInfo = UserPermissions.currentUser;
+            if (!userInfo) {
+                // 没有用户信息时，隐藏需要权限的tab
+                const modelOpsTab = document.getElementById('modelOpsTab');
+                const dataAnalysisTab = document.getElementById('dataAnalysisTab');
+                if (modelOpsTab) modelOpsTab.style.display = 'none';
+                if (dataAnalysisTab) dataAnalysisTab.style.display = 'none';
+                
+                // 仅在NotificationManager可用时显示提示
+                if (typeof NotificationManager !== 'undefined') {
+                    showLoginGuide();
+                }
+                return;
+            }
+            
+            const modelOpsTab = document.getElementById('modelOpsTab');
+            const dataAnalysisTab = document.getElementById('dataAnalysisTab');
+            
+            // 检查模型运维权限（建模工程师、系统管理员）
+            if (UserPermissions.hasPermission('model') || 
+                UserPermissions.hasPermission('all') ||
+                userInfo.role === 'engineer' ||
+                userInfo.role === 'admin') {
+                if (modelOpsTab) modelOpsTab.style.display = 'flex';
+            }
+            
+            // 检查数据分析权限（数据分析师、管理决策层、系统管理员）
+            if (UserPermissions.hasPermission('analyze') ||
+                UserPermissions.hasPermission('all') ||
+                userInfo.role === 'analyst' ||
+                userInfo.role === 'executive' ||
+                userInfo.role === 'admin') {
+                if (dataAnalysisTab) dataAnalysisTab.style.display = 'flex';
+            }
+            
+            console.log(`用户 ${userInfo.name}(${userInfo.role}) 的tab权限已设置`);
+        }
+        
+        // 实时仿真Tab初始化
+        function initSimulationTab() {
+            // 初始化基础功能
+            initializeBasicFeatures();
+            
+            // 原有的仿真功能初始化
+            if (typeof initializeNetworkDiagram === 'function') {
+                initializeNetworkDiagram();
+            } else {
+                // 如果原函数不存在，调用现有的初始化
+                if (typeof initDiagram === 'function') {
+                    initDiagram();
+                }
+                if (typeof loadDefaultModel === 'function') {
+                    loadDefaultModel();
+                }
+            }
+            if (typeof OperationLogger !== 'undefined') {
+                OperationLogger.log('激活实时仿真Tab');
+            }
+        }
+        
+        // 模型运维Tab初始化
+        function initModelOpsTab() {
+            loadModelFileList();
+            setupModelOpsEventListeners();
+        }
+        
+        // 数据分析Tab初始化
+        function initDataAnalysisTab() {
+            // 数据分析功能初始化（待开发）
+            console.log('数据分析Tab已激活');
+        }
+        
+        // ===========================
+        // 模型运维功能
+        // ===========================
+        
+        let modelFiles = [
+            {
+                id: 'hk-example',
+                name: 'HK Example.inp',
+                size: '45.2 KB',
+                status: 'loaded',
+                lastModified: '2024-12-19 14:30',
+                path: 'DATA/HK Example.inp'
+            },
+            {
+                id: 'hk-chinese',
+                name: '香港咸水管网Example.inp', 
+                size: '52.1 KB',
+                status: 'validated',
+                lastModified: '2024-12-18 16:45',
+                path: 'DATA/香港咸水管网Example.inp'
+            }
+        ];
+        
+        // 加载模型文件列表
+        function loadModelFileList() {
+            const fileList = document.getElementById('modelFileList');
+            if (!fileList) return;
+            
+            fileList.innerHTML = modelFiles.map(file => `
+                <div class="file-item ${file.status === 'loaded' ? 'active' : ''}" 
+                     data-file-id="${file.id}" 
+                     onclick="selectModelFile('${file.id}')">
+                    <div class="file-icon">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${file.size} • ${file.lastModified}</div>
+                    </div>
+                    <span class="status-indicator ${file.status}">
+                        ${getStatusIcon(file.status)} ${getStatusText(file.status)}
+                    </span>
+                </div>
+            `).join('');
+        }
+        
+        // 选择模型文件
+        function selectModelFile(fileId) {
+            // 更新选中状态
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-file-id="${fileId}"]`).classList.add('active');
+            
+            // 加载文件内容
+            const file = modelFiles.find(f => f.id === fileId);
+            if (file) {
+                loadModelFileContent(file);
+                updateModelFileInfo(file);
+                OperationLogger.log('选择模型文件', { fileName: file.name });
+            }
+        }
+        
+        // 加载模型文件内容
+        async function loadModelFileContent(file) {
+            const contentDiv = document.getElementById('modelFileContent');
+            const fileNameSpan = document.getElementById('currentModelFileName');
+            
+            if (!contentDiv || !fileNameSpan) return;
+            
+            fileNameSpan.textContent = file.name;
+            contentDiv.innerHTML = '<div class="loading-spinner"></div>';
+            
+            try {
+                // 模拟加载文件内容（实际应该从服务器获取）
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const content = await loadINPFileContent(file.path);
+                displayModelFileContent(content, contentDiv);
+                
+            } catch (error) {
+                console.error('加载文件失败:', error);
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 16px;"></i>
+                        <h3>加载失败</h3>
+                        <p>无法加载文件内容：${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 显示模型文件内容
+        function displayModelFileContent(content, container) {
+            const lines = content.split('\n');
+            const formattedContent = lines.map((line, index) => {
+                const lineNumber = index + 1;
+                const formattedLine = formatINPLine(line);
+                return `<div class="code-line">
+                    <span class="line-number">${lineNumber}</span>${formattedLine}
+                </div>`;
+            }).join('');
+            
+            container.innerHTML = formattedContent;
+        }
+        
+        // 格式化INP文件行
+        function formatINPLine(line) {
+            // 简单的语法高亮
+            if (line.trim().startsWith(';')) {
+                return `<span class="comment">${escapeHtml(line)}</span>`;
+            }
+            if (line.trim().startsWith('[') && line.trim().endsWith(']')) {
+                return `<span class="section">${escapeHtml(line)}</span>`;
+            }
+            // 数字高亮
+            line = line.replace(/\b\d+\.?\d*\b/g, '<span class="number">$&</span>');
+            return escapeHtml(line);
+        }
+        
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 加载INP文件内容（模拟）
+        async function loadINPFileContent(path) {
+            // 这里应该从实际文件路径加载，现在返回示例内容
+            return `[TITLE]
+;香港咸水管网示例模型
+;Created: 2024-12-19
+
+[JUNCTIONS]
+;ID    Elev    Demand    Pattern
+J1     100     10        1
+J2     95      15        1
+J3     90      20        2
+
+[RESERVOIRS]
+;ID    Head    Pattern
+R1     120     
+
+[TANKS]
+;ID    Elevation    InitLevel    MinLevel    MaxLevel    Diameter
+T1     110          10           2           15          50
+
+[PIPES]
+;ID    Node1    Node2    Length    Diameter    Roughness
+P1     R1       J1       1000      200         100
+P2     J1       J2       800       150         100
+P3     J2       J3       600       150         100
+
+[PUMPS]
+;ID    Node1    Node2    Parameters
+PU1    T1       J1       HEAD 1
+
+[PATTERNS]
+;ID    Multipliers
+1      1.0  0.8  0.6  0.5  0.4  0.4
+1      0.6  0.8  1.0  1.2  1.2  1.0
+1      1.0  1.2  1.4  1.2  1.0  0.8
+1      0.8  0.6  0.5  0.4  0.4  0.4
+
+2      0.5  0.3  0.2  0.1  0.1  0.2
+2      0.4  0.6  0.8  1.0  1.2  1.4
+2      1.6  1.4  1.2  1.0  0.8  0.6
+2      0.4  0.2  0.1  0.1  0.2  0.3
+
+[END]`;
+        }
+        
+        // 更新模型文件信息
+        function updateModelFileInfo(file) {
+            const statsDiv = document.getElementById('modelStats');
+            if (!statsDiv) return;
+            
+            // 模拟解析统计信息
+            const stats = {
+                junctions: Math.floor(Math.random() * 50) + 20,
+                pipes: Math.floor(Math.random() * 60) + 30,
+                pumps: Math.floor(Math.random() * 5) + 1,
+                tanks: Math.floor(Math.random() * 3) + 1,
+                patterns: Math.floor(Math.random() * 10) + 5
+            };
+            
+            statsDiv.innerHTML = `
+                <h4><i class="fas fa-chart-bar"></i> 统计信息</h4>
+                <div class="info-item">
+                    <span class="info-label">节点数量</span>
+                    <span class="info-value">${stats.junctions}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">管道数量</span>
+                    <span class="info-value">${stats.pipes}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">泵站数量</span>
+                    <span class="info-value">${stats.pumps}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">水塔数量</span>
+                    <span class="info-value">${stats.tanks}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">模式数量</span>
+                    <span class="info-value">${stats.patterns}</span>
+                </div>
+            `;
+        }
+        
+        // 设置模型运维事件监听器
+        function setupModelOpsEventListeners() {
+            // 文件拖拽上传
+            const uploadArea = document.querySelector('.file-upload-area');
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('drag-over');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('drag-over');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                    handleModelFileUpload({ files: e.dataTransfer.files });
+                });
+            }
+        }
+        
+        // 处理模型文件上传
+        function handleModelFileUpload(input) {
+            const files = input.files || input;
+            if (!files.length) return;
+            
+            const file = files[0];
+            if (!file.name.endsWith('.inp') && !file.name.endsWith('.txt')) {
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('请选择 .inp 或 .txt 格式的文件', 'error');
+                }
+                return;
+            }
+            
+            // 模拟上传过程
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('正在上传模型文件...', 'info');
+            }
+            
+            setTimeout(() => {
+                const newFile = {
+                    id: 'uploaded_' + Date.now(),
+                    name: file.name,
+                    size: formatFileSize(file.size),
+                    status: 'uploading',
+                    lastModified: new Date().toLocaleString(),
+                    path: 'uploaded/' + file.name
+                };
+                
+                modelFiles.unshift(newFile);
+                loadModelFileList();
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('模型文件上传成功！', 'success');
+                }
+                if (typeof OperationLogger !== 'undefined') {
+                    OperationLogger.log('上传模型文件', { fileName: file.name, size: file.size });
+                }
+            }, 1500);
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        // 获取状态图标
+        function getStatusIcon(status) {
+            const icons = {
+                loaded: '<i class="fas fa-check-circle"></i>',
+                validated: '<i class="fas fa-shield-alt"></i>',
+                uploading: '<i class="fas fa-spinner fa-spin"></i>',
+                error: '<i class="fas fa-exclamation-triangle"></i>'
+            };
+            return icons[status] || '<i class="fas fa-circle"></i>';
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const texts = {
+                loaded: '已加载',
+                validated: '已验证',
+                uploading: '上传中',
+                error: '错误'
+            };
+            return texts[status] || '未知';
+        }
+        
+        // 验证模型文件
+        function validateModelFile() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('正在验证模型文件...', 'info');
+            }
+            setTimeout(() => {
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('模型验证通过！', 'success');
+                }
+                if (typeof OperationLogger !== 'undefined') {
+                    OperationLogger.log('验证模型文件');
+                }
+            }, 2000);
+        }
+        
+        // 版本对比
+        function compareModelVersions() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('版本对比功能正在开发中...', 'info');
+            }
+        }
+        
+        // 导出模型文件
+        function exportModelFile() {
+            const fileName = document.getElementById('currentModelFileName').textContent;
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show(`正在导出 ${fileName}...`, 'info');
+            }
+            setTimeout(() => {
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('模型文件导出成功！', 'success');
+                }
+                if (typeof OperationLogger !== 'undefined') {
+                    OperationLogger.log('导出模型文件', { fileName });
+                }
+            }, 1500);
+        }
+        
+        // 显示帮助信息
+        function showHelp() {
+            const helpContent = `
+                <div style="max-width: 500px;">
+                    <h3><i class="fas fa-question-circle"></i> 仿真模拟帮助</h3>
+                    <div style="margin: 16px 0;">
+                        <h4>实时仿真</h4>
+                        <p>• 上传或选择INP模型文件<br>
+                        • 设置仿真参数<br>
+                        • 运行水力计算<br>
+                        • 查看仿真结果</p>
+                        
+                        <h4>模型运维</h4>
+                        <p>• 管理模型文件<br>
+                        • 验证模型完整性<br>
+                        • 查看历史版本<br>
+                        • 导出模型数据</p>
+                        
+                        <h4>数据分析</h4>
+                        <p>• 历史工况分析<br>
+                        • 性能统计报告<br>
+                        • 趋势预测<br>
+                        • 数据可视化</p>
+                    </div>
+                </div>
+            `;
+            
+            // 这里应该显示一个模态框，简化处理
+            NotificationManager.show('帮助信息已准备，请查看控制台或文档', 'info');
+            console.log('仿真模拟帮助信息', helpContent);
+        }
+        
+        // ===========================
+        // 页面初始化
+        // ===========================
+        
+        // 页面初始化函数
+        function initializeSimulationPage() {
+            // 检查必要的对象是否存在
+            if (typeof NavigationManager === 'undefined' || 
+                typeof NotificationManager === 'undefined' || 
+                typeof OperationLogger === 'undefined' ||
+                typeof UserPermissions === 'undefined') {
+                console.log('等待common.js加载完成...');
+                setTimeout(initializeSimulationPage, 100);
+                return;
+            }
+
+            try {
+                // 初始化通用功能
+                if (typeof ThemeManager !== 'undefined') {
+                    ThemeManager.init();
+                }
+                if (typeof TimeManager !== 'undefined') {
+                    TimeManager.init();
+                }
+                OperationLogger.init();
+                NavigationManager.init();
+                
+                // 初始化tab权限
+                initializeTabPermissions();
+                
+                // 检查URL hash，决定激活哪个tab
+                const hash = window.location.hash.replace('#', '');
+                if (hash === 'model-ops') {
+                    // 检查用户是否有权限访问模型运维
+                    const userInfo = UserPermissions.currentUser;
+                    if (userInfo && (UserPermissions.hasPermission('model') || 
+                        UserPermissions.hasPermission('all') ||
+                        userInfo.role === 'engineer' ||
+                        userInfo.role === 'admin')) {
+                        switchTab('model-ops');
+                    } else {
+                        // 权限不足，显示提示并回到默认tab
+                        NotificationManager.show('权限不足，无法访问模型运维功能', 'warning');
+                        switchTab('simulation');
+                    }
+                } else if (hash === 'data-analysis') {
+                    const userInfo = UserPermissions.currentUser;
+                    if (userInfo && (UserPermissions.hasPermission('analyze') ||
+                        UserPermissions.hasPermission('all') ||
+                        userInfo.role === 'analyst' ||
+                        userInfo.role === 'executive' ||
+                        userInfo.role === 'admin')) {
+                        switchTab('data-analysis');
+                    } else {
+                        NotificationManager.show('权限不足，无法访问数据分析功能', 'warning');
+                        switchTab('simulation');
+                    }
+                } else {
+                    // 默认激活实时仿真tab
+                    switchTab('simulation');
+                }
+                
+                // 监听hash变化
+                window.addEventListener('hashchange', function() {
+                    const newHash = window.location.hash.replace('#', '');
+                    if (['simulation', 'model-ops', 'data-analysis'].includes(newHash)) {
+                        switchTab(newHash);
+                    }
+                });
+                
+                console.log('仿真模拟页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                // 降级处理 - 显示基本页面
+                setTimeout(() => {
+                    // 至少显示基本的仿真tab
+                    switchTab('simulation');
+                }, 500);
+            }
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeSimulationPage);
+        } else {
+            initializeSimulationPage();
+        }
+
+        // 显示登录引导
+        function showLoginGuide() {
+            // 不再自动创建演示用户，直接引导到登录页面
+            NotificationManager.show('请先登录系统以访问完整功能', 'warning', 3000);
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
+        }
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

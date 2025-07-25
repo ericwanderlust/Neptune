@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 调度工作流编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        body {
+            overflow: hidden; /* 防止拖拽时出现滚动条 */
+        }
+
+        .workflow-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            height: calc(100vh - 60px);
+        }
+
+        /* 左侧组件面板 */
+        .components-panel {
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .component-category {
+            padding: var(--spacing-md);
+        }
+
+        .category-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+        }
+
+        .component-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            cursor: grab;
+            transition: all var(--transition-fast);
+            user-select: none;
+        }
+
+        .component-item:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .component-item:active {
+            cursor: grabbing;
+        }
+
+        .component-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: white;
+        }
+
+        .component-icon.trigger {
+            background: var(--success);
+        }
+
+        .component-icon.action {
+            background: var(--primary);
+        }
+
+        .component-icon.condition {
+            background: var(--warning);
+        }
+
+        .component-icon.end {
+            background: var(--danger);
+        }
+
+        .component-label {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        /* 中间画布区域 */
+        .canvas-container {
+            position: relative;
+            background: 
+                radial-gradient(circle, var(--text-tertiary) 1px, transparent 1px),
+                var(--bg-secondary);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+
+        .canvas-toolbar {
+            position: absolute;
+            top: var(--spacing-md);
+            left: var(--spacing-md);
+            display: flex;
+            gap: var(--spacing-sm);
+            z-index: 100;
+        }
+
+        .canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        /* 工作流节点 */
+        .workflow-node {
+            position: absolute;
+            min-width: 120px;
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            cursor: move;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-fast);
+            user-select: none;
+        }
+
+        .workflow-node:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .workflow-node.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 144, 184, 0.2);
+        }
+
+        .workflow-node.dragging {
+            opacity: 0.8;
+            transform: rotate(5deg);
+            z-index: 1000;
+        }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .node-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: white;
+        }
+
+        .node-title {
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            color: var(--text-primary);
+        }
+
+        .node-content {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* 连接点 */
+        .connection-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border: 2px solid var(--bg-primary);
+            border-radius: 50%;
+            cursor: crosshair;
+            transition: all var(--transition-fast);
+        }
+
+        .connection-point:hover {
+            width: 16px;
+            height: 16px;
+            margin: -2px;
+            background: var(--success);
+        }
+
+        .connection-point.output {
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .connection-point.input {
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 连接线 */
+        .connection-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line path {
+            stroke: var(--primary);
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .connection-line.active path {
+            stroke: var(--success);
+            stroke-width: 3;
+            animation: flowAnimation 2s linear infinite;
+        }
+
+        @keyframes flowAnimation {
+            0% { stroke-dasharray: 10 5; stroke-dashoffset: 0; }
+            100% { stroke-dasharray: 10 5; stroke-dashoffset: 15; }
+        }
+
+        /* 右侧属性面板 */
+        .properties-panel {
+            background: var(--bg-primary);
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+
+        .properties-content {
+            padding: var(--spacing-md);
+        }
+
+        .property-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .property-group-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .property-item {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .property-label {
+            display: block;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .property-input {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+        }
+
+        .property-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(74, 144, 184, 0.1);
+        }
+
+        /* 迷你地图 */
+        .minimap {
+            position: absolute;
+            bottom: var(--spacing-md);
+            right: var(--spacing-md);
+            width: 200px;
+            height: 120px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .minimap-content {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            position: relative;
+        }
+
+        .minimap-node {
+            position: absolute;
+            background: var(--primary);
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+
+        .minimap-viewport {
+            position: absolute;
+            border: 2px solid var(--warning);
+            background: rgba(255, 165, 2, 0.1);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .workflow-layout {
+                grid-template-columns: 200px 1fr 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workflow-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60px 1fr 200px;
+            }
+            
+            .components-panel,
+            .properties-panel {
+                border: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <button class="btn btn-sm btn-secondary" onclick="goBack()" style="margin-right: 16px;">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <button class="btn btn-sm" onclick="saveWorkflow()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="executeWorkflow()">
+                    <i class="fas fa-play"></i> 执行
+                </button>
+                <div class="user-info">
+                    <!-- 用户信息将由NavigationManager生成 -->
+                </div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主布局 -->
+    <div class="workflow-layout">
+        <!-- 左侧组件面板 -->
+        <div class="components-panel">
+            <div class="panel-header">
+                <i class="fas fa-puzzle-piece"></i> 工作流组件
+    </div>
+            
+            <div class="component-category">
+                <div class="category-title">触发器</div>
+                <div class="component-item" draggable="true" data-type="trigger" data-subtype="alarm">
+                    <div class="component-icon trigger">
+                        <i class="fas fa-exclamation"></i>
+                </div>
+                    <span class="component-label">告警触发</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="trigger" data-subtype="schedule">
+                    <div class="component-icon trigger">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <span class="component-label">定时触发</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="trigger" data-subtype="manual">
+                    <div class="component-icon trigger">
+                        <i class="fas fa-hand-pointer"></i>
+                    </div>
+                    <span class="component-label">手动触发</span>
+                </div>
+            </div>
+
+            <div class="component-category">
+                <div class="category-title">条件判断</div>
+                <div class="component-item" draggable="true" data-type="condition" data-subtype="threshold">
+                    <div class="component-icon condition">
+                        <i class="fas fa-code-branch"></i>
+                </div>
+                    <span class="component-label">阈值判断</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="condition" data-subtype="logic">
+                    <div class="component-icon condition">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <span class="component-label">逻辑判断</span>
+                </div>
+            </div>
+
+            <div class="component-category">
+                <div class="category-title">执行动作</div>
+                <div class="component-item" draggable="true" data-type="action" data-subtype="valve">
+                    <div class="component-icon action">
+                        <i class="fas fa-cog"></i>
+                </div>
+                    <span class="component-label">阀门控制</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="action" data-subtype="pump">
+                    <div class="component-icon action">
+                        <i class="fas fa-fan"></i>
+                    </div>
+                    <span class="component-label">水泵控制</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="action" data-subtype="notification">
+                    <div class="component-icon action">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <span class="component-label">发送通知</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="action" data-subtype="log">
+                    <div class="component-icon action">
+                        <i class="fas fa-file-alt"></i>
+            </div>
+                    <span class="component-label">记录日志</span>
+                </div>
+            </div>
+
+            <div class="component-category">
+                <div class="category-title">结束节点</div>
+                <div class="component-item" draggable="true" data-type="end" data-subtype="success">
+                    <div class="component-icon end">
+                        <i class="fas fa-check"></i>
+                </div>
+                    <span class="component-label">成功结束</span>
+                        </div>
+                <div class="component-item" draggable="true" data-type="end" data-subtype="error">
+                    <div class="component-icon end">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <span class="component-label">错误结束</span>
+                        </div>
+                    </div>
+                        </div>
+
+        <!-- 中间画布区域 -->
+        <div class="canvas-container">
+            <div class="canvas-toolbar">
+                <button class="btn btn-sm" onclick="zoomIn()">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="btn btn-sm" onclick="zoomOut()">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="btn btn-sm" onclick="resetZoom()">
+                    <i class="fas fa-compress-arrows-alt"></i>
+                </button>
+                <button class="btn btn-sm" onclick="centerCanvas()">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <span class="text-muted">|</span>
+                <button class="btn btn-sm" onclick="deleteSelected()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                    </div>
+
+            <div class="canvas" id="workflowCanvas">
+                <!-- 工作流节点将通过JavaScript动态创建 -->
+                <svg id="connectionLines" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                <!-- 连接线将在这里绘制 -->
+            </svg>
+            </div>
+
+            <!-- 迷你地图 -->
+            <div class="minimap">
+                <div class="minimap-content" id="minimapContent">
+                    <div class="minimap-viewport" id="minimapViewport"></div>
+                </div>
+            </div>
+    </div>
+
+        <!-- 右侧属性面板 -->
+        <div class="properties-panel">
+            <div class="panel-header">
+                <i class="fas fa-sliders-h"></i> 节点属性
+            </div>
+            
+            <div class="properties-content" id="propertiesContent">
+                <div class="text-center text-muted py-lg">
+                    <i class="fas fa-mouse-pointer" style="font-size: 32px; margin-bottom: var(--spacing-md);"></i>
+                    <p>选择一个节点以编辑其属性</p>
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        // 工作流编辑器类
+        class WorkflowEditor {
+            constructor() {
+                this.canvas = document.getElementById('workflowCanvas');
+                this.nodes = new Map();
+                this.connections = new Map();
+                this.selectedNode = null;
+                this.isDragging = false;
+                this.isConnecting = false;
+                this.connectionStart = null;
+                this.scale = 1;
+                this.panX = 0;
+                this.panY = 0;
+                this.nodeCounter = 0;
+                
+                this.initializeEditor();
+            }
+
+            initializeEditor() {
+                this.setupDragAndDrop();
+                this.setupCanvasEvents();
+                this.createSampleWorkflow();
+            }
+
+            setupDragAndDrop() {
+                // 组件拖拽
+                const components = document.querySelectorAll('.component-item');
+                components.forEach(component => {
+                    component.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({
+                            type: component.dataset.type,
+                            subtype: component.dataset.subtype,
+                            label: component.querySelector('.component-label').textContent
+                        }));
+                    });
+                });
+
+                // 画布拖放
+                this.canvas.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+
+                this.canvas.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    this.createNode(data, x, y);
+                });
+            }
+
+            setupCanvasEvents() {
+                // 画布点击事件
+                this.canvas.addEventListener('click', (e) => {
+                    if (e.target === this.canvas) {
+                        this.deselectAll();
+                    }
+                });
+
+                // 键盘事件
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Delete' || e.key === 'Backspace') {
+                        this.deleteSelected();
+                    }
+                    if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+                        this.saveWorkflow();
+                    }
+                });
+            }
+
+            createNode(data, x, y) {
+                const nodeId = `node_${++this.nodeCounter}`;
+                const node = document.createElement('div');
+                node.className = 'workflow-node';
+                node.style.left = x + 'px';
+                node.style.top = y + 'px';
+                node.dataset.nodeId = nodeId;
+                node.dataset.type = data.type;
+                node.dataset.subtype = data.subtype;
+
+                const iconClass = this.getIconClass(data.type, data.subtype);
+                const iconColor = this.getIconColor(data.type);
+
+                node.innerHTML = `
+                    <div class="node-header">
+                        <div class="node-icon ${data.type}" style="background: ${iconColor}">
+                            <i class="${iconClass}"></i>
+                </div>
+                        <div class="node-title">${data.label}</div>
+                </div>
+                    <div class="node-content">
+                        ${this.getNodeDescription(data.type, data.subtype)}
+                    </div>
+                    <div class="connection-point input"></div>
+                    <div class="connection-point output"></div>
+            `;
+            
+            // 添加事件监听
+                this.setupNodeEvents(node);
+                
+                this.canvas.appendChild(node);
+                this.nodes.set(nodeId, {
+                    element: node,
+                    data: data,
+                x: x,
+                y: y,
+                    properties: this.getDefaultProperties(data.type, data.subtype)
+                });
+
+                // 选中新创建的节点
+                this.selectNode(node);
+                
+                OperationLogger.log('创建工作流节点', { type: data.type, subtype: data.subtype });
+            }
+
+            setupNodeEvents(node) {
+                // 节点选择
+                node.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectNode(node);
+                });
+
+        // 节点拖拽
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
+
+                node.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('connection-point')) return;
+                    
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialX = parseInt(node.style.left);
+                    initialY = parseInt(node.style.top);
+                    node.classList.add('dragging');
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                const onMouseMove = (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    const newX = initialX + deltaX;
+                    const newY = initialY + deltaY;
+                    
+                    node.style.left = newX + 'px';
+                    node.style.top = newY + 'px';
+                    
+                    // 更新连接线
+                    this.updateConnections();
+                };
+
+                const onMouseUp = () => {
+                    isDragging = false;
+                    node.classList.remove('dragging');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    
+                    // 更新节点位置数据
+                    const nodeData = this.nodes.get(node.dataset.nodeId);
+                    nodeData.x = parseInt(node.style.left);
+                    nodeData.y = parseInt(node.style.top);
+                };
+
+                // 连接点事件
+                const connectionPoints = node.querySelectorAll('.connection-point');
+                connectionPoints.forEach(point => {
+                    point.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.handleConnectionPoint(point, node);
+                    });
+                });
+            }
+
+            selectNode(node) {
+                this.deselectAll();
+                node.classList.add('selected');
+                this.selectedNode = node;
+                this.updatePropertiesPanel(node);
+            }
+
+            deselectAll() {
+                document.querySelectorAll('.workflow-node.selected').forEach(node => {
+                node.classList.remove('selected');
+            });
+                this.selectedNode = null;
+                this.clearPropertiesPanel();
+            }
+
+            updatePropertiesPanel(node) {
+                const nodeData = this.nodes.get(node.dataset.nodeId);
+            const propertiesContent = document.getElementById('propertiesContent');
+            
+                propertiesContent.innerHTML = `
+                <div class="property-group">
+                        <div class="property-group-title">基本信息</div>
+                        <div class="property-item">
+                    <label class="property-label">节点名称</label>
+                            <input type="text" class="property-input" value="${nodeData.data.label}" 
+                                   onchange="workflowEditor.updateNodeProperty('label', this.value)">
+                </div>
+                        <div class="property-item">
+                            <label class="property-label">节点类型</label>
+                            <input type="text" class="property-input" value="${nodeData.data.type}" readonly>
+                    </div>
+                    </div>
+                    ${this.generateTypeSpecificProperties(nodeData)}
+                `;
+            }
+
+            generateTypeSpecificProperties(nodeData) {
+                const type = nodeData.data.type;
+                const subtype = nodeData.data.subtype;
+                
+                switch (type) {
+                    case 'trigger':
+                        if (subtype === 'alarm') {
+                            return `
+                <div class="property-group">
+                                    <div class="property-group-title">告警配置</div>
+                                    <div class="property-item">
+                                        <label class="property-label">监测设备</label>
+                                        <select class="property-input">
+                                            <option>PS001 - 主泵站</option>
+                                            <option>PS002 - 副泵站</option>
+                                            <option>VS001 - 主阀门</option>
+                                        </select>
+                </div>
+                                    <div class="property-item">
+                                        <label class="property-label">告警类型</label>
+                                        <select class="property-input">
+                                            <option>压力异常</option>
+                                            <option>流量异常</option>
+                                            <option>设备故障</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        break;
+                    case 'action':
+                        if (subtype === 'valve') {
+                            return `
+                <div class="property-group">
+                                    <div class="property-group-title">阀门控制</div>
+                                    <div class="property-item">
+                                        <label class="property-label">目标阀门</label>
+                                        <select class="property-input">
+                                            <option>VS001 - 主供水阀</option>
+                                            <option>VS002 - 备用阀门</option>
+                                            <option>VS003 - 排水阀</option>
+                    </select>
+                                    </div>
+                                    <div class="property-item">
+                                        <label class="property-label">操作类型</label>
+                                        <select class="property-input">
+                                            <option>打开</option>
+                                            <option>关闭</option>
+                                            <option>调节开度</option>
+                                        </select>
+                                    </div>
+                                    <div class="property-item">
+                                        <label class="property-label">开度值(%)</label>
+                                        <input type="number" class="property-input" value="100" min="0" max="100">
+                                    </div>
+                </div>
+            `;
+                        }
+                        break;
+                }
+                
+                return '<div class="property-group"><div class="text-muted text-center">暂无特定配置</div></div>';
+            }
+
+            clearPropertiesPanel() {
+                document.getElementById('propertiesContent').innerHTML = `
+                    <div class="text-center text-muted py-lg">
+                        <i class="fas fa-mouse-pointer" style="font-size: 32px; margin-bottom: var(--spacing-md);"></i>
+                        <p>选择一个节点以编辑其属性</p>
+                    </div>
+                `;
+            }
+
+            handleConnectionPoint(point, node) {
+                if (!this.isConnecting) {
+                    // 开始连接
+                    this.isConnecting = true;
+                    this.connectionStart = { point, node };
+                    point.style.background = 'var(--warning)';
+                } else {
+                    // 完成连接
+                    if (this.connectionStart.node !== node) {
+                        this.createConnection(this.connectionStart, { point, node });
+                    }
+                    this.resetConnectionState();
+                }
+            }
+
+            createConnection(start, end) {
+                const connectionId = `conn_${start.node.dataset.nodeId}_${end.node.dataset.nodeId}`;
+                
+                // 检查是否已存在连接
+                if (this.connections.has(connectionId)) {
+                    NotificationManager.show('节点间已存在连接', 'warning');
+                    return;
+                }
+
+                const connection = {
+                    id: connectionId,
+                    from: start.node.dataset.nodeId,
+                    to: end.node.dataset.nodeId,
+                    fromPoint: start.point,
+                    toPoint: end.point
+                };
+
+                this.connections.set(connectionId, connection);
+                this.drawConnection(connection);
+                
+                OperationLogger.log('创建工作流连接', { from: connection.from, to: connection.to });
+                NotificationManager.show('节点连接创建成功', 'success');
+            }
+
+            drawConnection(connection) {
+                const svg = document.getElementById('connectionLines');
+                const fromNode = this.nodes.get(connection.from);
+                const toNode = this.nodes.get(connection.to);
+                
+                if (!fromNode || !toNode) return;
+
+                const fromRect = fromNode.element.getBoundingClientRect();
+                const toRect = toNode.element.getBoundingClientRect();
+                const canvasRect = this.canvas.getBoundingClientRect();
+
+                const x1 = fromRect.right - canvasRect.left - 6;
+                const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top;
+                const x2 = toRect.left - canvasRect.left + 6;
+                const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const controlX1 = x1 + (x2 - x1) * 0.5;
+                const controlX2 = x1 + (x2 - x1) * 0.5;
+                
+                const pathData = `M ${x1} ${y1} C ${controlX1} ${y1}, ${controlX2} ${y2}, ${x2} ${y2}`;
+                path.setAttribute('d', pathData);
+                path.setAttribute('data-connection-id', connection.id);
+                path.classList.add('connection-path');
+
+                // 添加点击事件
+                path.addEventListener('click', () => {
+                    this.selectConnection(connection.id);
+                });
+
+                svg.appendChild(path);
+            }
+
+            updateConnections() {
+                const svg = document.getElementById('connectionLines');
+                svg.innerHTML = '';
+                
+                this.connections.forEach(connection => {
+                    this.drawConnection(connection);
+                });
+            }
+
+            resetConnectionState() {
+                this.isConnecting = false;
+                if (this.connectionStart) {
+                    this.connectionStart.point.style.background = 'var(--primary)';
+                    this.connectionStart = null;
+                }
+            }
+
+            createSampleWorkflow() {
+                // 创建示例工作流
+                setTimeout(() => {
+                    this.createNode({ type: 'trigger', subtype: 'alarm', label: '压力告警触发' }, 100, 100);
+                    this.createNode({ type: 'condition', subtype: 'threshold', label: '压力阈值判断' }, 300, 100);
+                    this.createNode({ type: 'action', subtype: 'valve', label: '关闭主阀门' }, 500, 50);
+                    this.createNode({ type: 'action', subtype: 'notification', label: '发送告警通知' }, 500, 150);
+                    this.createNode({ type: 'end', subtype: 'success', label: '流程结束' }, 700, 100);
+                }, 100);
+            }
+
+            getIconClass(type, subtype) {
+                const iconMap = {
+                    'trigger': {
+                        'alarm': 'fas fa-exclamation',
+                        'schedule': 'fas fa-clock',
+                        'manual': 'fas fa-hand-pointer'
+                    },
+                    'condition': {
+                        'threshold': 'fas fa-code-branch',
+                        'logic': 'fas fa-sitemap'
+                    },
+                    'action': {
+                        'valve': 'fas fa-cog',
+                        'pump': 'fas fa-fan',
+                        'notification': 'fas fa-bell',
+                        'log': 'fas fa-file-alt'
+                    },
+                    'end': {
+                        'success': 'fas fa-check',
+                        'error': 'fas fa-times'
+                    }
+                };
+                
+                return iconMap[type]?.[subtype] || 'fas fa-question';
+            }
+
+            getIconColor(type) {
+                const colorMap = {
+                    'trigger': 'var(--success)',
+                    'condition': 'var(--warning)',
+                    'action': 'var(--primary)',
+                    'end': 'var(--danger)'
+                };
+                
+                return colorMap[type] || 'var(--gray-500)';
+            }
+
+            getNodeDescription(type, subtype) {
+                const descriptions = {
+                    'trigger': {
+                        'alarm': '当系统检测到告警时触发',
+                        'schedule': '按照设定时间定时触发',
+                        'manual': '需要手动操作才能触发'
+                    },
+                    'condition': {
+                        'threshold': '基于数值阈值进行判断',
+                        'logic': '基于逻辑条件进行判断'
+                    },
+                    'action': {
+                        'valve': '控制阀门的开关和开度',
+                        'pump': '控制水泵的启停和转速',
+                        'notification': '发送通知消息给相关人员',
+                        'log': '记录操作日志到系统'
+                    },
+                    'end': {
+                        'success': '成功完成所有操作',
+                        'error': '发生错误，流程终止'
+                    }
+                };
+                
+                return descriptions[type]?.[subtype] || '暂无描述';
+            }
+
+            getDefaultProperties(type, subtype) {
+                // 返回节点的默认属性配置
+                return {
+                    type: type,
+                    subtype: subtype,
+                    enabled: true,
+                    timeout: 30
+                };
+            }
+
+            deleteSelected() {
+                if (this.selectedNode) {
+                    const nodeId = this.selectedNode.dataset.nodeId;
+                    
+                    // 删除相关连接
+                    const connectionsToDelete = [];
+                    this.connections.forEach((conn, id) => {
+                        if (conn.from === nodeId || conn.to === nodeId) {
+                            connectionsToDelete.push(id);
+                        }
+                    });
+                    
+                    connectionsToDelete.forEach(id => {
+                        this.connections.delete(id);
+                    });
+                    
+                    // 删除节点
+                    this.selectedNode.remove();
+                    this.nodes.delete(nodeId);
+                    this.selectedNode = null;
+                    
+                    // 更新连接线
+                    this.updateConnections();
+                    this.clearPropertiesPanel();
+                    
+                    OperationLogger.log('删除工作流节点', { nodeId });
+                    NotificationManager.show('节点已删除', 'success');
+                }
+            }
+
+            saveWorkflow() {
+                const workflowData = {
+                    nodes: Array.from(this.nodes.entries()).map(([id, data]) => ({
+                        id: id,
+                        type: data.data.type,
+                        subtype: data.data.subtype,
+                        label: data.data.label,
+                        x: data.x,
+                        y: data.y,
+                        properties: data.properties
+                    })),
+                    connections: Array.from(this.connections.entries()).map(([id, data]) => ({
+                        id: id,
+                        from: data.from,
+                        to: data.to
+                    }))
+                };
+                
+                localStorage.setItem('workflow_' + Date.now(), JSON.stringify(workflowData));
+                OperationLogger.log('保存工作流', { nodeCount: this.nodes.size, connectionCount: this.connections.size });
+                NotificationManager.show('工作流已保存', 'success');
+            }
+
+            executeWorkflow() {
+                OperationLogger.log('执行工作流', { nodeCount: this.nodes.size });
+                NotificationManager.show('工作流执行中...', 'info');
+                
+                // 模拟工作流执行
+                setTimeout(() => {
+                    NotificationManager.show('工作流执行完成', 'success');
+                }, 2000);
+            }
+        }
+
+        // 全局函数
+        function saveWorkflow() {
+            workflowEditor.saveWorkflow();
+        }
+
+        function executeWorkflow() {
+            workflowEditor.executeWorkflow();
+        }
+
+        function deleteSelected() {
+            workflowEditor.deleteSelected();
+        }
+
+        function zoomIn() {
+            workflowEditor.scale = Math.min(workflowEditor.scale * 1.2, 3);
+            workflowEditor.canvas.style.transform = `scale(${workflowEditor.scale})`;
+        }
+
+        function zoomOut() {
+            workflowEditor.scale = Math.max(workflowEditor.scale / 1.2, 0.3);
+            workflowEditor.canvas.style.transform = `scale(${workflowEditor.scale})`;
+        }
+
+        function resetZoom() {
+            workflowEditor.scale = 1;
+            workflowEditor.canvas.style.transform = 'scale(1)';
+        }
+
+        function centerCanvas() {
+            workflowEditor.canvas.style.transform = 'scale(1) translate(0, 0)';
+            workflowEditor.scale = 1;
+            workflowEditor.panX = 0;
+            workflowEditor.panY = 0;
+        }
+
+        // 返回功能
+        function goBack() {
+            // 检查浏览器历史记录
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // 如果没有历史记录，返回到日常调度页面
+                window.location.href = 'daily_dispatch.html';
+            }
+        }
+
+        // 初始化编辑器
+        let workflowEditor;
+        document.addEventListener('DOMContentLoaded', function() {
+            workflowEditor = new WorkflowEditor();
+            
+            // 记录页面访问
+            OperationLogger.log('访问页面', { page: '调度工作流编辑器' });
+        });
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

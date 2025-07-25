@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图性能测试</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f6fa;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #4A90B8;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: #357599;
+        }
+        
+        .performance-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 200px;
+            z-index: 1000;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            color: #2f3640;
+        }
+        
+        #map {
+            height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>香港水力模型地图性能测试</h1>
+        <p>测试不同缩放级别下的渲染性能和流畅度</p>
+    </div>
+    
+    <div class="controls">
+        <button class="btn" onclick="testZoomPerformance()">缩放性能测试</button>
+        <button class="btn" onclick="addMoreData()">增加数据量</button>
+        <button class="btn" onclick="toggleOptimization()">切换优化模式</button>
+        <button class="btn" onclick="resetTest()">重置测试</button>
+    </div>
+    
+    <div class="performance-info">
+        <h3 style="margin-top: 0;">性能指标</h3>
+        <div class="metric">
+            <span>当前缩放级别:</span>
+            <span class="metric-value" id="zoomLevel">11</span>
+        </div>
+        <div class="metric">
+            <span>可见节点数:</span>
+            <span class="metric-value" id="visibleNodes">0</span>
+        </div>
+        <div class="metric">
+            <span>可见管道数:</span>
+            <span class="metric-value" id="visiblePipes">0</span>
+        </div>
+        <div class="metric">
+            <span>渲染时间:</span>
+            <span class="metric-value" id="renderTime">0ms</span>
+        </div>
+        <div class="metric">
+            <span>FPS:</span>
+            <span class="metric-value" id="fps">60</span>
+        </div>
+        <div class="metric">
+            <span>优化模式:</span>
+            <span class="metric-value" id="optimizationMode">启用</span>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let facilityData = [];
+        let pipelineData = [];
+        let optimizationEnabled = true;
+        let renderStartTime = 0;
+        let frameCount = 0;
+        let lastFrameTime = 0;
+        
+        // 初始化地图
+        function initMap() {
+            map = L.map('map').setView([22.3193, 114.1694], 11);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // 监听缩放和移动事件
+            map.on('zoomstart', onRenderStart);
+            map.on('zoomend', onRenderEnd);
+            map.on('movestart', onRenderStart);
+            map.on('moveend', onRenderEnd);
+            
+            // FPS 计算
+            requestAnimationFrame(calculateFPS);
+        }
+        
+        // 生成测试数据
+        function generateTestData(nodeCount = 12) {
+            facilityData = [];
+            pipelineData = [];
+            
+            // 基础测试数据
+            const baseNodes = [
+                {id: 'S00145-11SE14B', type: 'junction', x: 841733.50, y: 815078.12, elev: 5.34},
+                {id: 'S01097-11SE19A', type: 'junction', x: 843615.45, y: 816542.33, elev: 43.65},
+                {id: 'S00027-11SE14A', type: 'junction', x: 841823.12, y: 815234.67, elev: 5.39},
+                {id: 'S00036-11SE14C', type: 'junction', x: 842156.78, y: 815456.89, elev: 7.45},
+                {id: 'S01125-11SE19B', type: 'junction', x: 843892.34, y: 816789.12, elev: 3.9},
+                {id: 'S01142-11SE19A', type: 'junction', x: 843567.89, y: 816423.45, elev: 8.25},
+                {id: 'S00166-11SE19C', type: 'junction', x: 842789.23, y: 815967.56, elev: 69.51},
+                {id: 'S00321-11SE19B', type: 'junction', x: 843123.67, y: 816234.78, elev: 3.98},
+                {id: 'S00008-11SE19A', type: 'junction', x: 842445.12, y: 815678.34, elev: 53.09},
+                {id: 'S00136-11SE19C', type: 'junction', x: 843234.56, y: 816345.67, elev: 39.1},
+                {id: 'SIUSAIWANSEA', type: 'reservoir', x: 841234.67, y: 814567.89, elev: 1.3},
+                {id: 'SWSR-CHAIWAN', type: 'tank', x: 843456.78, y: 816123.45, elev: 66.22}
+            ];
+            
+            // 根据需要扩展数据
+            for (let i = 0; i < nodeCount; i++) {
+                const baseIndex = i % baseNodes.length;
+                const base = baseNodes[baseIndex];
+                const node = {
+                    ...base,
+                    id: `${base.id}_${i}`,
+                    x: base.x + (Math.random() - 0.5) * 5000,
+                    y: base.y + (Math.random() - 0.5) * 5000
+                };
+                
+                const [lng, lat] = convertEPSG2326ToWGS84(node.x, node.y);
+                facilityData.push({
+                    id: node.id,
+                    name: node.id,
+                    lat: lat,
+                    lng: lng,
+                    type: node.type,
+                    elevation: node.elev,
+                    status: Math.random() > 0.8 ? 'warning' : 'normal'
+                });
+            }
+            
+            // 生成管道连接
+            for (let i = 0; i < facilityData.length - 1; i++) {
+                if (Math.random() > 0.3) { // 70% 概率连接
+                    pipelineData.push({
+                        id: `P${i}`,
+                        from: facilityData[i].id,
+                        to: facilityData[i + 1].id,
+                        diameter: Math.random() * 600 + 100,
+                        status: Math.random() > 0.9 ? 'warning' : 'normal'
+                    });
+                }
+            }
+        }
+        
+        // 坐标转换
+        function convertEPSG2326ToWGS84(x, y) {
+            const falseEasting = 836694.05;
+            const falseNorthing = 819069.8;
+            const centralMeridian = 114.178555555556;
+            const latitudeOfOrigin = 22.312133333334;
+            
+            const deltaE = x - falseEasting;
+            const deltaN = y - falseNorthing;
+            
+            const metersPerDegLng = 111000 * Math.cos(latitudeOfOrigin * Math.PI / 180);
+            const metersPerDegLat = 111000;
+            
+            const lng = centralMeridian + (deltaE / metersPerDegLng) + 0.000123;
+            const lat = latitudeOfOrigin + (deltaN / metersPerDegLat) - 0.000087;
+            
+            return [lng, lat];
+        }
+        
+        // 渲染设施
+        function renderFacilities() {
+            onRenderStart();
+            
+            // 清除现有标记
+            map.eachLayer(layer => {
+                if (layer.options && (layer.options.icon || layer.options.color)) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            const zoom = map.getZoom();
+            let visibleNodes = 0;
+            let visiblePipes = 0;
+            
+            // 渲染节点
+            facilityData.forEach(facility => {
+                if (optimizationEnabled) {
+                    // 优化模式：根据缩放级别过滤
+                    if (zoom < 12 && facility.type === 'junction' && Math.random() > 0.3) return;
+                    if (zoom < 10 && facility.type === 'junction') return;
+                }
+                
+                const icon = createAdaptiveIcon(facility, zoom);
+                L.marker([facility.lat, facility.lng], {icon: icon}).addTo(map);
+                visibleNodes++;
+            });
+            
+            // 渲染管道
+            pipelineData.forEach(pipe => {
+                if (optimizationEnabled && zoom < 11 && pipe.diameter < 300) return;
+                
+                const fromFacility = facilityData.find(f => f.id === pipe.from);
+                const toFacility = facilityData.find(f => f.id === pipe.to);
+                
+                if (fromFacility && toFacility) {
+                    const weight = optimizationEnabled ? 
+                        Math.max(1, Math.min(6, pipe.diameter / 100)) : 
+                        Math.max(2, Math.min(8, pipe.diameter / 80));
+                    
+                    const color = pipe.status === 'normal' ? '#4A90B8' : '#ff6b6b';
+                    
+                    L.polyline([
+                        [fromFacility.lat, fromFacility.lng],
+                        [toFacility.lat, toFacility.lng]
+                    ], {
+                        color: color,
+                        weight: weight,
+                        opacity: 0.8
+                    }).addTo(map);
+                    visiblePipes++;
+                }
+            });
+            
+            // 更新统计
+            document.getElementById('zoomLevel').textContent = zoom;
+            document.getElementById('visibleNodes').textContent = visibleNodes;
+            document.getElementById('visiblePipes').textContent = visiblePipes;
+            
+            onRenderEnd();
+        }
+        
+        // 创建自适应图标
+        function createAdaptiveIcon(facility, zoom) {
+            let iconSize = optimizationEnabled ? 
+                (zoom <= 10 ? 12 : zoom <= 13 ? 16 : 20) :
+                (facility.type === 'junction' ? 16 : 24);
+            
+            const color = facility.status === 'normal' ? '#2ed573' : '#ffa502';
+            const iconMap = {
+                'junction': 'fas fa-circle',
+                'reservoir': 'fas fa-water',
+                'tank': 'fas fa-oil-can'
+            };
+            
+            return L.divIcon({
+                html: `<div style="
+                    width: ${iconSize}px; 
+                    height: ${iconSize}px; 
+                    background: ${color}; 
+                    border: 2px solid white; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-size: ${iconSize * 0.4}px; 
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">
+                    <i class="${iconMap[facility.type] || 'fas fa-circle'}"></i>
+                </div>`,
+                iconSize: [iconSize, iconSize],
+                iconAnchor: [iconSize/2, iconSize/2]
+            });
+        }
+        
+        // 性能监测
+        function onRenderStart() {
+            renderStartTime = performance.now();
+        }
+        
+        function onRenderEnd() {
+            const renderTime = performance.now() - renderStartTime;
+            document.getElementById('renderTime').textContent = `${renderTime.toFixed(1)}ms`;
+        }
+        
+        function calculateFPS() {
+            const now = performance.now();
+            frameCount++;
+            
+            if (now - lastFrameTime >= 1000) {
+                const fps = Math.round(frameCount * 1000 / (now - lastFrameTime));
+                document.getElementById('fps').textContent = fps;
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+            
+            requestAnimationFrame(calculateFPS);
+        }
+        
+        // 测试功能
+        function testZoomPerformance() {
+            const zoomLevels = [9, 11, 13, 15, 17];
+            let index = 0;
+            
+            function nextZoom() {
+                if (index < zoomLevels.length) {
+                    map.setZoom(zoomLevels[index]);
+                    index++;
+                    setTimeout(nextZoom, 2000);
+                }
+            }
+            
+            nextZoom();
+        }
+        
+        function addMoreData() {
+            generateTestData(facilityData.length + 50);
+            renderFacilities();
+        }
+        
+        function toggleOptimization() {
+            optimizationEnabled = !optimizationEnabled;
+            document.getElementById('optimizationMode').textContent = 
+                optimizationEnabled ? '启用' : '禁用';
+            renderFacilities();
+        }
+        
+        function resetTest() {
+            generateTestData(12);
+            map.setView([22.3193, 114.1694], 11);
+            renderFacilities();
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            generateTestData(12);
+            renderFacilities();
+            
+            // 监听缩放变化
+            map.on('zoomend', renderFacilities);
+        });
+    </script>
+</body>
+</html> 

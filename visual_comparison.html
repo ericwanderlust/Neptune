@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节点样式和性能对比</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f6fa;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 80vh;
+        }
+
+        .map-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .section-title {
+            background: #4A90B8;
+            color: white;
+            padding: 10px 15px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .old-style { background: #e74c3c; }
+
+        .map-container {
+            height: calc(100% - 44px);
+            position: relative;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .control-btn {
+            background: #4A90B8;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 1000;
+        }
+
+        /* 旧版本样式 - 固定大小 */
+        .old-marker {
+            will-change: auto;
+        }
+
+        .old-marker > div {
+            width: 16px !important;
+            height: 16px !important;
+            font-size: 8px !important;
+            border: 2px solid white !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+            transition: none !important;
+        }
+
+        /* 新版本样式 - 自适应优化 */
+        .new-marker {
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+        }
+
+        .new-marker:hover {
+            transform: scale(1.15) !important;
+            z-index: 1000 !important;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        .new-marker:hover > div {
+            box-shadow: 0 4px 20px rgba(74, 144, 184, 0.4) !important;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>香港水力模型地图 - 节点样式和性能对比</h1>
+        <p>左侧：传统固定样式 | 右侧：自适应优化样式</p>
+    </div>
+
+    <div class="comparison-container">
+        <!-- 旧版本地图 -->
+        <div class="map-section">
+            <h3 class="section-title old-style">传统样式 - 固定大小节点</h3>
+            <div class="map-container">
+                <div id="mapOld" style="width: 100%; height: 100%;"></div>
+                <div class="controls">
+                    <button class="control-btn" onclick="setZoom('old', 9)">级别9</button>
+                    <button class="control-btn" onclick="setZoom('old', 11)">级别11</button>
+                    <button class="control-btn" onclick="setZoom('old', 13)">级别13</button>
+                    <button class="control-btn" onclick="setZoom('old', 15)">级别15</button>
+                </div>
+                <div class="stats" id="statsOld">
+                    缩放级别: 11<br>
+                    可见节点: 0<br>
+                    渲染时间: 0ms
+                </div>
+            </div>
+        </div>
+
+        <!-- 新版本地图 -->
+        <div class="map-section">
+            <h3 class="section-title">优化样式 - 自适应智能节点</h3>
+            <div class="map-container">
+                <div id="mapNew" style="width: 100%; height: 100%;"></div>
+                <div class="controls">
+                    <button class="control-btn" onclick="setZoom('new', 9)">级别9</button>
+                    <button class="control-btn" onclick="setZoom('new', 11)">级别11</button>
+                    <button class="control-btn" onclick="setZoom('new', 13)">级别13</button>
+                    <button class="control-btn" onclick="setZoom('new', 15)">级别15</button>
+                </div>
+                <div class="stats" id="statsNew">
+                    缩放级别: 11<br>
+                    可见节点: 0<br>
+                    渲染时间: 0ms
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let mapOld, mapNew;
+        let facilityData = [];
+        
+        // 初始化对比地图
+        function initMaps() {
+            // 旧版本地图
+            mapOld = L.map('mapOld').setView([22.3193, 114.1694], 11);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO'
+            }).addTo(mapOld);
+
+            // 新版本地图
+            mapNew = L.map('mapNew').setView([22.3193, 114.1694], 11);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO'
+            }).addTo(mapNew);
+
+            // 同步缩放
+            mapOld.on('zoomend', () => syncZoom('old'));
+            mapNew.on('zoomend', () => syncZoom('new'));
+        }
+
+        // 生成测试数据
+        function generateTestData() {
+            const baseNodes = [
+                {id: 'S00145-11SE14B', type: 'junction', x: 841733.50, y: 815078.12, elev: 5.34},
+                {id: 'S01097-11SE19A', type: 'junction', x: 843615.45, y: 816542.33, elev: 43.65},
+                {id: 'S00027-11SE14A', type: 'junction', x: 841823.12, y: 815234.67, elev: 5.39},
+                {id: 'S00036-11SE14C', type: 'junction', x: 842156.78, y: 815456.89, elev: 7.45},
+                {id: 'S01125-11SE19B', type: 'junction', x: 843892.34, y: 816789.12, elev: 3.9},
+                {id: 'S01142-11SE19A', type: 'junction', x: 843567.89, y: 816423.45, elev: 8.25},
+                {id: 'SIUSAIWANSEA', type: 'reservoir', x: 841234.67, y: 814567.89, elev: 1.3},
+                {id: 'SWSR-CHAIWAN', type: 'tank', x: 843456.78, y: 816123.45, elev: 66.22}
+            ];
+
+            // 扩展数据到50个节点用于测试
+            facilityData = [];
+            for (let i = 0; i < 50; i++) {
+                const baseIndex = i % baseNodes.length;
+                const base = baseNodes[baseIndex];
+                const node = {
+                    ...base,
+                    id: `${base.id}_${i}`,
+                    x: base.x + (Math.random() - 0.5) * 3000,
+                    y: base.y + (Math.random() - 0.5) * 3000
+                };
+
+                const [lng, lat] = convertEPSG2326ToWGS84(node.x, node.y);
+                facilityData.push({
+                    id: node.id,
+                    name: node.id,
+                    lat: lat,
+                    lng: lng,
+                    type: node.type,
+                    elevation: node.elev,
+                    status: Math.random() > 0.8 ? 'warning' : 'normal'
+                });
+            }
+        }
+
+        // 坐标转换
+        function convertEPSG2326ToWGS84(x, y) {
+            const falseEasting = 836694.05;
+            const falseNorthing = 819069.8;
+            const centralMeridian = 114.178555555556;
+            const latitudeOfOrigin = 22.312133333334;
+            
+            const deltaE = x - falseEasting;
+            const deltaN = y - falseNorthing;
+            
+            const metersPerDegLng = 111000 * Math.cos(latitudeOfOrigin * Math.PI / 180);
+            const metersPerDegLat = 111000;
+            
+            const lng = centralMeridian + (deltaE / metersPerDegLng) - 0.0008;
+            const lat = latitudeOfOrigin + (deltaN / metersPerDegLat) + 0.0003;
+            
+            return [lng, lat];
+        }
+
+        // 渲染旧版本样式
+        function renderOldStyle() {
+            const startTime = performance.now();
+            let visibleCount = 0;
+
+            mapOld.eachLayer(layer => {
+                if (layer.options && layer.options.icon) {
+                    mapOld.removeLayer(layer);
+                }
+            });
+
+            facilityData.forEach(facility => {
+                const icon = createOldIcon(facility);
+                L.marker([facility.lat, facility.lng], {icon: icon}).addTo(mapOld);
+                visibleCount++;
+            });
+
+            const renderTime = performance.now() - startTime;
+            updateStats('old', mapOld.getZoom(), visibleCount, renderTime);
+        }
+
+        // 渲染新版本样式
+        function renderNewStyle() {
+            const startTime = performance.now();
+            let visibleCount = 0;
+
+            mapNew.eachLayer(layer => {
+                if (layer.options && layer.options.icon) {
+                    mapNew.removeLayer(layer);
+                }
+            });
+
+            const zoom = mapNew.getZoom();
+            facilityData.forEach(facility => {
+                // 智能过滤
+                if (zoom < 10 && facility.type === 'junction' && facility.status === 'normal') {
+                    const hash = facility.id.split('').reduce((a, b) => {
+                        a = ((a << 5) - a) + b.charCodeAt(0);
+                        return a & a;
+                    }, 0);
+                    if (Math.abs(hash) % 100 > 30) return;
+                }
+
+                const icon = createNewIcon(facility, zoom);
+                L.marker([facility.lat, facility.lng], {icon: icon}).addTo(mapNew);
+                visibleCount++;
+            });
+
+            const renderTime = performance.now() - startTime;
+            updateStats('new', zoom, visibleCount, renderTime);
+        }
+
+        // 创建旧版本图标
+        function createOldIcon(facility) {
+            const color = facility.status === 'normal' ? '#2ed573' : '#ffa502';
+            const iconMap = {
+                'junction': 'fas fa-circle',
+                'reservoir': 'fas fa-water',
+                'tank': 'fas fa-oil-can'
+            };
+
+            return L.divIcon({
+                html: `<div style="
+                    width: 16px; 
+                    height: 16px; 
+                    background: ${color}; 
+                    border: 2px solid white; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-size: 8px; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                ">
+                    <i class="${iconMap[facility.type] || 'fas fa-circle'}"></i>
+                </div>`,
+                className: 'old-marker',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
+
+        // 创建新版本图标
+        function createNewIcon(facility, zoom) {
+            let iconSize, fontSize, borderWidth, shadowSize;
+            
+            if (zoom <= 9) {
+                iconSize = facility.type === 'junction' ? 6 : 12;
+                fontSize = iconSize * 0.4;
+                borderWidth = 1;
+                shadowSize = 2;
+            } else if (zoom <= 11) {
+                iconSize = facility.type === 'junction' ? 10 : 16;
+                fontSize = iconSize * 0.45;
+                borderWidth = 2;
+                shadowSize = 3;
+            } else if (zoom <= 13) {
+                iconSize = facility.type === 'junction' ? 14 : 20;
+                fontSize = iconSize * 0.5;
+                borderWidth = 2;
+                shadowSize = 4;
+            } else {
+                iconSize = facility.type === 'junction' ? 18 : 26;
+                fontSize = iconSize * 0.5;
+                borderWidth = 3;
+                shadowSize = 5;
+            }
+
+            const color = facility.status === 'normal' ? '#2ed573' : '#ffa502';
+            const iconMap = {
+                'junction': 'fas fa-circle',
+                'reservoir': 'fas fa-water',
+                'tank': 'fas fa-oil-can'
+            };
+
+            const opacity = zoom < 10 && facility.type === 'junction' ? 0.7 : 1;
+
+            return L.divIcon({
+                html: `<div data-facility-id="${facility.id}" style="
+                    width: ${iconSize}px; 
+                    height: ${iconSize}px; 
+                    background: ${color}; 
+                    border: ${borderWidth}px solid white; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-size: ${fontSize}px; 
+                    box-shadow: 0 ${shadowSize/2}px ${shadowSize*2}px rgba(0,0,0,0.25);
+                    opacity: ${opacity};
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                ">
+                    <i class="${iconMap[facility.type] || 'fas fa-circle'}"></i>
+                </div>`,
+                className: 'new-marker',
+                iconSize: [iconSize, iconSize],
+                iconAnchor: [iconSize/2, iconSize/2]
+            });
+        }
+
+        // 设置缩放级别
+        function setZoom(mapType, zoom) {
+            if (mapType === 'old') {
+                mapOld.setZoom(zoom);
+            } else {
+                mapNew.setZoom(zoom);
+            }
+        }
+
+        // 同步缩放
+        function syncZoom(source) {
+            if (source === 'old') {
+                renderOldStyle();
+            } else {
+                renderNewStyle();
+            }
+        }
+
+        // 更新统计信息
+        function updateStats(mapType, zoom, visibleCount, renderTime) {
+            const statsEl = document.getElementById(`stats${mapType === 'old' ? 'Old' : 'New'}`);
+            statsEl.innerHTML = `
+                缩放级别: ${zoom}<br>
+                可见节点: ${visibleCount}<br>
+                渲染时间: ${renderTime.toFixed(1)}ms
+            `;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initMaps();
+            generateTestData();
+            
+            // 初始渲染
+            setTimeout(() => {
+                renderOldStyle();
+                renderNewStyle();
+            }, 500);
+        });
+    </script>
+</body>
+</html> 

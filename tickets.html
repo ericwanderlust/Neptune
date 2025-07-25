@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 工单中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .tickets-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 120px);
+            padding: var(--spacing-lg);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            overflow: hidden;
+        }
+
+        /* 筛选器 */
+        .filter-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .filter-header {
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .filter-section {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .filter-section:last-child {
+            border-bottom: none;
+        }
+
+        .filter-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-xs);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+            font-size: var(--font-size-sm);
+        }
+
+        .filter-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .filter-option.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .filter-count {
+            margin-left: auto;
+            font-size: var(--font-size-xs);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        .filter-option.active .filter-count {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 工单表头工具栏 */
+        .tickets-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding-left: 36px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+        }
+
+        /* 工单列表 */
+        .tickets-container {
+            flex: 1;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tickets-header {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+        }
+
+        .tickets-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .ticket-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .ticket-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .ticket-item.selected {
+            background: rgba(74, 144, 184, 0.1);
+            border-left: 3px solid var(--primary);
+        }
+
+        .ticket-checkbox {
+            margin-right: var(--spacing-md);
+        }
+
+        .ticket-priority {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: var(--spacing-md);
+        }
+
+        .ticket-priority.high {
+            background: var(--danger);
+        }
+
+        .ticket-priority.medium {
+            background: var(--warning);
+        }
+
+        .ticket-priority.low {
+            background: var(--info);
+        }
+
+        .ticket-id {
+            width: 100px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .ticket-title {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .ticket-type {
+            width: 100px;
+            text-align: center;
+        }
+
+        .ticket-status {
+            width: 100px;
+            text-align: center;
+        }
+
+        .ticket-assignee {
+            width: 100px;
+            text-align: center;
+        }
+
+        .ticket-created {
+            width: 120px;
+            text-align: center;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .ticket-actions {
+            width: 120px;
+            display: flex;
+            gap: var(--spacing-xs);
+            justify-content: center;
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .status-badge.processing {
+            background: rgba(74, 144, 184, 0.1);
+            color: var(--primary);
+        }
+
+        .status-badge.completed {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.cancelled {
+            background: rgba(164, 176, 190, 0.1);
+            color: var(--gray-600);
+        }
+
+        /* 类型标签 */
+        .type-badge {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination-info {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-fast);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .tickets-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        /* 状态栏样式 */
+        .status-bar {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .status-bar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+    <div class="tickets-layout">
+        <!-- 左侧筛选器 -->
+        <div class="sidebar">
+            <!-- 快速统计 -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <i class="fas fa-chart-bar"></i> 工单统计
+                </div>
+                <div class="filter-section">
+                    <div class="stats-grid" style="grid-template-columns: 1fr; gap: var(--spacing-sm);">
+                        <div class="flex-between">
+                            <span class="text-sm">今日新增</span>
+                            <span class="font-semibold text-primary">15</span>
+                        </div>
+                        <div class="flex-between">
+                            <span class="text-sm">待处理</span>
+                            <span class="font-semibold text-warning">8</span>
+                        </div>
+                        <div class="flex-between">
+                            <span class="text-sm">处理中</span>
+                            <span class="font-semibold text-info">12</span>
+                        </div>
+                        <div class="flex-between">
+                            <span class="text-sm">已完成</span>
+                            <span class="font-semibold text-success">45</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 状态筛选 -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <i class="fas fa-filter"></i> 状态筛选
+                </div>
+                <div class="filter-section">
+                    <div class="filter-title">工单状态</div>
+                    <div class="filter-options">
+                        <div class="filter-option active" onclick="filterByStatus('all')">
+                            <i class="fas fa-list"></i>
+                            <span>全部工单</span>
+                            <span class="filter-count">80</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByStatus('pending')">
+                            <i class="fas fa-clock"></i>
+                            <span>待处理</span>
+                            <span class="filter-count">8</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByStatus('processing')">
+                            <i class="fas fa-cog"></i>
+                            <span>处理中</span>
+                            <span class="filter-count">12</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByStatus('completed')">
+                            <i class="fas fa-check-circle"></i>
+                            <span>已完成</span>
+                            <span class="filter-count">45</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByStatus('cancelled')">
+                            <i class="fas fa-times-circle"></i>
+                            <span>已取消</span>
+                            <span class="filter-count">15</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-title">优先级</div>
+                    <div class="filter-options">
+                        <div class="filter-option" onclick="filterByPriority('high')">
+                            <div class="ticket-priority high"></div>
+                            <span>高优先级</span>
+                            <span class="filter-count">5</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByPriority('medium')">
+                            <div class="ticket-priority medium"></div>
+                            <span>中优先级</span>
+                            <span class="filter-count">25</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByPriority('low')">
+                            <div class="ticket-priority low"></div>
+                            <span>低优先级</span>
+                            <span class="filter-count">50</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-title">工单类型</div>
+                    <div class="filter-options">
+                        <div class="filter-option" onclick="filterByType('maintenance')">
+                            <i class="fas fa-wrench"></i>
+                            <span>设备维修</span>
+                            <span class="filter-count">35</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByType('inspection')">
+                            <i class="fas fa-search"></i>
+                            <span>巡检任务</span>
+                            <span class="filter-count">20</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByType('complaint')">
+                            <i class="fas fa-comment-dots"></i>
+                            <span>客户投诉</span>
+                            <span class="filter-count">15</span>
+                        </div>
+                        <div class="filter-option" onclick="filterByType('emergency')">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>应急处置</span>
+                            <span class="filter-count">10</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快速操作 -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <i class="fas fa-bolt"></i> 快速操作
+                </div>
+                <div class="filter-section">
+                    <div class="flex-column gap-sm">
+                        <button class="btn btn-primary btn-block" onclick="createTicket()">
+                            <i class="fas fa-plus"></i> 创建工单
+                        </button>
+                        <button class="btn btn-block" onclick="batchAssign()">
+                            <i class="fas fa-user-plus"></i> 批量分配
+                        </button>
+                        <button class="btn btn-block" onclick="exportTickets()">
+                            <i class="fas fa-download"></i> 导出数据
+                        </button>
+                        <button class="btn btn-block" onclick="generateReport()">
+                            <i class="fas fa-chart-line"></i> 生成报表
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧主内容 -->
+        <div class="main-content">
+            <!-- 工具栏 -->
+            <div class="tickets-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control" placeholder="搜索工单号、标题、负责人...">
+                    </div>
+                    <select class="form-control form-select" style="width: 120px;">
+                        <option>全部区域</option>
+                        <option>A区</option>
+                        <option>B区</option>
+                        <option>C区</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <div class="flex gap-sm align-center text-sm text-muted">
+                        <span>视图:</span>
+                        <button class="btn btn-sm btn-icon active" title="列表视图">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="卡片视图">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="看板视图">
+                            <i class="fas fa-columns"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm" onclick="refreshTickets()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+            </div>
+
+            <!-- 批量操作工具栏 -->
+            <div class="batch-toolbar" style="display: none;">
+                <span class="batch-info">已选择 <span class="batch-count">0</span> 个工单</span>
+                <div class="flex gap-sm">
+                    <button class="btn btn-sm" onclick="batchAssignTickets()">
+                        <i class="fas fa-user-plus"></i> 批量分配
+                    </button>
+                    <button class="btn btn-sm" onclick="batchUpdateStatus()">
+                        <i class="fas fa-edit"></i> 更新状态
+                    </button>
+                    <button class="btn btn-sm" onclick="batchSetPriority()">
+                        <i class="fas fa-flag"></i> 设置优先级
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="batchCloseTickets()">
+                        <i class="fas fa-times"></i> 批量关闭
+                    </button>
+                </div>
+            </div>
+
+            <!-- 工单列表 -->
+            <div class="tickets-container">
+                <div class="tickets-header">
+                    <div class="ticket-checkbox">
+                        <input type="checkbox" data-select-all>
+                    </div>
+                    <div style="width: 12px;"></div>
+                    <div class="ticket-id">工单号</div>
+                    <div class="ticket-title">标题</div>
+                    <div class="ticket-type">类型</div>
+                    <div class="ticket-status">状态</div>
+                    <div class="ticket-assignee">负责人</div>
+                    <div class="ticket-created">创建时间</div>
+                    <div class="ticket-actions">操作</div>
+                </div>
+                
+                <div class="tickets-list">
+                    <!-- 工单项目 -->
+                    <div class="ticket-item" data-batch-id="T001" onclick="selectTicket('T001')">
+                        <div class="ticket-checkbox">
+                            <input type="checkbox" data-batch-checkbox>
+                        </div>
+                        <div class="ticket-priority high"></div>
+                        <div class="ticket-id">#T001</div>
+                        <div class="ticket-title">PS001泵站异常噪音问题</div>
+                        <div class="ticket-type">
+                            <span class="type-badge">设备维修</span>
+                        </div>
+                        <div class="ticket-status">
+                            <span class="status-badge processing">
+                                <i class="fas fa-cog"></i> 处理中
+                            </span>
+                        </div>
+                        <div class="ticket-assignee">李工</div>
+                        <div class="ticket-created">2024-01-10 09:30</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-sm btn-icon" title="查看详情" onclick="viewTicket('T001')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" title="编辑" onclick="editTicket('T001')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" data-batch-id="T002" onclick="selectTicket('T002')">
+                        <div class="ticket-checkbox">
+                            <input type="checkbox" data-batch-checkbox>
+                        </div>
+                        <div class="ticket-priority medium"></div>
+                        <div class="ticket-id">#T002</div>
+                        <div class="ticket-title">A区水压不足客户投诉</div>
+                        <div class="ticket-type">
+                            <span class="type-badge">客户投诉</span>
+                        </div>
+                        <div class="ticket-status">
+                            <span class="status-badge pending">
+                                <i class="fas fa-clock"></i> 待处理
+                            </span>
+                        </div>
+                        <div class="ticket-assignee">张工</div>
+                        <div class="ticket-created">2024-01-10 08:45</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-sm btn-icon" title="查看详情" onclick="viewTicket('T002')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" title="编辑" onclick="editTicket('T002')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" data-batch-id="T003" onclick="selectTicket('T003')">
+                        <div class="ticket-checkbox">
+                            <input type="checkbox" data-batch-checkbox>
+                        </div>
+                        <div class="ticket-priority low"></div>
+                        <div class="ticket-id">#T003</div>
+                        <div class="ticket-title">每周例行设备巡检</div>
+                        <div class="ticket-type">
+                            <span class="type-badge">巡检任务</span>
+                        </div>
+                        <div class="ticket-status">
+                            <span class="status-badge completed">
+                                <i class="fas fa-check-circle"></i> 已完成
+                            </span>
+                        </div>
+                        <div class="ticket-assignee">王工</div>
+                        <div class="ticket-created">2024-01-09 16:00</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-sm btn-icon" title="查看详情" onclick="viewTicket('T003')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" title="编辑" onclick="editTicket('T003')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" data-batch-id="T004" onclick="selectTicket('T004')">
+                        <div class="ticket-checkbox">
+                            <input type="checkbox" data-batch-checkbox>
+                        </div>
+                        <div class="ticket-priority high"></div>
+                        <div class="ticket-id">#T004</div>
+                        <div class="ticket-title">B区管网漏水应急抢修</div>
+                        <div class="ticket-type">
+                            <span class="type-badge">应急处置</span>
+                        </div>
+                        <div class="ticket-status">
+                            <span class="status-badge processing">
+                                <i class="fas fa-cog"></i> 处理中
+                            </span>
+                        </div>
+                        <div class="ticket-assignee">赵工</div>
+                        <div class="ticket-created">2024-01-10 07:20</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-sm btn-icon" title="查看详情" onclick="viewTicket('T004')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" title="编辑" onclick="editTicket('T004')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-item" data-batch-id="T005" onclick="selectTicket('T005')">
+                        <div class="ticket-checkbox">
+                            <input type="checkbox" data-batch-checkbox>
+                        </div>
+                        <div class="ticket-priority medium"></div>
+                        <div class="ticket-id">#T005</div>
+                        <div class="ticket-title">流量计校准维护工作</div>
+                        <div class="ticket-type">
+                            <span class="type-badge">设备维修</span>
+                        </div>
+                        <div class="ticket-status">
+                            <span class="status-badge pending">
+                                <i class="fas fa-clock"></i> 待处理
+                            </span>
+                        </div>
+                        <div class="ticket-assignee">-</div>
+                        <div class="ticket-created">2024-01-09 14:30</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-sm btn-icon" title="查看详情" onclick="viewTicket('T005')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" title="编辑" onclick="editTicket('T005')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分页 -->
+                <div class="pagination">
+                    <div class="pagination-info">
+                        显示 1-5 / 共 80 条工单
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-sm active">1</button>
+                        <button class="btn btn-sm">2</button>
+                        <button class="btn btn-sm">3</button>
+                        <button class="btn btn-sm">...</button>
+                        <button class="btn btn-sm">16</button>
+                        <button class="btn btn-sm">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <div class="status-bar-content">
+            <span><i class="fas fa-ticket-alt text-primary"></i> 工单系统运行正常</span>
+            <span>今日新增: 15个</span>
+            <span>待处理: 8个</span>
+            <span>我的工单: 3个</span>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof NavigationManager !== 'undefined') { NavigationManager.init(); }
+            if (typeof Clock !== 'undefined') { Clock.init(); }
+            OperationLogger.log('访问页面', { page: '工单中心' });
+        });
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

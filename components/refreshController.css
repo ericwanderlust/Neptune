@@ -1,0 +1,159 @@
+/* Safari兼容性修复 */
+.refresh-controller {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(145deg, #ffffff, #f0f2f5);
+  border: 2px solid #e6e9ed;
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 10000;
+  -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  -moz-box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+  align-items: center;
+  gap: 10px;
+  -webkit-transition: all 0.4s ease-in-out;
+  -moz-transition: all 0.4s ease-in-out;
+  -ms-transition: all 0.4s ease-in-out;
+  -o-transition: all 0.4s ease-in-out;
+  transition: all 0.4s ease-in-out;
+  width: 220px;
+  min-height: 60px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.refresh-controller.active {
+  background: linear-gradient(145deg, #e8f4f8, #d1e7dd);
+  border-color: #3498db;
+}
+
+.refresh-button {
+  background: linear-gradient(145deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  -webkit-transition: background 0.2s;
+  -moz-transition: background 0.2s;
+  -ms-transition: background 0.2s;
+  -o-transition: background 0.2s;
+  transition: background 0.2s;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  -webkit-box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  -moz-box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+}
+
+.refresh-button:hover {
+  background: linear-gradient(145deg, #2980b9, #1f5f99);
+  -webkit-transform: translateY(-1px);
+  -moz-transform: translateY(-1px);
+  -ms-transform: translateY(-1px);
+  -o-transform: translateY(-1px);
+  transform: translateY(-1px);
+}
+
+.status-line { 
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex; 
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+  align-items: center; 
+  gap: 8px; 
+  font-weight: 600; 
+}
+
+.status-dot { 
+  width: 10px; 
+  height: 10px; 
+  border-radius: 50%; 
+  -webkit-animation: pulse 1.5s infinite;
+  -moz-animation: pulse 1.5s infinite;
+  -ms-animation: pulse 1.5s infinite;
+  -o-animation: pulse 1.5s infinite;
+  animation: pulse 1.5s infinite; 
+}
+
+.status-dot.success { background-color: #27ae60; }
+.status-dot.waiting { 
+  background-color: #3498db; 
+  -webkit-animation: none;
+  -moz-animation: none;
+  -ms-animation: none;
+  -o-animation: none;
+  animation: none; 
+}
+.status-dot.error { background-color: #e74c3c; }
+
+@-webkit-keyframes fadeInSlide {
+  0% { opacity: 0; -webkit-transform: translateY(-20px); transform: translateY(-20px); }
+  100% { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
+}
+
+@keyframes fadeInSlide {
+  0% { opacity: 0; -webkit-transform: translateY(-20px); transform: translateY(-20px); }
+  100% { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
+}
+
+.status-text {
+  font-size: 11px;
+  color: #2c3e50;
+  font-weight: 500;
+  -webkit-animation: fadeInSlide 0.5s ease-out;
+  -moz-animation: fadeInSlide 0.5s ease-out;
+  -ms-animation: fadeInSlide 0.5s ease-out;
+  -o-animation: fadeInSlide 0.5s ease-out;
+  animation: fadeInSlide 0.5s ease-out;
+}
+
+.refresh-controller.hidden {
+  -webkit-transition: all 0.3s;
+  -moz-transition: all 0.3s;
+  -ms-transition: all 0.3s;
+  -o-transition: all 0.3s;
+  transition: all 0.3s;
+  -webkit-transform: translateY(-100%);
+  -moz-transform: translateY(-100%);
+  -ms-transform: translateY(-100%);
+  -o-transform: translateY(-100%);
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.refresh-controller.visible {
+  -webkit-transform: translateY(0);
+  -moz-transform: translateY(0);
+  -ms-transform: translateY(0);
+  -o-transform: translateY(0);
+  transform: translateY(0);
+  opacity: 1;
+} 

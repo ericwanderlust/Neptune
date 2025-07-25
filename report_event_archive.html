@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 报表与历史事件</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f5f6fa;
+            color: #2f3640;
+        }
+
+        .top-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .system-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #57606f;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #4A90B8;
+            background: white;
+            color: #4A90B8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #ff6b6b !important;
+            border-color: #ff6b6b !important;
+            color: white !important;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252 !important;
+            border-color: #ff5252 !important;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .report-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            border-color: #4A90B8;
+            outline: none;
+        }
+
+        .event-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ddd;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4A90B8;
+        }
+
+        .timeline-item.critical {
+            border-left-color: #ff3838;
+        }
+
+        .timeline-item.warning {
+            border-left-color: #ffa502;
+        }
+
+        .timeline-item.resolved {
+            border-left-color: #2ed573;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -22px;
+            top: 15px;
+            width: 12px;
+            height: 12px;
+            background: #4A90B8;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #ddd;
+        }
+
+        .timeline-dot.critical {
+            background: #ff3838;
+        }
+
+        .timeline-dot.warning {
+            background: #ffa502;
+        }
+
+        .timeline-dot.resolved {
+            background: #2ed573;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .event-title {
+            font-weight: 600;
+            color: #2f3640;
+        }
+
+        .event-time {
+            font-size: 12px;
+            color: #57606f;
+            margin-left: auto;
+        }
+
+        .event-desc {
+            font-size: 14px;
+            color: #57606f;
+            margin-bottom: 8px;
+        }
+
+        .event-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .event-tag {
+            padding: 2px 6px;
+            background: #4A90B8;
+            color: white;
+            font-size: 10px;
+            border-radius: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #4A90B8;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2f3640;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #57606f;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            height: 300px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #57606f;
+            font-size: 14px;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            cursor: pointer;
+        }
+
+        .filter-option input[type="checkbox"] {
+            accent-color: #4A90B8;
+        }
+
+        .export-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="system-title">
+            <i class="fas fa-chart-bar" style="color: #4A90B8; margin-right: 8px;"></i>
+            在线水力模型系统 - 报表与历史事件
+        </div>
+        
+        <div class="nav-right">
+            <a href="dashboard_overview.html" class="btn">
+                <i class="fas fa-home"></i> 运营总览
+            </a>
+            <a href="monitor_realtime_map.html" class="btn">
+                <i class="fas fa-map"></i> 实时监控
+            </a>
+            <a href="dispatch_emergency_main.html" class="btn">
+                <i class="fas fa-bolt"></i> 应急调度
+            </a>
+            <span><i class="fas fa-user" style="color: #4A90B8; margin-right: 5px;"></i>数据员 - 赵工</span>
+            <span>|</span>
+            <span><i class="fas fa-circle" style="color: #2ed573; margin-right: 5px;"></i>在线</span>
+            <span>|</span>
+            <span id="currentTime">2024-01-15 14:30:25</span>
+            <span>|</span>
+            <a href="login.html" class="btn logout-btn" onclick="return confirm('确定要退出系统吗？')">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="filter-section">
+                <div class="filter-title">筛选条件</div>
+                
+                <div class="form-group">
+                    <label class="form-label">时间范围</label>
+                    <select class="form-input">
+                        <option value="today">今天</option>
+                        <option value="week" selected>本周</option>
+                        <option value="month">本月</option>
+                        <option value="quarter">本季度</option>
+                        <option value="year">本年度</option>
+                        <option value="custom">自定义</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">事件类型</label>
+                    <div class="filter-option">
+                        <input type="checkbox" id="pressure-event" checked>
+                        <label for="pressure-event">压力异常</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="quality-event" checked>
+                        <label for="quality-event">水质异常</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="flow-event" checked>
+                        <label for="flow-event">流量异常</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="maintenance-event">
+                        <label for="maintenance-event">维护事件</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="complaint-event">
+                        <label for="complaint-event">用户投诉</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">严重程度</label>
+                    <div class="filter-option">
+                        <input type="checkbox" id="critical" checked>
+                        <label for="critical">严重</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="warning" checked>
+                        <label for="warning">警告</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="info">
+                        <label for="info">信息</label>
+                    </div>
+                </div>
+
+                <button class="btn" style="width: 100%; margin-top: 15px;" onclick="applyFilters()">
+                    <i class="fas fa-filter"></i> 应用筛选
+                </button>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">快捷报表</div>
+                <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="generateReport('daily')">
+                    <i class="fas fa-calendar-day"></i> 日报表
+                </button>
+                <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="generateReport('weekly')">
+                    <i class="fas fa-calendar-week"></i> 周报表
+                </button>
+                <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="generateReport('monthly')">
+                    <i class="fas fa-calendar-alt"></i> 月报表
+                </button>
+                <button class="btn" style="width: 100%;" onclick="generateReport('custom')">
+                    <i class="fas fa-cog"></i> 自定义报表
+                </button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- 统计概览 -->
+            <div class="report-section">
+                <div class="section-header">
+                    <div class="section-title">统计概览</div>
+                    <div class="export-section">
+                        <button class="btn" onclick="exportData('excel')">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button class="btn" onclick="exportData('pdf')">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">247</div>
+                            <div class="stat-label">总事件数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">15</div>
+                            <div class="stat-label">严重事件</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">89.2%</div>
+                            <div class="stat-label">处理完成率</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">2.3h</div>
+                            <div class="stat-label">平均响应时间</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">156</div>
+                            <div class="stat-label">本周新增</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">98.7%</div>
+                            <div class="stat-label">系统可用性</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势图表 -->
+            <div class="report-section">
+                <div class="section-header">
+                    <div class="section-title">趋势分析</div>
+                    <select class="form-input" style="width: auto;">
+                        <option>按天统计</option>
+                        <option>按周统计</option>
+                        <option>按月统计</option>
+                    </select>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <i class="fas fa-chart-area" style="margin-right: 8px;"></i>
+                        事件趋势图表 (图表组件加载中...)
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史事件时间轴 -->
+            <div class="report-section">
+                <div class="section-header">
+                    <div class="section-title">历史事件时间轴</div>
+                    <button class="btn" onclick="refreshTimeline()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="event-timeline">
+                        <div class="timeline-line"></div>
+                        
+                        <div class="timeline-item critical">
+                            <div class="timeline-dot critical"></div>
+                            <div class="event-header">
+                                <div class="event-title">S01097-11SE19A泵站压力突降</div>
+                                <div class="event-time">2024-01-15 13:45</div>
+                            </div>
+                            <div class="event-desc">泵站压力从0.45MPa急剧下降至0.15MPa，影响下游供水</div>
+                            <div class="event-tags">
+                                <span class="event-tag">压力异常</span>
+                                <span class="event-tag">设备故障</span>
+                                <span class="event-tag">处理中</span>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item warning">
+                            <div class="timeline-dot warning"></div>
+                            <div class="event-header">
+                                <div class="event-title">柴湾区水质浊度超标</div>
+                                <div class="event-time">2024-01-15 11:20</div>
+                            </div>
+                            <div class="event-desc">监测点S00321-11SE19B检测到浊度1.85NTU，超出标准值</div>
+                            <div class="event-tags">
+                                <span class="event-tag">水质异常</span>
+                                <span class="event-tag">用户投诉</span>
+                                <span class="event-tag">处理中</span>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item resolved">
+                            <div class="timeline-dot resolved"></div>
+                            <div class="event-header">
+                                <div class="event-title">管道P-001维护完成</div>
+                                <div class="event-time">2024-01-15 09:30</div>
+                            </div>
+                            <div class="event-desc">香港仔地区主供水管道计划维护工作完成，恢复正常供水</div>
+                            <div class="event-tags">
+                                <span class="event-tag">计划维护</span>
+                                <span class="event-tag">已完成</span>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item warning">
+                            <div class="timeline-dot warning"></div>
+                            <div class="event-header">
+                                <div class="event-title">北角区域流量下降</div>
+                                <div class="event-time">2024-01-14 16:15</div>
+                            </div>
+                            <div class="event-desc">监测点流量较正常值下降18%，疑似管道局部堵塞</div>
+                            <div class="event-tags">
+                                <span class="event-tag">流量异常</span>
+                                <span class="event-tag">已解决</span>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item resolved">
+                            <div class="timeline-dot resolved"></div>
+                            <div class="event-header">
+                                <div class="event-title">用户投诉处理完成</div>
+                                <div class="event-time">2024-01-14 14:00</div>
+                            </div>
+                            <div class="event-desc">铜锣湾用户反映的水压不足问题已通过调度优化解决</div>
+                            <div class="event-tags">
+                                <span class="event-tag">用户投诉</span>
+                                <span class="event-tag">调度优化</span>
+                                <span class="event-tag">已解决</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function applyFilters() {
+            console.log('应用筛选条件');
+            // 这里可以根据筛选条件重新加载数据
+        }
+
+        function generateReport(type) {
+            console.log('生成报表:', type);
+            alert(`正在生成${type}报表...`);
+        }
+
+        function exportData(format) {
+            console.log('导出数据:', format);
+            alert(`正在导出${format}格式的数据...`);
+        }
+
+        function refreshTimeline() {
+            console.log('刷新时间轴');
+            // 这里可以重新加载事件数据
+        }
+
+        function updateTime() {
+            const currentTimeEl = document.getElementById('currentTime');
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+    </script>
+</body>
+</html> 

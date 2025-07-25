@@ -1,0 +1,3749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 运营总览</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+            zoom: 1;
+            transform: scale(1);
+            transform-origin: 0 0;
+            width: 100vw;
+            min-height: 100vh;
+        }
+
+        /* 主题变量 */
+        :root {
+            --bg-color: #f5f6fa;
+            --card-bg: #ffffff;
+            --text-color: #2f3640;
+            --text-secondary: #57606f;
+            --border-color: #e5e9f0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+            --positive: #2ed573;
+            --neutral: #4A90B8;
+            --warning: #ffa502;
+            --critical: #ff3838;
+            --accent-blue: #74b9ff;
+            --accent-purple: #a29bfe;
+            --surface-elevated: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e2e;
+            --card-bg: #2a2a3a;
+            --text-color: #cdd6f4;
+            --text-secondary: #a6adc8;
+            --border-color: #45475a;
+            --shadow: 0 2px 8px rgba(0,0,0,0.2);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.4);
+            --input-bg: #313244;
+            --hover-bg: #383848;
+            --surface-elevated: #343447;
+        }
+
+        /* 深色主题下的特殊样式 */
+        [data-theme="dark"] .btn {
+            background: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .btn:hover {
+            background: #4A90B8;
+            border-color: #4A90B8;
+            color: white;
+        }
+
+
+
+        [data-theme="dark"] .device-category {
+            background: var(--input-bg);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .device-item {
+            background: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .device-item.online {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .device-item.warning {
+            background: #4a3728;
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .device-item.offline {
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .device-name {
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .alert-item {
+            border-bottom-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .bottom-status-bar {
+            background: #1a1a2e;
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .system-stat-item {
+            background: var(--input-bg);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .system-stat-item:hover {
+            background: var(--hover-bg);
+            border-color: #4A90B8;
+        }
+
+        [data-theme="dark"] .stat-trend.up {
+            background: #1a3d35;
+            color: #2ed573;
+        }
+
+        [data-theme="dark"] .stat-trend.down {
+            background: #1a2b4d;
+            color: #74b9ff;
+        }
+
+        [data-theme="dark"] .stat-trend.neutral {
+            background: #2a1a3d;
+            color: #a29bfe;
+        }
+
+        [data-theme="dark"] .metric-item {
+            background: var(--input-bg);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .metric-item:hover {
+            background: var(--hover-bg);
+            border-color: #4A90B8;
+        }
+
+        [data-theme="dark"] .metric-status.online {
+            background: #1a3d35;
+            color: #2ed573;
+        }
+
+        [data-theme="dark"] .metric-status.normal {
+            background: #1a2b4d;
+            color: #74b9ff;
+        }
+
+        [data-theme="dark"] .metric-status.warning {
+            background: #4a3728;
+            color: #ffa502;
+        }
+
+        [data-theme="dark"] .metric-status.excellent {
+            background: #2a1a3d;
+            color: #a29bfe;
+        }
+
+
+
+        /* 主要内容区域 */
+        .main-container {
+            padding: 20px;
+            padding-bottom: 80px;
+            min-height: calc(100vh - 60px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* KPI卡片区域 */
+        .kpi-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-section > * {
+            flex: 1 1 calc(25% - 15px);
+            min-width: 260px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neutral), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            border-color: var(--neutral);
+        }
+
+        .kpi-card:hover::before {
+            transform: translateX(0);
+        }
+        
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .kpi-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .kpi-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 2px;
+            line-height: 1.1;
+        }
+
+        .kpi-unit {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+            font-weight: 400;
+        }
+
+        .kpi-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .kpi-change.positive { color: var(--positive); }
+        .kpi-change.negative { color: var(--critical); }
+
+        .kpi-icon-wrapper {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: linear-gradient(135deg, var(--bg-color), var(--border-color));
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            flex-shrink: 0;
+        }
+
+        /* 进度条样式 */
+        .kpi-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            margin-top: auto;
+        }
+
+        .kpi-progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-positive .kpi-progress-bar {
+            background: linear-gradient(90deg, var(--positive), #00d68f);
+        }
+
+        .progress-neutral .kpi-progress-bar {
+            background: linear-gradient(90deg, var(--neutral), #74b9ff);
+        }
+
+        .progress-warning .kpi-progress-bar {
+            background: linear-gradient(90deg, var(--warning), #fdcb6e);
+        }
+
+        .progress-critical .kpi-progress-bar {
+            background: linear-gradient(90deg, var(--critical), #fd79a8);
+        }
+
+        .positive-icon { color: var(--positive); }
+        .neutral-icon { color: var(--neutral); }
+        .warning-icon { color: var(--warning); }
+        .critical-icon { color: var(--critical); }
+
+        /* 管理层快速操作栏 */
+        .executive-toolbar {
+            display: flex;
+            gap: 15px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .toolbar-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toolbar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .quick-actions-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 6px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 70px;
+            font-size: 10px;
+            color: var(--text-color);
+        }
+
+        .quick-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .quick-btn.critical {
+            border-color: var(--critical);
+            color: var(--critical);
+        }
+
+        .quick-btn.warning {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .quick-btn.neutral {
+            border-color: var(--neutral);
+            color: var(--neutral);
+        }
+
+        .quick-btn.positive {
+            border-color: var(--positive);
+            color: var(--positive);
+        }
+
+        .quick-btn:hover {
+            background: var(--bg-color);
+        }
+
+        .quick-btn i {
+            font-size: 14px;
+        }
+
+        .quick-btn .badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--critical);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .risk-indicators {
+            display: flex;
+            gap: 8px;
+        }
+
+        .risk-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px;
+            background: var(--bg-color);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .risk-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .risk-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        /* 运营洞察卡片 */
+        .operational-insights {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .insights-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .insights-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .insights-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .insight-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .insight-item.positive {
+            border-left: 3px solid var(--positive);
+        }
+
+        .insight-item.warning {
+            border-left: 3px solid var(--warning);
+        }
+
+        .insight-item.neutral {
+            border-left: 3px solid var(--neutral);
+        }
+
+        .insight-item.critical {
+            border-left: 3px solid var(--critical);
+        }
+
+        .insight-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .insight-item.positive .insight-icon {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--positive);
+        }
+
+        .insight-item.warning .insight-icon {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .insight-item.neutral .insight-icon {
+            background: rgba(74, 144, 184, 0.1);
+            color: var(--neutral);
+        }
+
+        .insight-item.critical .insight-icon {
+            background: rgba(255, 56, 56, 0.1);
+            color: var(--critical);
+        }
+
+        .insight-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .insight-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .insight-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 2px;
+        }
+
+        .insight-desc {
+            font-size: 10px;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        /* 主要内容布局 */
+        .content-grid {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* 左侧主要内容 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* 滚动条样式 */
+        .main-content::-webkit-scrollbar,
+        .side-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .main-content::-webkit-scrollbar-track,
+        .side-panel::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 3px;
+        }
+        
+        .main-content::-webkit-scrollbar-thumb,
+        .side-panel::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+        
+        .main-content::-webkit-scrollbar-thumb:hover,
+        .side-panel::-webkit-scrollbar-thumb:hover {
+            background: #4A90B8;
+        }
+        
+        /* Firefox滚动条 */
+        .main-content,
+        .side-panel {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--bg-color);
+        }
+
+        /* 地图概览 */
+        .map-overview {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+            max-height: 500px;
+            flex: 1;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .view-more {
+            color: #4A90B8;
+            font-size: 12px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+        }
+
+        .view-more:hover {
+            color: #357abd;
+        }
+
+        #overview-map {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            border-radius: 8px;
+        }
+
+        /* 指标样式已移至右侧面板统一管理区域 */
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-item:hover {
+            background: var(--hover-bg, #e9ecef);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .metric-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .metric-content {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .metric-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .metric-status.online {
+            background: #d1f2eb;
+            color: #00b894;
+        }
+
+        .metric-status.normal {
+            background: #dff0ff;
+            color: #0984e3;
+        }
+
+        .metric-status.warning {
+            background: #fff5e6;
+            color: #e17055;
+        }
+
+        .metric-status.excellent {
+            background: #f3f0ff;
+            color: #6c5ce7;
+        }
+
+        /* 左侧底部双栏布局 */
+        .left-bottom-grid {
+            display: flex;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .left-bottom-grid > * {
+            flex: 1;
+        }
+
+
+
+        /* ============================================
+           右侧面板布局系统 - 统一管理
+           ============================================ */
+        
+        /* 右侧面板容器 */
+        .side-panel {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* 右侧面板的所有子面板通用样式 */
+        .side-panel > .alerts-panel,
+        .side-panel > .operation-metrics-panel,
+        .side-panel > .system-overview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            min-height: 180px;
+            overflow: hidden;
+        }
+
+        /* 右侧面板标题区域通用样式 */
+        .side-panel .section-header {
+            flex-shrink: 0;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* 右侧面板内容区域通用样式 - 支持独立滚动 */
+        .alerts-list,
+        .metrics-grid,
+        .system-stats {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 8px;
+            padding-right: 5px;
+            min-height: 0;
+        }
+
+        /* 设备状态面板 */
+        .device-status-panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+
+        .device-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .device-category {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            background: var(--bg-color);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .category-count {
+            margin-left: auto;
+            background: var(--border-color);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .device-item.online {
+            border-left: 3px solid #2ed573;
+        }
+
+        .device-item.warning {
+            border-left: 3px solid #ffa502;
+            background: #fff9f0;
+        }
+
+        .device-item.offline {
+            border-left: 3px solid #95a5a6;
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .device-name {
+            font-weight: 500;
+        }
+
+        .device-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+
+        .device-item.online .device-status {
+            background: #d1f2eb;
+            color: #00b894;
+        }
+
+        .device-item.warning .device-status {
+            background: #fff5e6;
+            color: #e17055;
+        }
+
+        .device-item.offline .device-status {
+            background: #e9ecef;
+            color: #666;
+        }
+
+        /* ============================================
+           右侧面板具体内容样式
+           ============================================ */
+
+        /* 1. 告警面板 - 告警列表样式 */
+        .alerts-list {
+            max-height: 320px; /* 增加高度，减少底部遮挡 */
+            overflow-y: auto; /* 添加滚动条 */
+        }
+        
+        .alerts-list .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .alerts-list .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 2. 运营指标面板 - 2x2网格布局 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        /* 3. 系统状态面板 - 垂直列表布局 */
+        .system-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 320px; /* 增加高度，确保5条记录完整显示 */
+            overflow-y: auto; /* 添加滚动条 */
+        }
+
+        /* 4. 右侧面板统一滚动条样式 */
+        .alerts-list::-webkit-scrollbar,
+        .metrics-grid::-webkit-scrollbar,
+        .system-stats::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .alerts-list::-webkit-scrollbar-track,
+        .metrics-grid::-webkit-scrollbar-track,
+        .system-stats::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 3px;
+        }
+        
+        .alerts-list::-webkit-scrollbar-thumb,
+        .metrics-grid::-webkit-scrollbar-thumb,
+        .system-stats::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+        
+        .alerts-list::-webkit-scrollbar-thumb:hover,
+        .metrics-grid::-webkit-scrollbar-thumb:hover,
+        .system-stats::-webkit-scrollbar-thumb:hover {
+            background: #4A90B8;
+        }
+        
+        /* Firefox滚动条兼容 */
+        .alerts-list,
+        .metrics-grid,
+        .system-stats {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--bg-color);
+        }
+
+        /* ============================================
+           右侧面板布局系统配置完成
+           ============================================ */
+
+        /* 告警样式已移至右侧面板统一管理区域 */
+
+        .alert-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+        }
+
+        .alert-icon.critical {
+            background: var(--critical);
+            animation: pulse 2s infinite;
+        }
+
+        .alert-icon.warning {
+            background: var(--warning);
+        }
+
+        .alert-icon.info {
+            background: var(--neutral);
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 6px;
+        }
+
+        .alert-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .alert-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* 底部状态栏 */
+        .bottom-status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #2f3640;
+            color: white;
+            padding: 10px 20px; /* 减少内边距 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            z-index: 1000;
+            height: 50px; /* 明确设置高度 */
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            gap: 30px;
+        }
+
+        .system-health, .last-update, .connection-status, .model-accuracy {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 快速操作 */
+        .quick-actions {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+
+        .action-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .action-grid > * {
+            flex: 1 1 calc(50% - 6px);
+            min-width: 120px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .action-btn:hover {
+            background: var(--bg-color);
+            border-color: #4A90B8;
+            color: #4A90B8;
+        }
+
+        .action-btn i {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .action-btn span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .content-grid {
+                flex-direction: column;
+            }
+            
+            .side-panel {
+                width: 100%;
+                flex-direction: row;
+                gap: 20px;
+            }
+            
+            .side-panel > * {
+                flex: 1;
+                min-height: 300px;
+            }
+            
+            .executive-toolbar {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .quick-actions-row {
+                justify-content: center;
+            }
+            
+            .risk-indicators {
+                justify-content: center;
+            }
+            
+            .insights-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px;
+                padding-bottom: 60px;
+                gap: 15px;
+            }
+            
+            .kpi-section > * {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+            
+            .kpi-value { 
+                font-size: 28px; 
+            }
+            
+            .kpi-card { 
+                padding: 16px; 
+            }
+
+            .content-grid {
+                gap: 15px;
+            }
+            
+            .map-overview {
+                min-height: 300px;
+            }
+            
+            .left-bottom-grid {
+                flex-direction: column;
+            }
+            
+            .side-panel {
+                flex-direction: column;
+            }
+            
+            .side-panel > * {
+                min-height: 250px;
+            }
+            
+            .action-grid > * {
+                flex: 1 1 100%;
+            }
+            
+            .executive-toolbar {
+                padding: 12px;
+            }
+            
+            .quick-actions-row {
+                gap: 8px;
+            }
+            
+            .quick-btn {
+                min-width: 70px;
+                padding: 10px 6px;
+            }
+            
+            .risk-indicators {
+                gap: 8px;
+            }
+            
+            .insights-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+        /* 动画 */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* KPI告警动画已移除 - 只保留全局告警效果 */
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* 全局告警提示 */
+        .global-alert-notification {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 380px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border-left: 4px solid #ff3838;
+            z-index: 10000;
+            transform: translateX(420px);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+        }
+
+        .global-alert-notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .global-alert-notification.critical {
+            border-left-color: #ff3838;
+            animation: criticalAlertPulse 2s infinite;
+        }
+
+        .global-alert-notification.warning {
+            border-left-color: #ffa502;
+            animation: warningAlertPulse 3s infinite;
+        }
+
+        .global-alert-notification.info {
+            border-left-color: #4A90B8;
+            animation: infoAlertGlow 4s infinite;
+        }
+
+        @keyframes criticalAlertPulse {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(255, 56, 56, 0.7);
+                transform: translateY(0) scale(1);
+                border-color: rgba(255, 56, 56, 0.3);
+            }
+            25% { 
+                box-shadow: 0 16px 48px rgba(255, 56, 56, 0.4), 0 0 30px 8px rgba(255, 56, 56, 0.6);
+                transform: translateY(-3px) scale(1.02);
+                border-color: rgba(255, 56, 56, 0.8);
+            }
+            50% { 
+                box-shadow: 0 24px 60px rgba(255, 56, 56, 0.5), 0 0 40px 15px rgba(255, 56, 56, 0.4);
+                transform: translateY(-4px) scale(1.03);
+                border-color: rgba(255, 56, 56, 1);
+            }
+            75% { 
+                box-shadow: 0 16px 48px rgba(255, 56, 56, 0.4), 0 0 30px 8px rgba(255, 56, 56, 0.6);
+                transform: translateY(-3px) scale(1.02);
+                border-color: rgba(255, 56, 56, 0.8);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(255, 56, 56, 0.7);
+                transform: translateY(0) scale(1);
+                border-color: rgba(255, 56, 56, 0.3);
+            }
+        }
+
+        @keyframes warningAlertPulse {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(255, 165, 2, 0.5);
+                border-color: rgba(255, 165, 2, 0.4);
+            }
+            50% { 
+                box-shadow: 0 16px 48px rgba(255, 165, 2, 0.3), 0 0 25px 8px rgba(255, 165, 2, 0.4);
+                border-color: rgba(255, 165, 2, 0.8);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(255, 165, 2, 0.5);
+                border-color: rgba(255, 165, 2, 0.4);
+            }
+        }
+
+        @keyframes infoAlertGlow {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(74, 144, 184, 0.2);
+            }
+            50% { 
+                box-shadow: 0 10px 36px rgba(74, 144, 184, 0.15), 0 0 15px 3px rgba(74, 144, 184, 0.15);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 0 rgba(74, 144, 184, 0.2);
+            }
+        }
+
+        .global-alert-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .global-alert-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+
+        .global-alert-icon.critical {
+            background: #ff3838;
+        }
+
+        .global-alert-icon.warning {
+            background: #ffa502;
+        }
+
+        .global-alert-icon.info {
+            background: #4A90B8;
+        }
+
+        .global-alert-content {
+            padding: 15px 20px;
+        }
+
+        .global-alert-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .global-alert-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .global-alert-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .global-alert-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .global-alert-btn {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .global-alert-btn:hover {
+            background: #4A90B8;
+            border-color: #4A90B8;
+            color: white;
+        }
+
+        .global-alert-btn.primary {
+            background: #4A90B8;
+            border-color: #4A90B8;
+            color: white;
+        }
+
+        .global-alert-btn.primary:hover {
+            background: #357abd;
+            border-color: #357abd;
+        }
+
+        .close-alert {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-alert:hover {
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        /* 缩放和高DPI屏幕适配 */
+        @media (min-resolution: 1.5dppx), (min-resolution: 144dpi) {
+            body {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        }
+        
+        /* 缩放级别适配 - 检测实际可视区域 */
+        @media (max-width: 1024px) and (min-width: 800px) {
+            /* 中等缩放级别 */
+            .content-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .map-overview {
+                min-height: 350px;
+            }
+        }
+        
+        /* 强制双栏布局的最小宽度 */
+        @media (min-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr 400px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-container {
+                padding: 10px;
+                padding-bottom: 50px;
+                gap: 10px;
+            }
+            
+            .kpi-section {
+                gap: 10px;
+            }
+            
+            .kpi-value { 
+                font-size: 24px; 
+            }
+            
+            .kpi-card { 
+                padding: 12px; 
+            }
+            
+            .content-grid {
+                gap: 10px;
+            }
+            
+            .map-overview {
+                min-height: 250px;
+                padding: 15px;
+            }
+            
+            .device-status-panel,
+            .alerts-panel,
+            .trend-panel,
+            .quick-actions {
+                padding: 15px;
+            }
+            
+            .section-title {
+                font-size: 14px;
+            }
+            
+            .kpi-title {
+                font-size: 11px;
+            }
+        }
+
+        /* 趋势面板 */
+        .trend-panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            flex-shrink: 0;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 系统状态样式已移至右侧面板统一管理区域 */
+
+        .system-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .system-stat-item:hover {
+            background: var(--hover-bg, #e9ecef);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-icon-small {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .stat-details {
+            flex: 1;
+        }
+
+        .stat-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value-small {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-trend {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .stat-trend.up {
+            background: #d1f2eb;
+            color: #00b894;
+        }
+
+        .stat-trend.down {
+            background: #dff0ff;
+            color: #0984e3;
+        }
+
+        .stat-trend.neutral {
+            background: #f3f0ff;
+            color: #6c5ce7;
+        }
+
+        .trend-chart {
+            width: 100%;
+            height: 280px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #trend-chart {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        /* 深色模式下的发光效果增强 */
+        [data-theme="dark"] .global-alert-notification.critical {
+            animation: criticalAlertPulseDark 2s infinite;
+        }
+
+        [data-theme="dark"] .global-alert-notification.warning {
+            animation: warningAlertPulseDark 3s infinite;
+        }
+
+        [data-theme="dark"] .global-alert-notification.info {
+            animation: infoAlertGlowDark 4s infinite;
+        }
+
+        @keyframes criticalAlertPulseDark {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 0 rgba(255, 56, 56, 0.8);
+                transform: translateY(0) scale(1);
+                background: var(--card-bg);
+                border-color: rgba(255, 56, 56, 0.5);
+            }
+            25% { 
+                box-shadow: 0 16px 48px rgba(255, 56, 56, 0.5), 0 0 35px 12px rgba(255, 56, 56, 0.7);
+                transform: translateY(-3px) scale(1.02);
+                background: rgba(255, 56, 56, 0.03);
+                border-color: rgba(255, 56, 56, 0.8);
+            }
+            50% { 
+                box-shadow: 0 24px 64px rgba(255, 56, 56, 0.6), 0 0 50px 18px rgba(255, 56, 56, 0.6);
+                transform: translateY(-4px) scale(1.03);
+                background: rgba(255, 56, 56, 0.05);
+                border-color: rgba(255, 56, 56, 1);
+            }
+            75% { 
+                box-shadow: 0 16px 48px rgba(255, 56, 56, 0.5), 0 0 35px 12px rgba(255, 56, 56, 0.7);
+                transform: translateY(-3px) scale(1.02);
+                background: rgba(255, 56, 56, 0.03);
+                border-color: rgba(255, 56, 56, 0.8);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 0 rgba(255, 56, 56, 0.8);
+                transform: translateY(0) scale(1);
+                background: var(--card-bg);
+                border-color: rgba(255, 56, 56, 0.5);
+            }
+        }
+
+        @keyframes warningAlertPulseDark {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(255, 165, 2, 0.5);
+            }
+            50% { 
+                box-shadow: 0 12px 40px rgba(255, 165, 2, 0.3), 0 0 25px 8px rgba(255, 165, 2, 0.4);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(255, 165, 2, 0.5);
+            }
+        }
+
+        @keyframes infoAlertGlowDark {
+            0% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(74, 144, 184, 0.4);
+            }
+            50% { 
+                box-shadow: 0 10px 36px rgba(74, 144, 184, 0.25), 0 0 20px 6px rgba(74, 144, 184, 0.3);
+            }
+            100% { 
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(74, 144, 184, 0.4);
+            }
+        }
+
+        /* 右侧告警指示器 */
+        .right-alert-indicator {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 6px;
+            z-index: 20000;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .right-alert-indicator.show {
+            opacity: 1;
+            pointer-events: auto; /* 显示时允许点击 */
+        }
+
+        .right-alert-indicator.critical {
+            background: linear-gradient(180deg, 
+                rgba(255, 56, 56, 1) 0%, 
+                rgba(255, 56, 56, 1) 25%, 
+                rgba(255, 56, 56, 1) 50%, 
+                rgba(255, 56, 56, 1) 75%, 
+                rgba(255, 56, 56, 1) 100%);
+            animation: criticalRightPulse 1.5s infinite;
+            box-shadow: 0 0 20px rgba(255, 56, 56, 0.8), 0 0 40px rgba(255, 56, 56, 0.6);
+        }
+
+        .right-alert-indicator.warning {
+            background: linear-gradient(180deg, 
+                rgba(255, 165, 2, 1) 0%, 
+                rgba(255, 165, 2, 1) 25%, 
+                rgba(255, 165, 2, 1) 50%, 
+                rgba(255, 165, 2, 1) 75%, 
+                rgba(255, 165, 2, 1) 100%);
+            animation: warningRightPulse 2.5s infinite;
+            box-shadow: 0 0 15px rgba(255, 165, 2, 0.7), 0 0 30px rgba(255, 165, 2, 0.5);
+        }
+
+        .right-alert-indicator.info {
+            background: linear-gradient(180deg, 
+                rgba(74, 144, 184, 0.9) 0%, 
+                rgba(74, 144, 184, 1) 25%, 
+                rgba(74, 144, 184, 1) 50%, 
+                rgba(74, 144, 184, 1) 75%, 
+                rgba(74, 144, 184, 0.9) 100%);
+            animation: infoRightGlow 3.5s infinite;
+            box-shadow: 0 0 12px rgba(74, 144, 184, 0.6), 0 0 24px rgba(74, 144, 184, 0.4);
+        }
+
+        @keyframes criticalRightPulse {
+            0% { 
+                width: 6px;
+                box-shadow: 0 0 25px rgba(255, 56, 56, 0.9), 0 0 50px rgba(255, 56, 56, 0.7), 0 0 100px rgba(255, 56, 56, 0.4);
+                transform: scaleY(1);
+            }
+            25% { 
+                width: 12px;
+                box-shadow: 0 0 35px rgba(255, 56, 56, 1), 0 0 70px rgba(255, 56, 56, 0.8), 0 0 140px rgba(255, 56, 56, 0.6);
+                transform: scaleY(1.02);
+            }
+            50% { 
+                width: 18px;
+                box-shadow: 0 0 50px rgba(255, 56, 56, 1), 0 0 100px rgba(255, 56, 56, 0.9), 0 0 200px rgba(255, 56, 56, 0.7);
+                transform: scaleY(1.05);
+            }
+            75% { 
+                width: 12px;
+                box-shadow: 0 0 35px rgba(255, 56, 56, 1), 0 0 70px rgba(255, 56, 56, 0.8), 0 0 140px rgba(255, 56, 56, 0.6);
+                transform: scaleY(1.02);
+            }
+            100% { 
+                width: 6px;
+                box-shadow: 0 0 25px rgba(255, 56, 56, 0.9), 0 0 50px rgba(255, 56, 56, 0.7), 0 0 100px rgba(255, 56, 56, 0.4);
+                transform: scaleY(1);
+            }
+        }
+
+        @keyframes warningRightPulse {
+            0% { 
+                width: 6px;
+                box-shadow: 0 0 18px rgba(255, 165, 2, 0.8), 0 0 36px rgba(255, 165, 2, 0.5), 0 0 72px rgba(255, 165, 2, 0.3);
+                transform: scaleY(1);
+            }
+            50% { 
+                width: 12px;
+                box-shadow: 0 0 30px rgba(255, 165, 2, 1), 0 0 60px rgba(255, 165, 2, 0.8), 0 0 120px rgba(255, 165, 2, 0.5);
+                transform: scaleY(1.03);
+            }
+            100% { 
+                width: 6px;
+                box-shadow: 0 0 18px rgba(255, 165, 2, 0.8), 0 0 36px rgba(255, 165, 2, 0.5), 0 0 72px rgba(255, 165, 2, 0.3);
+                transform: scaleY(1);
+            }
+        }
+
+        @keyframes infoRightGlow {
+            0% { 
+                width: 6px;
+                box-shadow: 0 0 15px rgba(74, 144, 184, 0.7), 0 0 30px rgba(74, 144, 184, 0.4), 0 0 60px rgba(74, 144, 184, 0.2);
+                transform: scaleY(1);
+            }
+            50% { 
+                width: 10px;
+                box-shadow: 0 0 25px rgba(74, 144, 184, 0.9), 0 0 50px rgba(74, 144, 184, 0.6), 0 0 100px rgba(74, 144, 184, 0.4);
+                transform: scaleY(1.02);
+            }
+            100% { 
+                width: 6px;
+                box-shadow: 0 0 15px rgba(74, 144, 184, 0.7), 0 0 30px rgba(74, 144, 184, 0.4), 0 0 60px rgba(74, 144, 184, 0.2);
+                transform: scaleY(1);
+            }
+        }
+    </style>
+  </head>
+<body>
+    <!-- 右侧告警指示器 -->
+    <div class="right-alert-indicator" id="rightAlertIndicator"></div>
+    
+    <!-- 统一导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+            </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+        </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">张总</span>
+                        <span class="user-role">管理决策层</span>
+                    </div>
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time" id="currentTime">2025-01-15 14:30:25</span>
+                </div>
+                
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- KPI指标卡片 -->
+        <div class="kpi-section">
+            <div class="kpi-card progress-positive" onclick="drillDown('water_supply')">
+                <div class="kpi-header">
+                    <div class="kpi-content">
+                        <div class="kpi-title">供水总量</div>
+                        <div class="kpi-value">2,845.6 <span class="kpi-unit">万m³</span></div>
+                        <div class="kpi-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>较昨日 +2.3%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-icon-wrapper positive-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                </div>
+                <div class="kpi-progress">
+                    <div class="kpi-progress-bar" style="width: 78%"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card progress-neutral" onclick="drillDown('pressure')">
+                <div class="kpi-header">
+                    <div class="kpi-content">
+                        <div class="kpi-title">平均压力</div>
+                        <div class="kpi-value">0.42 <span class="kpi-unit">MPa</span></div>
+                        <div class="kpi-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>较昨日 +1.8%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-icon-wrapper neutral-icon">
+                        <i class="fas fa-gauge-high"></i>
+                    </div>
+                </div>
+                <div class="kpi-progress">
+                    <div class="kpi-progress-bar" style="width: 65%"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card progress-warning" onclick="drillDown('alerts')">
+                <div class="kpi-header">
+                    <div class="kpi-content">
+                        <div class="kpi-title">活跃告警</div>
+                        <div class="kpi-value">7 <span class="kpi-unit">条</span></div>
+                        <div class="kpi-change negative">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>较昨日 +3</span>
+                        </div>
+                    </div>
+                    <div class="kpi-icon-wrapper warning-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="kpi-progress">
+                    <div class="kpi-progress-bar" style="width: 35%"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card progress-positive" onclick="drillDown('efficiency')">
+                <div class="kpi-header">
+                    <div class="kpi-content">
+                        <div class="kpi-title">运行效率</div>
+                        <div class="kpi-value">94.2 <span class="kpi-unit">%</span></div>
+                        <div class="kpi-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>较昨日 +0.5%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-icon-wrapper positive-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="kpi-progress">
+                    <div class="kpi-progress-bar" style="width: 94%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理层快速操作栏 -->
+        <div class="executive-toolbar">
+            <div class="toolbar-section">
+                <div class="toolbar-title">快速决策</div>
+                <div class="quick-actions-row">
+                    <button class="quick-btn critical" onclick="emergencyResponse()">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>应急响应</span>
+                        <div class="badge" id="criticalCount">2</div>
+                    </button>
+                    <button class="quick-btn warning" onclick="supervisePipeline()">
+                        <i class="fas fa-search"></i>
+                        <span>管网督查</span>
+                        <div class="badge" id="inspectionCount">5</div>
+                    </button>
+                    <button class="quick-btn neutral" onclick="viewReports()">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>今日报表</span>
+                    </button>
+                    <button class="quick-btn positive" onclick="exportData()">
+                        <i class="fas fa-download"></i>
+                        <span>数据导出</span>
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar-section">
+                <div class="toolbar-title">风险追溯</div>
+                <div class="risk-indicators">
+                    <div class="risk-item">
+                        <span class="risk-label">投诉高发区</span>
+                        <span class="risk-value">3个</span>
+                    </div>
+                    <div class="risk-item">
+                        <span class="risk-label">低压告警</span>
+                        <span class="risk-value">7处</span>
+                    </div>
+                    <div class="risk-item">
+                        <span class="risk-label">未闭环事件</span>
+                        <span class="risk-value">12件</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 运营洞察卡片 -->
+        <div class="operational-insights">
+            <div class="insights-header">
+                <div class="insights-title">运营洞察与决策支持</div>
+                <div class="insights-time">基于过去24小时数据分析</div>
+            </div>
+            <div class="insights-grid">
+                <div class="insight-item positive" onclick="handleInsightClick('efficiency')">
+                    <div class="insight-icon">
+                        <i class="fas fa-trending-up"></i>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-label">供水效率</div>
+                        <div class="insight-value">比昨日提升2.3%</div>
+                        <div class="insight-desc">主要得益于泵站优化调度</div>
+                    </div>
+                </div>
+                <div class="insight-item warning" onclick="handleInsightClick('risk')">
+                    <div class="insight-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-label">风险预警</div>
+                        <div class="insight-value">港岛东区压力偏低</div>
+                        <div class="insight-desc">建议优先检查P-003管段</div>
+                    </div>
+                </div>
+                <div class="insight-item neutral" onclick="handleInsightClick('resource')">
+                    <div class="insight-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-label">资源配置</div>
+                        <div class="insight-value">南区负荷率达95%</div>
+                        <div class="insight-desc">考虑启用备用水源</div>
+                    </div>
+                </div>
+                <div class="insight-item critical" onclick="handleInsightClick('response')">
+                    <div class="insight-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-label">响应时效</div>
+                        <div class="insight-value">12件事件未闭环</div>
+                        <div class="insight-desc">需要督促相关部门处理</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="content-grid">
+            <!-- 左侧主内容 -->
+            <div class="main-content">
+                <!-- 地图概览 -->
+                <div class="map-overview">
+                    <div class="section-header">
+                        <div class="section-title">管网运行态势</div>
+                        <a href="monitor_realtime_map.html" class="view-more">
+                            查看详细地图 <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div id="overview-map"></div>
+                </div>
+
+
+
+                <!-- 24小时趋势面板 -->
+                <div class="trend-panel">
+                    <div class="section-header">
+                        <div class="section-title">24小时趋势</div>
+                        <a href="report_event_archive.html" class="view-more">
+                            详细报表 <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="trend-chart">
+                        <div id="trend-chart"></div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(90deg, #00b894, #00cec9);"></div>
+                            <span>供水量 (万m³) - 左轴</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(90deg, #0984e3, #74b9ff);"></div>
+                            <span>平均压力 (MPa) - 右轴</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffa502; width: 10px; height: 10px; border-radius: 50%;"></div>
+                            <span>告警数量 (散点表示)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 左侧底部双栏布局 -->
+                <div class="left-bottom-grid">
+                    <!-- 快速操作 -->
+                    <div class="quick-actions">
+                        <div class="section-header">
+                            <div class="section-title">快速操作</div>
+                        </div>
+                        
+                        <div class="action-grid">
+                            <a href="monitor_realtime_map.html" class="action-btn">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <span>实时监控</span>
+                            </a>
+                            <a href="dispatch_emergency_main.html" class="action-btn">
+                                <i class="fas fa-bolt"></i>
+                                <span>应急调度</span>
+                            </a>
+                            <a href="service_complaint_center.html" class="action-btn">
+                                <i class="fas fa-headset"></i>
+                                <span>工单管理</span>
+                            </a>
+                            <a href="quality_trace_analysis.html" class="action-btn">
+                                <i class="fas fa-search"></i>
+                                <span>水质溯源</span>
+                            </a>
+                            <a href="dispatch_workflow_builder.html" class="action-btn">
+                                <i class="fas fa-sitemap"></i>
+                                <span>流程编排</span>
+                            </a>
+                            <a href="report_event_archive.html" class="action-btn">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>数据报表</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 设备状态面板 -->
+                    <div class="device-status-panel">
+                        <div class="section-header">
+                            <div class="section-title">设备运行状态</div>
+                            <a href="system_admin_panel.html" class="view-more">
+                                设备管理 <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="device-categories">
+                            <div class="device-category">
+                                <div class="category-header">
+                                    <i class="fas fa-tint" style="color: #00b894;"></i>
+                                    <span>泵站设备</span>
+                                    <span class="category-count">12/13</span>
+                                </div>
+                                <div class="device-list">
+                                    <div class="device-item online">
+                                        <span class="device-name">S01097-11SE19A</span>
+                                        <span class="device-status">运行中</span>
+                                    </div>
+                                    <div class="device-item warning">
+                                        <span class="device-name">S00034-11SE08B</span>
+                                        <span class="device-status">压力异常</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="device-category">
+                                <div class="category-header">
+                                    <i class="fas fa-water" style="color: #0984e3;"></i>
+                                    <span>水库水塔</span>
+                                    <span class="category-count">8/8</span>
+                                </div>
+                                <div class="device-list">
+                                    <div class="device-item online">
+                                        <span class="device-name">东区主水库</span>
+                                        <span class="device-status">正常</span>
+                                    </div>
+                                    <div class="device-item warning">
+                                        <span class="device-name">南区调节池</span>
+                                        <span class="device-status">水位偏低</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="device-category">
+                                <div class="category-header">
+                                    <i class="fas fa-cogs" style="color: #6c5ce7;"></i>
+                                    <span>监测设备</span>
+                                    <span class="category-count">156/158</span>
+                                </div>
+                                <div class="device-list">
+                                    <div class="device-item online">
+                                        <span class="device-name">流量监测点</span>
+                                        <span class="device-status">正常</span>
+                                    </div>
+                                    <div class="device-item offline">
+                                        <span class="device-name">质量检测仪</span>
+                                        <span class="device-status">离线</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧面板 -->
+            <div class="side-panel">
+                <!-- 实时告警面板 -->
+                <div class="alerts-panel">
+                    <div class="section-header">
+                        <div class="section-title">实时告警</div>
+                        <a href="dispatch_emergency_main.html" class="view-more">
+                            查看全部 <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="alerts-list">
+                    <div class="alert-item">
+                        <div class="alert-icon critical">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">S01097-11SE19A 泵站压力异常</div>
+                            <div class="alert-desc">压力值超出正常范围，需要立即检查</div>
+                            <div class="alert-time">2分钟前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">管道P-001流量下降</div>
+                            <div class="alert-desc">流量较正常值下降15%</div>
+                            <div class="alert-time">5分钟前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon info">
+                            <i class="fas fa-info"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">预定维护提醒</div>
+                            <div class="alert-desc">S00027-11SE14A节点今日计划维护</div>
+                            <div class="alert-time">1小时前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon critical">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">T00145-水塔水位急剧下降</div>
+                            <div class="alert-desc">水位从8.5m降至6.2m，疑似泄漏</div>
+                            <div class="alert-time">刚刚</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">区域供水压力不均</div>
+                            <div class="alert-desc">港岛东区压力偏低，已启动备用泵站</div>
+                            <div class="alert-time">10分钟前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon critical">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">P-003管道流量骤降</div>
+                            <div class="alert-desc">流量从450L/s降至180L/s，可能爆管</div>
+                            <div class="alert-time">15分钟前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">北区配水站负荷过高</div>
+                            <div class="alert-desc">当前负荷95%，接近满载运行</div>
+                            <div class="alert-time">30分钟前</div>
+                        </div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-icon info">
+                            <i class="fas fa-info"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">系统切换到夜间模式</div>
+                            <div class="alert-desc">已启用节能运行策略</div>
+                            <div class="alert-time">1小时前</div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- 运营关键指标 -->
+                <div class="operation-metrics-panel">
+                    <div class="section-header">
+                        <div class="section-title">运营关键指标</div>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-item" onclick="drillDownStat('monitor')">
+                            <div class="metric-icon" style="background: #00b894;">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">监测点位</div>
+                                <div class="metric-value">156个</div>
+                                <div class="metric-status online">在线率 98.7%</div>
+                    </div>
+                </div>
+
+                        <div class="metric-item" onclick="drillDownStat('pipeline')">
+                            <div class="metric-icon" style="background: #0984e3;">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">管道总长</div>
+                                <div class="metric-value">583km</div>
+                                <div class="metric-status normal">运行正常</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-item" onclick="drillDownStat('focus')">
+                            <div class="metric-icon" style="background: #e17055;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">重点关注</div>
+                                <div class="metric-value">3处</div>
+                                <div class="metric-status warning">需要注意</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-item" onclick="drillDownStat('coverage')">
+                            <div class="metric-icon" style="background: #6c5ce7;">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-label">供水覆盖</div>
+                                <div class="metric-value">100%</div>
+                                <div class="metric-status excellent">覆盖完整</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统状态总览 -->
+                <div class="system-overview-panel">
+                    <div class="section-header">
+                        <div class="section-title">系统状态总览</div>
+                    </div>
+                    
+                    <div class="system-stats">
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #00b894;">
+                                <i class="fas fa-server"></i>
+                    </div>
+                            <div class="stat-details">
+                                <div class="stat-name">数据采集率</div>
+                                <div class="stat-value-small">99.8% <span class="stat-trend up">↑0.2%</span></div>
+                </div>
+            </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #0984e3;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">响应时间</div>
+                                <div class="stat-value-small">1.2s <span class="stat-trend down">↓0.3s</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #6c5ce7;">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">计算精度</div>
+                                <div class="stat-value-small">98.7% <span class="stat-trend up">↑0.1%</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #e17055;">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">安全评级</div>
+                                <div class="stat-value-small">A级 <span class="stat-trend neutral">稳定</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #ffa502;">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">网络延迟</div>
+                                <div class="stat-value-small">12ms <span class="stat-trend down">↓3ms</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #a29bfe;">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">存储使用率</div>
+                                <div class="stat-value-small">73.2% <span class="stat-trend up">↑1.5%</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #fd79a8;">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">API调用/分钟</div>
+                                <div class="stat-value-small">1,247 <span class="stat-trend up">↑182</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #00b894;">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">实时更新</div>
+                                <div class="stat-value-small">正常 <span class="stat-trend up">↑稳定</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #00cec9;">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">CPU使用率</div>
+                                <div class="stat-value-small">28.5% <span class="stat-trend down">↓4.2%</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-stat-item">
+                            <div class="stat-icon-small" style="background: #e84393;">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-name">数据同步率</div>
+                                <div class="stat-value-small">99.9% <span class="stat-trend neutral">正常</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统一状态栏 -->
+        <div class="status-bar">
+            <div class="status-bar-content">
+                <span>
+                    <i class="fas fa-circle text-success"></i>
+                    系统运行正常
+                </span>
+                <span>
+                    <i class="fas fa-sync-alt"></i>
+                    数据同步正常
+                </span>
+                <span>
+                    <i class="fas fa-database"></i>
+                    数据实时更新
+                </span>
+                <span id="statusTime">2025-01-15 14:30:25</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 全局变量
+        let overviewMap;
+        let trendChart;
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 全局告警队列
+        let alertQueue = [];
+        let currentAlert = null;
+
+        // 初始化应用
+        function initializeApp() {
+            // 首先初始化主题
+            initTheme();
+            
+            initOverviewMap();
+            initTrendChart();
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 模拟数据更新
+            setTimeout(updateKPIData, 2000);
+            setInterval(updateKPIData, 30000);
+            
+            // 更新趋势图数据
+            setInterval(updateTrendChart, 60000); // 每分钟更新
+            
+            // 初始化告警系统
+            initAlertSystem();
+            
+            // 模拟管理层关注的动态更新
+            setTimeout(simulateExecutiveUpdates, 5000);
+            setInterval(simulateExecutiveUpdates, 45000);
+            
+            // 监听滚动事件检查右侧指示器可见性
+            window.addEventListener('scroll', debounce(checkRightIndicatorVisibility, 200));
+            
+            // 监听窗口大小变化
+            const handleResize = debounce(function() {
+                if (trendChart) {
+                    trendChart.resize();
+                }
+                if (overviewMap) {
+                    overviewMap.invalidateSize();
+                }
+            }, 250);
+            
+            window.addEventListener('resize', handleResize);
+            window.addEventListener('orientationchange', handleResize);
+        }
+
+        // 初始化告警系统
+        function initAlertSystem() {
+            // 模拟随机告警生成
+            setInterval(generateRandomAlert, 15000); // 每15秒可能生成一个告警
+            
+            // 5秒后显示第一个告警
+            setTimeout(() => {
+                showGlobalAlert({
+                    type: 'critical',
+                    title: 'S01097-11SE19A 泵站压力异常',
+                    desc: '压力值超出正常范围，需要立即检查',
+                    time: '刚刚'
+                });
+            }, 5000);
+        }
+
+        // 生成随机告警
+        function generateRandomAlert() {
+            // 30%概率生成告警
+            if (Math.random() > 0.3) return;
+            
+            const alerts = [
+                {
+                    type: 'critical',
+                    title: 'T00145-水塔水位急剧下降',
+                    desc: '水位从8.5m降至6.2m，疑似泄漏',
+                    time: '刚刚'
+                },
+                {
+                    type: 'warning',
+                    title: '区域供水压力不均',
+                    desc: '港岛东区压力偏低，已启动备用泵站',
+                    time: '刚刚'
+                },
+                {
+                    type: 'critical',
+                    title: 'P-002管道流量异常',
+                    desc: '流量突然下降45%，可能存在爆管',
+                    time: '刚刚'
+                },
+                {
+                    type: 'warning',
+                    title: 'S00034-11SE08B压力高',
+                    desc: '压力超出安全阈值，建议调节',
+                    time: '刚刚'
+                },
+                {
+                    type: 'info',
+                    title: '系统自动切换到夜间模式',
+                    desc: '已启用节能运行策略',
+                    time: '刚刚'
+                }
+            ];
+            
+            const randomAlert = alerts[Math.floor(Math.random() * alerts.length)];
+            showGlobalAlert(randomAlert);
+        }
+
+        // 显示全局告警
+        function showGlobalAlert(alert) {
+            // 如果当前有告警显示，加入队列
+            if (currentAlert) {
+                alertQueue.push(alert);
+                return;
+            }
+            
+            currentAlert = alert;
+            
+            // 显示右侧告警指示器
+            showRightAlertIndicator(alert.type);
+            
+            // 创建告警元素
+            const alertElement = document.createElement('div');
+            alertElement.className = `global-alert-notification ${alert.type}`;
+            alertElement.innerHTML = `
+                <div class="global-alert-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="global-alert-icon ${alert.type}">
+                            <i class="fas fa-${alert.type === 'critical' ? 'exclamation' : alert.type === 'warning' ? 'exclamation-triangle' : 'info'}"></i>
+                        </div>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-color);">
+                            ${alert.type === 'critical' ? '严重告警' : alert.type === 'warning' ? '警告' : '信息'}
+                        </span>
+                    </div>
+                    <button class="close-alert" onclick="closeGlobalAlert()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="global-alert-content">
+                    <div class="global-alert-title">${alert.title}</div>
+                    <div class="global-alert-desc">${alert.desc}</div>
+                    <div class="global-alert-time">${alert.time}</div>
+                    <div class="global-alert-actions">
+                        <button class="global-alert-btn" onclick="dismissAlert()">忽略</button>
+                        <button class="global-alert-btn primary" onclick="handleAlert()">处理</button>
+                    </div>
+                </div>
+            `;
+            
+            // 将告警添加到页面body
+            document.body.appendChild(alertElement);
+            
+            // 显示动画
+            setTimeout(() => {
+                alertElement.classList.add('show');
+            }, 100);
+            
+            // 自动关闭（严重告警20秒，其他10秒）
+            const autoCloseTime = alert.type === 'critical' ? 20000 : 10000;
+            setTimeout(() => {
+                if (alertElement.parentNode) {
+                    closeGlobalAlert();
+                }
+            }, autoCloseTime);
+        }
+
+        // 显示右侧告警指示器
+        function showRightAlertIndicator(type) {
+            const indicator = document.getElementById('rightAlertIndicator');
+            if (indicator) {
+                // 清除现有类名
+                indicator.className = 'right-alert-indicator';
+                // 添加新的类型
+                indicator.classList.add(type, 'show');
+                
+                // 添加点击事件滚动到顶部查看告警
+                indicator.style.cursor = 'pointer';
+                indicator.onclick = scrollToAlert;
+            }
+        }
+
+        // 隐藏右侧告警指示器
+        function hideRightAlertIndicator() {
+            const indicator = document.getElementById('rightAlertIndicator');
+            if (indicator) {
+                indicator.classList.remove('show');
+                // 延迟清除类名，等待动画完成
+                setTimeout(() => {
+                    indicator.className = 'right-alert-indicator';
+                }, 400);
+            }
+        }
+
+        // 关闭全局告警
+        function closeGlobalAlert() {
+            const alertElement = document.querySelector('.global-alert-notification');
+            
+            if (alertElement) {
+                alertElement.classList.remove('show');
+                setTimeout(() => {
+                    if (alertElement.parentNode) {
+                        alertElement.remove();
+                    }
+                    
+                    currentAlert = null;
+                    
+                    // 显示队列中的下一个告警
+                    if (alertQueue.length > 0) {
+                        const nextAlert = alertQueue.shift();
+                        setTimeout(() => showGlobalAlert(nextAlert), 1000);
+                    } else {
+                        // 没有更多告警时隐藏右侧指示器
+                        hideRightAlertIndicator();
+                    }
+                }, 400);
+            }
+        }
+
+        // 忽略告警
+        function dismissAlert() {
+            closeGlobalAlert();
+        }
+
+        // 处理告警
+        function handleAlert() {
+            // 跳转到应急调度页面
+            window.open('dispatch_emergency_main.html', '_blank');
+            closeGlobalAlert();
+        }
+
+        // 点击右侧指示器滚动到顶部看告警
+        function scrollToAlert() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // 检查是否需要显示右侧指示器
+        function checkRightIndicatorVisibility() {
+            const alertElement = document.querySelector('.global-alert-notification');
+            const indicator = document.getElementById('rightAlertIndicator');
+            
+            if (alertElement && indicator) {
+                const alertRect = alertElement.getBoundingClientRect();
+                const isAlertVisible = alertRect.top >= 0 && alertRect.bottom <= window.innerHeight;
+                
+                if (!isAlertVisible && !indicator.classList.contains('show')) {
+                    // 告警不可见且指示器未显示时，显示指示器
+                    const alertType = alertElement.className.includes('critical') ? 'critical' :
+                                     alertElement.className.includes('warning') ? 'warning' : 'info';
+                    showRightAlertIndicator(alertType);
+                } else if (isAlertVisible && indicator.classList.contains('show')) {
+                    // 告警可见且指示器显示时，隐藏指示器
+                    hideRightAlertIndicator();
+                }
+            }
+        }
+
+
+        // 主题切换功能
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // 更新图标
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+            
+            // 重新初始化图表以应用新主题
+            if (trendChart) {
+                trendChart.dispose();
+                initTrendChart();
+            }
+            
+            // 更新地图主题
+            if (overviewMap) {
+                updateMapTheme();
+            }
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            const themeIcon = document.getElementById('theme-icon');
+            if (themeIcon) {
+                themeIcon.className = savedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+            }
+        }
+
+        // 全局地图图层变量
+        let currentTileLayer = null;
+
+        // 初始化概览地图
+        function initOverviewMap() {
+            const mapContainer = document.getElementById('overview-map');
+            if (!mapContainer) return;
+            
+            overviewMap = L.map('overview-map', {
+                preferCanvas: true,
+                zoomControl: true
+            }).setView([22.3193, 114.1694], 10);
+            
+            // 根据当前主题设置底图
+            updateMapTheme();
+            
+            // 确保地图正确调整大小
+            setTimeout(() => {
+                overviewMap.invalidateSize();
+            }, 100);
+
+            // 添加管道线段（demo）
+            addPipelineSegments();
+
+            // 添加示例标记点（关键节点）
+            addKeyPoints();
+
+            // 点击地图跳转到详细监控页面
+            overviewMap.on('click', function() {
+                window.location.href = 'monitor_realtime_map.html';
+            });
+        }
+
+        // 更新地图主题
+        function updateMapTheme() {
+            if (!overviewMap) return;
+            
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            // 移除现有图层
+            if (currentTileLayer) {
+                overviewMap.removeLayer(currentTileLayer);
+            }
+            
+            // 根据主题选择底图
+            if (isDark) {
+                // 深色主题使用深色底图
+                currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+                });
+            } else {
+                // 浅色主题使用浅色底图
+                currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '© OpenStreetMap contributors © CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 19
+                });
+            }
+            
+            currentTileLayer.addTo(overviewMap);
+        }
+
+        // 添加管道线段
+        function addPipelineSegments() {
+            const pipelineData = [
+                {
+                    coords: [[22.3193, 114.1694], [22.2793, 114.1894]],
+                    name: '主供水管道 P-001',
+                    diameter: '1200mm',
+                    material: '钢管',
+                    status: 'normal'
+                },
+                {
+                    coords: [[22.3193, 114.1694], [22.3593, 114.1494]],
+                    name: '北向输水管 P-002',
+                    diameter: '800mm',
+                    material: '球墨铸铁',
+                    status: 'normal'
+                },
+                {
+                    coords: [[22.3193, 114.1694], [22.2993, 114.1394]],
+                    name: '西向配水管 P-003',
+                    diameter: '600mm',
+                    material: '钢管',
+                    status: 'warning'
+                },
+                {
+                    coords: [[22.3193, 114.1694], [22.3393, 114.1994]],
+                    name: '南向干管 P-004',
+                    diameter: '1000mm',
+                    material: '预应力钢筒混凝土管',
+                    status: 'normal'
+                },
+                {
+                    coords: [[22.2793, 114.1894], [22.3593, 114.1494]],
+                    name: '东北连接管 P-005',
+                    diameter: '400mm',
+                    material: '球墨铸铁',
+                    status: 'normal'
+                },
+                {
+                    coords: [[22.2993, 114.1394], [22.3393, 114.1994]],
+                    name: '环形配水管 P-006',
+                    diameter: '500mm',
+                    material: '钢管',
+                    status: 'critical'
+                }
+            ];
+
+            pipelineData.forEach(pipe => {
+                let color, weight;
+                switch(pipe.status) {
+                    case 'critical':
+                        color = '#ff3838';
+                        weight = 5;
+                        break;
+                    case 'warning':
+                        color = '#ffa502';
+                        weight = 4;
+                        break;
+                    default:
+                        color = '#4A90B8';
+                        weight = 3;
+                }
+
+                const pipelineLayer = L.polyline(pipe.coords, {
+                    color: color,
+                    weight: weight,
+                    opacity: 0.8,
+                    smoothFactor: 1
+            }).addTo(overviewMap);
+
+                // 添加管道信息弹窗
+                pipelineLayer.bindPopup(`
+                    <div style="font-family: 'Microsoft YaHei'; min-width: 200px;">
+                        <h4 style="margin: 0 0 8px 0; color: #2f3640;">${pipe.name}</h4>
+                        <p style="margin: 4px 0; font-size: 12px;"><strong>管径:</strong> ${pipe.diameter}</p>
+                        <p style="margin: 4px 0; font-size: 12px;"><strong>材质:</strong> ${pipe.material}</p>
+                        <p style="margin: 4px 0; font-size: 12px;"><strong>状态:</strong> 
+                            <span style="color: ${color}; font-weight: bold;">
+                                ${getStatusText(pipe.status)}
+                            </span>
+                        </p>
+                    </div>
+                `);
+
+                // 添加管道动画效果（流动效果）
+                if (pipe.status === 'normal') {
+                    setInterval(() => {
+                        pipelineLayer.setStyle({
+                            opacity: 0.6 + Math.sin(Date.now() * 0.003) * 0.2
+                        });
+                    }, 50);
+                }
+            });
+        }
+
+        // 添加关键节点
+        function addKeyPoints() {
+            const keyPoints = [
+                {lat: 22.3193, lng: 114.1694, name: '中央泵站', status: 'normal', type: 'pump'},
+                {lat: 22.2793, lng: 114.1894, name: '东区水库', status: 'warning', type: 'reservoir'},
+                {lat: 22.3593, lng: 114.1494, name: '北区配水站', status: 'normal', type: 'station'},
+                {lat: 22.2993, lng: 114.1394, name: '西区水塔', status: 'normal', type: 'tank'},
+                {lat: 22.3393, lng: 114.1994, name: '南区监测点', status: 'critical', type: 'monitor'}
+            ];
+
+            keyPoints.forEach(point => {
+                const color = point.status === 'critical' ? '#ff3838' : 
+                             point.status === 'warning' ? '#ffa502' : '#2ed573';
+                
+                // 根据类型选择图标
+                let iconClass;
+                switch(point.type) {
+                    case 'pump': iconClass = 'fas fa-tint'; break;
+                    case 'reservoir': iconClass = 'fas fa-water'; break;
+                    case 'station': iconClass = 'fas fa-industry'; break;
+                    case 'tank': iconClass = 'fas fa-wine-bottle'; break;
+                    case 'monitor': iconClass = 'fas fa-tachometer-alt'; break;
+                    default: iconClass = 'fas fa-circle';
+                }
+                
+                const marker = L.circleMarker([point.lat, point.lng], {
+                    radius: 10,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(overviewMap);
+
+                // 添加设备详细信息弹窗
+                marker.bindPopup(`
+                    <div style="font-family: 'Microsoft YaHei'; min-width: 180px;">
+                        <h4 style="margin: 0 0 8px 0; color: #2f3640;">
+                            <i class="${iconClass}" style="margin-right: 6px; color: ${color};"></i>
+                            ${point.name}
+                        </h4>
+                        <p style="margin: 4px 0; font-size: 12px;"><strong>类型:</strong> ${getTypeText(point.type)}</p>
+                        <p style="margin: 4px 0; font-size: 12px;"><strong>状态:</strong> 
+                            <span style="color: ${color}; font-weight: bold;">
+                                ${getStatusText(point.status)}
+                            </span>
+                        </p>
+                        <p style="margin: 8px 0 4px 0; font-size: 11px; color: #666;">
+                            点击查看详细监控数据
+                        </p>
+                    </div>
+                `);
+
+                // 严重状态的节点添加闪烁效果
+                if (point.status === 'critical') {
+                    setInterval(() => {
+                        marker.setStyle({
+                            fillOpacity: 0.4 + Math.sin(Date.now() * 0.01) * 0.4
+                        });
+                    }, 100);
+                }
+            });
+        }
+
+        // 获取设备类型文字
+        function getTypeText(type) {
+            switch(type) {
+                case 'pump': return '泵站';
+                case 'reservoir': return '水库';
+                case 'station': return '配水站';
+                case 'tank': return '水塔';
+                case 'monitor': return '监测点';
+                default: return '未知';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'normal': return '正常';
+                case 'warning': return '预警';
+                case 'critical': return '严重';
+                default: return '未知';
+            }
+        }
+
+        // 钻取功能
+        function drillDown(type) {
+            switch(type) {
+                case 'water_supply':
+                    window.location.href = 'monitor_realtime_map.html?focus=supply';
+                    break;
+                case 'pressure':
+                    window.location.href = 'monitor_realtime_map.html?focus=pressure';
+                    break;
+                case 'alerts':
+                    window.location.href = 'dispatch_emergency_main.html';
+                    break;
+                case 'efficiency':
+                    window.location.href = 'report_event_archive.html?type=efficiency';
+                    break;
+            }
+        }
+
+        // 管理层快速操作功能
+        function emergencyResponse() {
+            // 跳转到应急响应页面，自动筛选严重告警
+            window.open('dispatch_emergency_main.html?filter=critical', '_blank');
+        }
+
+        function supervisePipeline() {
+            // 跳转到管网督查页面，显示需要关注的区域
+            window.open('monitor_realtime_map.html?mode=inspection', '_blank');
+        }
+
+        function viewReports() {
+            // 跳转到今日报表页面
+            window.open('report_event_archive.html?period=today', '_blank');
+        }
+
+        function exportData() {
+            // 快速导出今日数据
+            showExportDialog();
+        }
+
+        function showExportDialog() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: var(--card-bg);
+                color: var(--text-color);
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: var(--shadow);
+            `;
+            
+            content.innerHTML = `
+                <h3 style="margin: 0 0 20px 0; color: var(--text-color);">数据导出</h3>
+                <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-secondary);">报表类型</label>
+                        <select style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color);">
+                            <option>今日运营报表</option>
+                            <option>供水量统计</option>
+                            <option>告警事件报告</option>
+                            <option>设备运行状态</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-secondary);">导出格式</label>
+                        <div style="display: flex; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="radio" name="format" value="pdf" checked> PDF
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="radio" name="format" value="excel"> Excel
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="radio" name="format" value="image"> 图片
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <button onclick="this.closest('.modal').remove()" 
+                            style="margin-right: 10px; padding: 8px 16px; border: 1px solid var(--border-color); 
+                                   background: var(--card-bg); color: var(--text-color); border-radius: 4px; cursor: pointer;">
+                        取消
+                    </button>
+                    <button onclick="executeExport()" 
+                            style="padding: 8px 16px; border: none; background: #4A90B8; color: white; 
+                                   border-radius: 4px; cursor: pointer;">
+                        导出
+                    </button>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // 点击背景关闭
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+        }
+
+        function executeExport() {
+            // 模拟导出过程
+            const modal = document.querySelector('.modal');
+            const button = modal.querySelector('button[onclick="executeExport()"]');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 导出中...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-check"></i> 导出完成';
+                setTimeout(() => {
+                    modal.remove();
+                                 }, 1000);
+             }, 2000);
+         }
+
+         // 模拟管理层关注的动态更新
+         function simulateExecutiveUpdates() {
+             // 更新告警计数
+             const criticalCount = document.getElementById('criticalCount');
+             const inspectionCount = document.getElementById('inspectionCount');
+             
+             if (criticalCount) {
+                 const currentCount = parseInt(criticalCount.textContent);
+                 const variation = Math.random() > 0.7 ? 1 : 0; // 30%概率增加告警
+                 criticalCount.textContent = Math.max(0, currentCount + variation - (Math.random() > 0.8 ? 1 : 0));
+             }
+             
+             if (inspectionCount) {
+                 const currentCount = parseInt(inspectionCount.textContent);
+                 const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, 1的变化
+                 inspectionCount.textContent = Math.max(0, currentCount + variation);
+             }
+             
+             // 模拟严重告警时的卡片样式已移除，只保留基础样式
+         }
+
+        // 更新时间
+        function updateTime() {
+            const currentTimeEl = document.getElementById('currentTime');
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 更新KPI数据
+        function updateKPIData() {
+            // 模拟实时数据更新
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                card.classList.add('loading');
+                
+                // 随机更新进度条
+                const progressBar = card.querySelector('.kpi-progress-bar');
+                if (progressBar) {
+                    setTimeout(() => {
+                        const currentWidth = parseInt(progressBar.style.width);
+                        const variation = (Math.random() - 0.5) * 10; // ±5%的变化
+                        const newWidth = Math.max(10, Math.min(100, currentWidth + variation));
+                        progressBar.style.width = newWidth + '%';
+                    }, 300);
+                }
+                
+                setTimeout(() => {
+                    card.classList.remove('loading');
+                }, 500 + index * 100); // 错开动画时间
+            });
+            
+            // 更新数值（模拟）
+            updateKPIValues();
+        }
+
+        // 更新KPI数值
+        function updateKPIValues() {
+            const updates = [
+                { selector: '.kpi-card:nth-child(1) .kpi-value', base: 2845.6, variation: 50 },
+                { selector: '.kpi-card:nth-child(2) .kpi-value', base: 0.42, variation: 0.02 },
+                { selector: '.kpi-card:nth-child(3) .kpi-value', base: 7, variation: 2 },
+                { selector: '.kpi-card:nth-child(4) .kpi-value', base: 94.2, variation: 1 }
+            ];
+            
+            updates.forEach(update => {
+                const element = document.querySelector(update.selector);
+                if (element) {
+                    const variation = (Math.random() - 0.5) * update.variation;
+                    const newValue = update.base + variation;
+                    
+                    if (update.selector.includes('nth-child(1)')) {
+                        // 供水量
+                        element.innerHTML = `${newValue.toFixed(1)} <span class="kpi-unit">万m³</span>`;
+                    } else if (update.selector.includes('nth-child(2)')) {
+                        // 压力
+                        element.innerHTML = `${newValue.toFixed(2)} <span class="kpi-unit">MPa</span>`;
+                    } else if (update.selector.includes('nth-child(3)')) {
+                        // 告警
+                        element.innerHTML = `${Math.round(newValue)} <span class="kpi-unit">条</span>`;
+                    } else if (update.selector.includes('nth-child(4)')) {
+                        // 效率
+                        element.innerHTML = `${newValue.toFixed(1)} <span class="kpi-unit">%</span>`;
+                    }
+                }
+            });
+        }
+
+        // 初始化趋势图表 (ECharts版本)
+        function initTrendChart() {
+            const chartContainer = document.getElementById('trend-chart');
+            if (!chartContainer) return;
+            
+            // 销毁已存在的图表
+            if (trendChart) {
+                trendChart.dispose();
+            }
+            
+            // 创建新图表
+            trendChart = echarts.init(chartContainer);
+            
+            // 生成24小时模拟数据
+            const hours = 24;
+            const now = new Date();
+            const timeLabels = [];
+            const waterSupplyData = [];
+            const pressureData = [];
+            const alertsData = [];
+            
+            for (let i = hours - 1; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+                timeLabels.push(time.getHours().toString().padStart(2, '0') + ':00');
+                
+                // 模拟供水量数据 (万m³)
+                const baseSupply = 2800;
+                const supplyVariation = Math.sin((time.getHours() - 6) * Math.PI / 12) * 200 + Math.random() * 100 - 50;
+                waterSupplyData.push((baseSupply + supplyVariation).toFixed(1));
+                
+                // 模拟压力数据 (MPa)
+                const basePressure = 0.42;
+                const pressureVariation = Math.sin((time.getHours() - 8) * Math.PI / 10) * 0.05 + (Math.random() - 0.5) * 0.02;
+                pressureData.push((basePressure + pressureVariation).toFixed(3));
+                
+                // 模拟告警数量
+                const baseAlerts = 5;
+                const alertVariation = Math.floor(Math.random() * 8);
+                alertsData.push(baseAlerts + alertVariation);
+            }
+            
+            // 获取当前主题
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#cdd6f4' : '#666';
+            const bgColor = isDark ? '#2a2a3a' : '#ffffff';
+            
+            const option = {
+                backgroundColor: bgColor,
+                                 tooltip: {
+                     trigger: 'axis',
+                     axisPointer: {
+                         type: 'cross',
+                         label: {
+                             backgroundColor: '#4A90B8',
+                             fontSize: 11
+                         },
+                         crossStyle: {
+                             color: '#4A90B8',
+                             width: 1,
+                             type: 'dashed'
+                         }
+                     },
+                     backgroundColor: isDark ? '#2a2a3a' : '#ffffff',
+                     borderColor: isDark ? '#45475a' : '#e1e8ed',
+                     borderWidth: 1,
+                     textStyle: {
+                         color: textColor,
+                         fontSize: 12
+                     },
+                     formatter: function(params) {
+                         let html = `<div style="margin-bottom: 8px; font-weight: bold; color: ${textColor};">${params[0].axisValue}</div>`;
+                         params.forEach(param => {
+                             let unit, value;
+                             if (param.seriesName.includes('供水量')) {
+                                 unit = '万m³';
+                                 value = param.value;
+                             } else if (param.seriesName.includes('压力')) {
+                                 unit = 'MPa';
+                                 value = param.value;
+                             } else if (param.seriesName.includes('告警数量')) {
+                                 unit = '条';
+                                 value = alertsData[param.dataIndex]; // 使用原始告警数量
+                             }
+                             
+                             const colorStyle = typeof param.color === 'string' ? param.color : 
+                                               param.color.colorStops ? param.color.colorStops[0].color : 
+                                               param.seriesName.includes('告警') ? '#ffa502' : '#666';
+                             
+                             html += `<div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 12px;">
+                                         <span style="display: inline-block; width: 12px; height: 12px; background: ${colorStyle}; border-radius: 50%; margin-right: 8px;"></span>
+                                         <span style="color: ${textColor};">${param.seriesName}: </span>
+                                         <strong style="margin-left: 5px; color: ${textColor};">${value} ${unit}</strong>
+                                      </div>`;
+                         });
+                         return html;
+                     }
+                 },
+                                 legend: {
+                     data: ['供水量', '平均压力', '告警数量'],
+                     top: 15,
+                     left: 'center',
+                     itemGap: 25,
+                     textStyle: {
+                         color: textColor,
+                         fontSize: 12
+                     },
+                     itemWidth: 14,
+                     itemHeight: 14
+                 },
+                                 grid: {
+                     left: '70px',
+                     right: '70px',
+                     bottom: '50px',
+                     top: '60px',
+                     containLabel: true
+                 },
+                                 xAxis: [
+                     {
+                         type: 'category',
+                         boundaryGap: false,
+                         data: timeLabels,
+                         axisLabel: {
+                             color: textColor,
+                             fontSize: 10,
+                             interval: 'auto',
+                             rotate: 0,
+                             margin: 8,
+                             formatter: function(value, index) {
+                                 // 在1080p下只显示每4个小时的标签
+                                 if (index % 4 === 0) {
+                                     return value;
+                                 }
+                                 return '';
+                             }
+                         },
+                         axisTick: {
+                             alignWithLabel: true,
+                             interval: 3
+                         },
+                         axisLine: {
+                             lineStyle: {
+                                 color: isDark ? '#45475a' : '#e1e8ed'
+                             }
+                         }
+                     }
+                 ],
+                                 yAxis: [
+                     {
+                         type: 'value',
+                         name: '供水量 (万m³)',
+                         nameLocation: 'middle',
+                         nameGap: 40,
+                         nameTextStyle: {
+                             color: '#00b894',
+                             fontSize: 11,
+                             fontWeight: 'bold'
+                         },
+                         position: 'left',
+                         axisLabel: {
+                             formatter: function(value) {
+                                 return Math.round(value);
+                             },
+                             color: textColor,
+                             fontSize: 10,
+                             margin: 8
+                         },
+                         axisLine: {
+                             show: true,
+                             lineStyle: {
+                                 color: '#00b894',
+                                 width: 2
+                             }
+                         },
+                         splitLine: {
+                             show: true,
+                             lineStyle: {
+                                 color: isDark ? '#45475a' : '#f1f3f8',
+                                 type: 'dashed'
+                             }
+                         }
+                     },
+                     {
+                         type: 'value',
+                         name: '平均压力 (MPa)',
+                         nameLocation: 'middle',
+                         nameGap: 45,
+                         nameTextStyle: {
+                             color: '#0984e3',
+                             fontSize: 11,
+                             fontWeight: 'bold'
+                         },
+                         position: 'right',
+                         min: 0.30,
+                         max: 0.55,
+                         interval: 0.05,
+                         axisLabel: {
+                             formatter: function(value) {
+                                 return value.toFixed(2);
+                             },
+                             color: textColor,
+                             fontSize: 10,
+                             margin: 8
+                         },
+                         axisLine: {
+                             show: true,
+                             lineStyle: {
+                                 color: '#0984e3',
+                                 width: 2
+                             }
+                         },
+                         splitLine: {
+                             show: false
+                         }
+                     }
+                 ],
+                series: [
+                    {
+                        name: '供水量',
+                        type: 'line',
+                        yAxisIndex: 0,
+                        data: waterSupplyData,
+                        smooth: true,
+                        lineStyle: {
+                            width: 3,
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#00cec9' },
+                                { offset: 1, color: '#00b894' }
+                            ])
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(0, 206, 201, 0.3)' },
+                                { offset: 1, color: 'rgba(0, 184, 148, 0.1)' }
+                            ])
+                        },
+                        emphasis: {
+                            focus: 'series'
+                        }
+                    },
+                    {
+                        name: '平均压力',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: pressureData,
+                        smooth: true,
+                        lineStyle: {
+                            width: 3,
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#74b9ff' },
+                                { offset: 1, color: '#0984e3' }
+                            ])
+                        },
+                        symbolSize: 4,
+                        symbol: 'circle',
+                        emphasis: {
+                            focus: 'series'
+                        }
+                    },
+                    {
+                        name: '告警数量',
+                        type: 'scatter',
+                        yAxisIndex: 1,
+                        data: alertsData.map((value, index) => {
+                            // 将告警数量映射到压力范围内进行显示
+                            const normalizedValue = 0.30 + (value / 20) * 0.25; // 映射到0.30-0.55范围
+                            return normalizedValue;
+                        }),
+                        symbolSize: function(value, params) {
+                            // 根据告警数量调整点的大小
+                            const originalValue = alertsData[params.dataIndex];
+                            return Math.max(6, Math.min(16, originalValue * 1.2));
+                        },
+                        itemStyle: {
+                            color: function(params) {
+                                const originalValue = alertsData[params.dataIndex];
+                                if (originalValue <= 3) return '#2ed573';
+                                if (originalValue <= 8) return '#ffa502';
+                                return '#ff3838';
+                            },
+                            shadowBlur: 3,
+                            shadowColor: 'rgba(253, 203, 110, 0.4)'
+                        },
+                        emphasis: {
+                            focus: 'series',
+                            scale: true,
+                            scaleSize: 8
+                        }
+                    }
+                ]
+            };
+            
+            trendChart.setOption(option);
+            
+            // 添加点击事件进行数据下钻
+            trendChart.on('click', function(params) {
+                const time = params.name;
+                const seriesName = params.seriesName;
+                const value = params.value;
+                
+                // 数据下钻功能
+                if (seriesName === '供水量') {
+                    drillDownToDetail('supply', time, value);
+                } else if (seriesName === '平均压力') {
+                    drillDownToDetail('pressure', time, value);
+                } else if (seriesName === '告警数量') {
+                    drillDownToDetail('alerts', time, value);
+                }
+            });
+            
+            // 添加图例点击事件
+            trendChart.on('legendselectchanged', function(params) {
+                console.log('图例切换:', params);
+            });
+            
+            // 响应式处理
+            const handleResize = debounce(function() {
+                if (trendChart) {
+                    trendChart.resize();
+                }
+                if (overviewMap) {
+                    overviewMap.invalidateSize();
+                }
+            }, 300);
+            
+            window.addEventListener('resize', handleResize);
+        }
+        
+        // 更新趋势图表
+        function updateTrendChart() {
+            initTrendChart(); // 重新生成数据并绘制
+        }
+
+        // 统计卡片下钻功能
+        function drillDownStat(type) {
+            switch(type) {
+                case 'monitor':
+                    window.open('monitor_realtime_map.html?focus=nodes', '_blank');
+                    break;
+                case 'pipeline':
+                    window.open('monitor_realtime_map.html?focus=pipes', '_blank');
+                    break;
+                case 'focus':
+                    window.open('dispatch_emergency_main.html?filter=focus', '_blank');
+                    break;
+                case 'coverage':
+                    window.open('report_event_archive.html?type=coverage', '_blank');
+                    break;
+            }
+        }
+
+        // 运营洞察点击功能
+        function handleInsightClick(type) {
+            switch(type) {
+                case 'efficiency':
+                    window.open('report_event_archive.html?focus=efficiency&period=24h', '_blank');
+                    break;
+                case 'risk':
+                    window.open('monitor_realtime_map.html?focus=pressure&region=east', '_blank');
+                    break;
+                case 'resource':
+                    window.open('dispatch_emergency_main.html?action=resource_allocation', '_blank');
+                    break;
+                case 'response':
+                    window.open('service_complaint_center.html?filter=pending', '_blank');
+                    break;
+            }
+        }
+
+        // 数据下钻功能
+        function drillDownToDetail(type, time, value) {
+            // 显示详细信息弹窗
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: var(--card-bg);
+                color: var(--text-color);
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: var(--shadow);
+            `;
+            
+            let title, description, action;
+            switch(type) {
+                case 'supply':
+                    title = `供水量详情 - ${time}`;
+                    description = `当前供水量: ${value} 万m³<br/>
+                                  较前一小时: +2.3%<br/>
+                                  今日累计: 68,294 万m³<br/>
+                                  月度目标: 85,000 万m³`;
+                    action = 'monitor_realtime_map.html?focus=supply&time=' + time;
+                    break;
+                case 'pressure':
+                    title = `压力详情 - ${time}`;
+                    description = `平均压力: ${value} MPa<br/>
+                                  压力范围: 0.35-0.65 MPa<br/>
+                                  异常节点: 3个<br/>
+                                  建议检查: S01097-11SE19A`;
+                    action = 'monitor_realtime_map.html?focus=pressure&time=' + time;
+                    break;
+                case 'alerts':
+                    title = `告警详情 - ${time}`;
+                    description = `活跃告警: ${value} 条<br/>
+                                  严重告警: 2条<br/>
+                                  警告告警: ${value-2}条<br/>
+                                  最新: 压力异常告警`;
+                    action = 'dispatch_emergency_main.html?time=' + time;
+                    break;
+            }
+            
+            content.innerHTML = `
+                <h3 style="margin: 0 0 15px 0; color: var(--text-color);">${title}</h3>
+                <div style="margin-bottom: 20px; line-height: 1.6; color: var(--text-secondary);">${description}</div>
+                <div style="text-align: right;">
+                    <button onclick="this.closest('.modal').remove()" 
+                            style="margin-right: 10px; padding: 8px 16px; border: 1px solid var(--border-color); 
+                                   background: var(--card-bg); color: var(--text-color); border-radius: 4px; cursor: pointer;">
+                        关闭
+                    </button>
+                    <button onclick="window.open('${action}', '_blank')" 
+                            style="padding: 8px 16px; border: none; background: #4A90B8; color: white; 
+                                   border-radius: 4px; cursor: pointer;">
+                        查看详情
+                    </button>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // 点击背景关闭
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+    
+    <script src="common.js"></script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

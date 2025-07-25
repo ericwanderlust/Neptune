@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线水力模型系统 - 调度计划</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 调度计划页面特定样式 */
+        body {
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .left-panel {
+            width: 280px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: var(--spacing-lg) var(--spacing-lg);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: var(--font-size-md);
+            color: var(--text-primary);
+        }
+
+        .action-library {
+            flex: 1;
+            padding: var(--spacing-lg) var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        .action-category {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .category-header {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-xs);
+            cursor: grab;
+            background: var(--bg-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .action-item:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+        }
+
+        .action-item:active {
+            cursor: grabbing;
+        }
+
+        .action-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+
+        .action-pump { background: var(--primary); }
+        .action-valve { background: var(--success); }
+        .action-alert { background: var(--warning); }
+        .action-report { background: var(--info); }
+
+        .action-details {
+            flex: 1;
+        }
+
+        .action-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2f3640;
+            margin-bottom: 2px;
+        }
+
+        .action-desc {
+            font-size: 10px;
+            color: #57606f;
+        }
+
+        .center-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .timeline-header {
+            padding: var(--spacing-lg) var(--spacing-lg);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timeline-title {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .timeline-controls {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .timeline-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+        }
+
+        .timeline {
+            position: relative;
+            height: 100%;
+            background: var(--bg-secondary);
+        }
+
+        .time-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .time-slot {
+            border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .time-slot:nth-child(even) {
+            background: rgba(74, 144, 184, 0.02);
+        }
+
+        .time-labels {
+            position: sticky;
+            top: 0;
+            height: 40px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            z-index: 100;
+        }
+
+        .time-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .schedule-tracks {
+            padding: 20px 0;
+            min-height: calc(100% - 40px);
+        }
+
+        .schedule-track {
+            height: 60px;
+            margin-bottom: 10px;
+            position: relative;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .track-label {
+            width: 120px;
+            padding: 0 15px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #2f3640;
+            border-right: 1px solid #eee;
+            background: #f8f9fa;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .track-content {
+            flex: 1;
+            position: relative;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+        }
+
+        .track-slot {
+            border-right: 1px solid #f0f0f0;
+            position: relative;
+            min-height: 100%;
+        }
+
+        .schedule-block {
+            position: absolute;
+            top: 5px;
+            bottom: 5px;
+            border-radius: 4px;
+            color: white;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .schedule-block.pump { background: var(--primary); }
+        .schedule-block.valve { background: var(--success); }
+        .schedule-block.alert { background: var(--warning); }
+        .schedule-block.report { background: var(--info); }
+
+        .schedule-block:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .drop-zone {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(74, 144, 184, 0.1);
+            border: 2px dashed var(--primary);
+            border-radius: var(--radius-sm);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: var(--font-size-xs);
+            z-index: 5;
+        }
+
+        .drop-zone.active {
+            display: flex;
+        }
+
+        .right-panel {
+            width: 300px;
+            background: var(--bg-primary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: var(--spacing-md);
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+
+        .panel-tab.active {
+            background: var(--bg-primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        .property-group {
+            margin-bottom: 20px;
+        }
+
+        .property-group h4 {
+            color: #4A90B8;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 11px;
+            color: #4A5568;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: #4A90B8;
+            outline: none;
+        }
+
+        .schedule-summary {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .summary-label {
+            color: #57606f;
+        }
+
+        .summary-value {
+            font-weight: 500;
+            color: #2f3640;
+        }
+
+        .validation-results {
+            margin-top: 15px;
+        }
+
+        .validation-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .validation-item.success {
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+        }
+
+        .validation-item.warning {
+            background: rgba(255, 165, 2, 0.1);
+            color: #ffa502;
+        }
+
+        .validation-item.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        /* 拖拽样式 */
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.8;
+            transform: scale(0.9);
+        }
+
+        @media (max-width: 1200px) {
+            .left-panel, .right-panel {
+                width: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 150px;
+            }
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .page-header-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .page-header-title h1 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .page-header-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <button class="btn btn-sm btn-secondary" onclick="goBack()" style="margin-right: 16px;">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>在线水力模型系统</span>
+                </div>
+                <div class="nav-links">
+                    <!-- 动态菜单将由NavigationManager生成 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将由NavigationManager生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="page-header-title">
+            <h1>调度计划制定</h1>
+        </div>
+        <div class="page-header-actions">
+            <input type="date" id="planDate" value="2024-01-15" class="form-control" style="width: auto;">
+            <button class="btn btn-outline" onclick="loadTemplate()">
+                <i class="fas fa-file-alt"></i> 载入模板
+            </button>
+            <button class="btn" onclick="validatePlan()">
+                <i class="fas fa-check-circle"></i> 验证计划
+            </button>
+            <button class="btn btn-success" onclick="savePlan()">
+                <i class="fas fa-save"></i> 保存计划
+            </button>
+            <button class="btn btn-primary" onclick="publishPlan()">
+                <i class="fas fa-broadcast-tower"></i> 发布执行
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container" style="height: calc(100vh - 60px - 73px);">
+        <div class="left-panel">
+            <div class="panel-header">
+                <i class="fas fa-cogs"></i>
+                调度操作库
+            </div>
+            <div class="action-library">
+                <div class="action-category">
+                    <div class="category-header">
+                        <i class="fas fa-cog"></i> 泵站操作
+                    </div>
+                    <div class="action-item" draggable="true" data-type="pump" data-action="start">
+                        <div class="action-icon action-pump">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">启动泵站</div>
+                            <div class="action-desc">启动指定泵站运行</div>
+                        </div>
+                    </div>
+                    <div class="action-item" draggable="true" data-type="pump" data-action="stop">
+                        <div class="action-icon action-pump">
+                            <i class="fas fa-stop"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">停止泵站</div>
+                            <div class="action-desc">停止指定泵站运行</div>
+                        </div>
+                    </div>
+                    <div class="action-item" draggable="true" data-type="pump" data-action="adjust">
+                        <div class="action-icon action-pump">
+                            <i class="fas fa-sliders-h"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">调节出力</div>
+                            <div class="action-desc">调节泵站出力参数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-category">
+                    <div class="category-header">
+                        <i class="fas fa-stop-circle"></i> 阀门操作
+                    </div>
+                    <div class="action-item" draggable="true" data-type="valve" data-action="open">
+                        <div class="action-icon action-valve">
+                            <i class="fas fa-unlock"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">开启阀门</div>
+                            <div class="action-desc">开启指定管段阀门</div>
+                        </div>
+                    </div>
+                    <div class="action-item" draggable="true" data-type="valve" data-action="close">
+                        <div class="action-icon action-valve">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">关闭阀门</div>
+                            <div class="action-desc">关闭指定管段阀门</div>
+                        </div>
+                    </div>
+                    <div class="action-item" draggable="true" data-type="valve" data-action="regulate">
+                        <div class="action-icon action-valve">
+                            <i class="fas fa-adjust"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">调节阀门</div>
+                            <div class="action-desc">调节阀门开度</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-category">
+                    <div class="category-header">
+                        <i class="fas fa-bell"></i> 预警操作
+                    </div>
+                    <div class="action-item" draggable="true" data-type="alert" data-action="check">
+                        <div class="action-icon action-alert">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">系统巡检</div>
+                            <div class="action-desc">执行系统状态检查</div>
+                        </div>
+                    </div>
+                    <div class="action-item" draggable="true" data-type="alert" data-action="maintain">
+                        <div class="action-icon action-alert">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">维护提醒</div>
+                            <div class="action-desc">发送设备维护提醒</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-category">
+                    <div class="category-header">
+                        <i class="fas fa-chart-bar"></i> 报表操作
+                    </div>
+                    <div class="action-item" draggable="true" data-type="report" data-action="generate">
+                        <div class="action-icon action-report">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="action-details">
+                            <div class="action-name">生成报表</div>
+                            <div class="action-desc">生成运行数据报表</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中央时间轴 -->
+        <main class="center-area">
+            <div class="timeline-header">
+                <div class="timeline-title">2024年1月15日 调度计划</div>
+                <div class="timeline-controls">
+                    <button class="btn" onclick="clearAll()">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                    <button class="btn" onclick="autoOptimize()">
+                        <i class="fas fa-magic"></i> 智能优化
+                    </button>
+                </div>
+            </div>
+            
+            <div class="timeline-container" id="timelineContainer">
+                <div class="time-labels">
+                    <div class="time-label">00:00</div>
+                    <div class="time-label">01:00</div>
+                    <div class="time-label">02:00</div>
+                    <div class="time-label">03:00</div>
+                    <div class="time-label">04:00</div>
+                    <div class="time-label">05:00</div>
+                    <div class="time-label">06:00</div>
+                    <div class="time-label">07:00</div>
+                    <div class="time-label">08:00</div>
+                    <div class="time-label">09:00</div>
+                    <div class="time-label">10:00</div>
+                    <div class="time-label">11:00</div>
+                    <div class="time-label">12:00</div>
+                    <div class="time-label">13:00</div>
+                    <div class="time-label">14:00</div>
+                    <div class="time-label">15:00</div>
+                    <div class="time-label">16:00</div>
+                    <div class="time-label">17:00</div>
+                    <div class="time-label">18:00</div>
+                    <div class="time-label">19:00</div>
+                    <div class="time-label">20:00</div>
+                    <div class="time-label">21:00</div>
+                    <div class="time-label">22:00</div>
+                    <div class="time-label">23:00</div>
+                </div>
+                
+                <div class="schedule-tracks">
+                    <div class="schedule-track" data-track="pump1">
+                        <div class="track-label">泵站S01097</div>
+                        <div class="track-content" id="track-pump1">
+                            <!-- 调度块将通过拖拽添加到这里 -->
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-track" data-track="pump2">
+                        <div class="track-label">泵站S01098</div>
+                        <div class="track-content" id="track-pump2">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-track" data-track="valve1">
+                        <div class="track-label">主控阀V-001</div>
+                        <div class="track-content" id="track-valve1">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-track" data-track="valve2">
+                        <div class="track-label">调节阀V-002</div>
+                        <div class="track-content" id="track-valve2">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-track" data-track="system">
+                        <div class="track-label">系统巡检</div>
+                        <div class="track-content" id="track-system">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-track" data-track="report">
+                        <div class="track-label">报表生成</div>
+                        <div class="track-content" id="track-report">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧属性面板 -->
+        <aside class="right-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchTab('properties')">属性</button>
+                <button class="panel-tab" onclick="switchTab('summary')">总览</button>
+                <button class="panel-tab" onclick="switchTab('validation')">验证</button>
+            </div>
+            
+            <div class="panel-content">
+                <!-- 属性编辑 -->
+                <div id="propertiesTab">
+                    <div class="property-group">
+                        <h4>选择操作块查看属性</h4>
+                        <p style="font-size: 11px; color: #57606f; line-height: 1.4;">
+                            点击时间轴上的操作块来查看和编辑其详细属性设置。
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- 计划总览 -->
+                <div id="summaryTab" style="display: none;">
+                    <div class="schedule-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">计划日期</span>
+                            <span class="summary-value">2024-01-15</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">总操作数</span>
+                            <span class="summary-value" id="totalActions">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">泵站操作</span>
+                            <span class="summary-value" id="pumpActions">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">阀门操作</span>
+                            <span class="summary-value" id="valveActions">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">系统操作</span>
+                            <span class="summary-value" id="systemActions">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="property-group">
+                        <h4>预计效果</h4>
+                        <div class="summary-item">
+                            <span class="summary-label">节能效果</span>
+                            <span class="summary-value">8.5%</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">供水稳定性</span>
+                            <span class="summary-value">95.2%</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">设备利用率</span>
+                            <span class="summary-value">82.3%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 验证结果 -->
+                <div id="validationTab" style="display: none;">
+                    <div class="validation-results" id="validationResults">
+                        <div class="validation-item success">
+                            <i class="fas fa-check-circle"></i>
+                            <span>计划时间分配合理</span>
+                        </div>
+                        <div class="validation-item success">
+                            <i class="fas fa-check-circle"></i>
+                            <span>操作顺序符合规范</span>
+                        </div>
+                        <div class="validation-item warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>峰期泵站负荷较高</span>
+                        </div>
+                        <div class="validation-item success">
+                            <i class="fas fa-check-circle"></i>
+                            <span>无操作冲突</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn primary" style="width: 100%; margin-top: 15px;" onclick="runFullValidation()">
+                        <i class="fas fa-check-double"></i> 执行完整验证
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let draggedElement = null;
+        let scheduleBlocks = [];
+        let selectedBlock = null;
+
+        // 初始化应用
+        function initializeApp() {
+            initDragAndDrop();
+            loadDefaultSchedule();
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        // 初始化拖拽功能
+        function initDragAndDrop() {
+            const actionItems = document.querySelectorAll('.action-item');
+            actionItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+
+            const trackContents = document.querySelectorAll('.track-content');
+            trackContents.forEach(track => {
+                track.addEventListener('dragover', handleDragOver);
+                track.addEventListener('drop', handleDrop);
+                track.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.classList.add('dragging');
+            
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: e.target.dataset.type,
+                action: e.target.dataset.action,
+                name: e.target.querySelector('.action-name').textContent
+            }));
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            showDropZone(e.target, e.clientX);
+        }
+
+        function handleDragLeave(e) {
+            hideDropZone(e.target);
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            hideDropZone(e.target);
+            
+            if (!draggedElement) return;
+            
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const hourWidth = rect.width / 24;
+            const startHour = Math.floor(x / hourWidth);
+            
+            createScheduleBlock(e.target, data, startHour);
+            updateSummary();
+        }
+
+        function showDropZone(track, clientX) {
+            const rect = track.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const hourWidth = rect.width / 24;
+            const hour = Math.floor(x / hourWidth);
+            
+            let dropZone = track.querySelector('.drop-zone');
+            if (!dropZone) {
+                dropZone = document.createElement('div');
+                dropZone.className = 'drop-zone';
+                dropZone.textContent = '放置操作';
+                track.appendChild(dropZone);
+            }
+            
+            dropZone.style.left = (hour * (100/24)) + '%';
+            dropZone.style.width = (100/24) + '%';
+            dropZone.classList.add('active');
+        }
+
+        function hideDropZone(track) {
+            const dropZone = track.querySelector('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.remove('active');
+            }
+        }
+
+        function createScheduleBlock(track, data, startHour, duration = 1) {
+            const block = document.createElement('div');
+            block.className = `schedule-block ${data.type}`;
+            block.textContent = data.name;
+            
+            const left = (startHour / 24) * 100;
+            const width = (duration / 24) * 100;
+            
+            block.style.left = left + '%';
+            block.style.width = width + '%';
+            
+            // 添加数据属性
+            block.dataset.type = data.type;
+            block.dataset.action = data.action;
+            block.dataset.startHour = startHour;
+            block.dataset.duration = duration;
+            block.dataset.track = track.parentElement.dataset.track;
+            
+            // 添加事件监听器
+            block.addEventListener('click', () => selectBlock(block));
+            block.addEventListener('mousedown', initBlockDrag);
+            
+            track.appendChild(block);
+            scheduleBlocks.push(block);
+            
+            return block;
+        }
+
+        function selectBlock(block) {
+            // 取消之前的选择
+            document.querySelectorAll('.schedule-block').forEach(b => {
+                b.style.outline = 'none';
+            });
+            
+            // 选择新块
+            block.style.outline = '2px solid #ff6b6b';
+            selectedBlock = block;
+            
+            showBlockProperties(block);
+        }
+
+        function showBlockProperties(block) {
+            const content = document.getElementById('propertiesTab');
+            content.innerHTML = `
+                <div class="property-group">
+                    <h4>${block.textContent} 属性</h4>
+                    <div class="form-group">
+                        <label class="form-label">操作名称</label>
+                        <input type="text" class="form-input" value="${block.textContent}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">开始时间</label>
+                        <input type="time" class="form-input" value="${block.dataset.startHour.padStart(2, '0')}:00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">持续时间 (小时)</label>
+                        <input type="number" class="form-input" value="${block.dataset.duration}" min="0.5" max="24" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">执行设备</label>
+                        <select class="form-select">
+                            <option>自动选择</option>
+                            <option>设备A</option>
+                            <option>设备B</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">优先级</label>
+                        <select class="form-select">
+                            <option>普通</option>
+                            <option>重要</option>
+                            <option>紧急</option>
+                        </select>
+                    </div>
+                    <button class="btn primary" style="width: 100%; margin-top: 10px;" onclick="applyBlockChanges()">
+                        应用更改
+                    </button>
+                    <button class="btn" style="width: 100%; margin-top: 5px;" onclick="deleteBlock()">
+                        <i class="fas fa-trash"></i> 删除操作
+                    </button>
+                </div>
+            `;
+        }
+
+        function deleteBlock() {
+            if (selectedBlock) {
+                selectedBlock.remove();
+                scheduleBlocks = scheduleBlocks.filter(b => b !== selectedBlock);
+                selectedBlock = null;
+                
+                // 重置属性面板
+                document.getElementById('propertiesTab').innerHTML = `
+                    <div class="property-group">
+                        <h4>选择操作块查看属性</h4>
+                        <p style="font-size: 11px; color: #57606f; line-height: 1.4;">
+                            点击时间轴上的操作块来查看和编辑其详细属性设置。
+                        </p>
+                    </div>
+                `;
+                
+                updateSummary();
+            }
+        }
+
+        function updateSummary() {
+            const pumpCount = scheduleBlocks.filter(b => b.dataset.type === 'pump').length;
+            const valveCount = scheduleBlocks.filter(b => b.dataset.type === 'valve').length;
+            const systemCount = scheduleBlocks.filter(b => b.dataset.type === 'alert' || b.dataset.type === 'report').length;
+            
+            document.getElementById('totalActions').textContent = scheduleBlocks.length;
+            document.getElementById('pumpActions').textContent = pumpCount;
+            document.getElementById('valveActions').textContent = valveCount;
+            document.getElementById('systemActions').textContent = systemCount;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('propertiesTab').style.display = tab === 'properties' ? 'block' : 'none';
+            document.getElementById('summaryTab').style.display = tab === 'summary' ? 'block' : 'none';
+            document.getElementById('validationTab').style.display = tab === 'validation' ? 'block' : 'none';
+        }
+
+        function loadDefaultSchedule() {
+            // 添加一些默认的调度计划
+            const track1 = document.getElementById('track-pump1');
+            createScheduleBlock(track1, {type: 'pump', action: 'start', name: '启动泵站'}, 6, 2);
+            createScheduleBlock(track1, {type: 'pump', action: 'stop', name: '停止泵站'}, 22, 1);
+            
+            const track2 = document.getElementById('track-valve1');
+            createScheduleBlock(track2, {type: 'valve', action: 'open', name: '开启阀门'}, 5, 1);
+            
+            const trackSystem = document.getElementById('track-system');
+            createScheduleBlock(trackSystem, {type: 'alert', action: 'check', name: '系统巡检'}, 8, 1);
+            createScheduleBlock(trackSystem, {type: 'alert', action: 'check', name: '系统巡检'}, 20, 1);
+            
+            const trackReport = document.getElementById('track-report');
+            createScheduleBlock(trackReport, {type: 'report', action: 'generate', name: '生成报表'}, 23, 1);
+            
+            updateSummary();
+        }
+
+        function clearAll() {
+            if (confirm('确定要清空所有调度计划吗？')) {
+                scheduleBlocks.forEach(block => block.remove());
+                scheduleBlocks = [];
+                selectedBlock = null;
+                updateSummary();
+            }
+        }
+
+        function autoOptimize() {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('智能优化功能正在分析当前计划，将基于历史数据和预测需求进行优化...', 'info');
+            } else {
+                alert('智能优化功能正在分析当前计划，将基于历史数据和预测需求进行优化...');
+            }
+            // 这里可以实现智能优化算法
+        }
+
+        function validatePlan() {
+            // 模拟验证过程
+            const results = document.getElementById('validationResults');
+            results.innerHTML = `
+                <div class="validation-item success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>计划时间分配合理</span>
+                </div>
+                <div class="validation-item success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>操作顺序符合规范</span>
+                </div>
+                <div class="validation-item ${scheduleBlocks.length > 10 ? 'warning' : 'success'}">
+                    <i class="fas fa-${scheduleBlocks.length > 10 ? 'exclamation-triangle' : 'check-circle'}"></i>
+                    <span>操作数量${scheduleBlocks.length > 10 ? '较多，建议优化' : '适中'}</span>
+                </div>
+                <div class="validation-item success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>无操作冲突</span>
+                </div>
+            `;
+            
+            // 切换到验证标签
+            document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel-tab')[2].classList.add('active');
+            switchTab('validation');
+        }
+
+        function savePlan() {
+            const planData = {
+                date: document.getElementById('planDate').value,
+                blocks: scheduleBlocks.map(block => ({
+                    type: block.dataset.type,
+                    action: block.dataset.action,
+                    track: block.dataset.track,
+                    startHour: parseInt(block.dataset.startHour),
+                    duration: parseInt(block.dataset.duration),
+                    name: block.textContent
+                }))
+            };
+            
+            console.log('保存计划:', planData);
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.show('调度计划已保存！', 'success');
+                if (typeof OperationLogger !== 'undefined') {
+                    OperationLogger.log('保存调度计划', { blocksCount: scheduleBlocks.length });
+                }
+            } else {
+                alert('调度计划已保存！');
+            }
+        }
+
+        function publishPlan() {
+            if (confirm('确定要发布此调度计划并开始执行吗？')) {
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('调度计划已发布！系统将按照计划自动执行调度操作。', 'success');
+                    if (typeof OperationLogger !== 'undefined') {
+                        OperationLogger.log('发布调度计划', { blocksCount: scheduleBlocks.length });
+                    }
+                } else {
+                    alert('调度计划已发布！系统将按照计划自动执行调度操作。');
+                }
+            }
+        }
+
+        function loadTemplate() {
+            if (confirm('载入模板将覆盖当前计划，确定继续吗？')) {
+                clearAll();
+                loadDefaultSchedule();
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.show('模板已载入！', 'success');
+                } else {
+                    alert('模板已载入！');
+                }
+            }
+        }
+
+        function updateTime() {
+            const currentTimeEl = document.querySelector('.current-time');
+            if (currentTimeEl) {
+                const now = new Date();
+                try {
+                    // 尝试使用本地化时间格式
+                    currentTimeEl.textContent = now.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                } catch (error) {
+                    // 降级到手动格式化
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hour = String(now.getHours()).padStart(2, '0');
+                    const minute = String(now.getMinutes()).padStart(2, '0');
+                    const second = String(now.getSeconds()).padStart(2, '0');
+                    currentTimeEl.textContent = `${year}/${month}/${day} ${hour}:${minute}:${second}`;
+                }
+            }
+        }
+
+        // 返回功能
+        function goBack() {
+            // 检查浏览器历史记录
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // 如果没有历史记录，返回到日常调度页面
+                window.location.href = 'daily_dispatch.html';
+            }
+        }
+
+        // 页面初始化函数
+        function initializeSchedulePage() {
+            // 检查必要的对象是否存在
+            if (typeof NavigationManager === 'undefined' || 
+                typeof UserPermissions === 'undefined') {
+                console.log('等待common.js加载完成...');
+                setTimeout(initializeSchedulePage, 100);
+                return;
+            }
+
+            try {
+                // 检查用户登录状态，如果没有用户信息则设置默认用户
+                let currentUser = UserPermissions.currentUser;
+                if (!currentUser) {
+                    console.log('未找到用户信息，设置默认调度员用户');
+                    // 设置默认调度员用户
+                    UserPermissions.setDefaultUser('dispatcher');
+                    currentUser = UserPermissions.currentUser;
+                }
+
+                // 检查调度员权限
+                if (!UserPermissions.hasPermission('schedule_planning', 'active')) {
+                    console.warn('用户权限不足，但允许访问（调度员应该有权限）');
+                    // 不阻止访问，但记录警告
+                }
+
+                // 初始化通用管理器
+                NavigationManager.init();
+                
+                // 初始化其他管理器（如果可用）
+                if (typeof TimeManager !== 'undefined') {
+                    TimeManager.init();
+                } else if (typeof Clock !== 'undefined') {
+                    Clock.init();
+                }
+                
+                if (typeof ThemeManager !== 'undefined') {
+                    ThemeManager.init();
+                }
+                
+                // 初始化调度计划功能
+                initializeApp();
+                
+                // 记录访问日志
+                if (typeof OperationLogger !== 'undefined') {
+                    OperationLogger.log('访问页面', { 
+                        page: '调度计划制定', 
+                        user: currentUser ? currentUser.name : '未知用户' 
+                    });
+                }
+                
+                // 显示欢迎消息
+                if (typeof NotificationManager !== 'undefined') {
+                    const userName = currentUser ? currentUser.name : '用户';
+                    NotificationManager.show(`欢迎 ${userName}！调度计划制定工具已就绪`, 'success');
+                }
+                
+                console.log('调度计划页面初始化完成', { 
+                    user: currentUser ? currentUser.name : '未知',
+                    role: currentUser ? currentUser.role : '未知'
+                });
+                
+            } catch (error) {
+                console.error('调度计划页面初始化失败:', error);
+                // 降级处理，仍然启动基本功能
+                try {
+                    initializeApp();
+                    console.log('使用降级模式启动调度计划页面');
+                } catch (fallbackError) {
+                    console.error('降级启动也失败:', fallbackError);
+                }
+            }
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', initializeSchedulePage);
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

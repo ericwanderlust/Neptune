@@ -1,0 +1,49 @@
+
+  ******************************************************************
+  *                           E P A N E T                          *
+  *                   Hydraulic and Water Quality                  *
+  *                   Analysis for Pipe Networks                   *
+  *                         Version 3.0.000                        *
+  ******************************************************************
+
+  Exported by WaterDesk 5.0.0
+
+  Input Data File ............... 20250612_172126.inp
+  Number of Junctions ........... 1293
+  Number of Reservoirs .......... 1
+  Number of Tanks ............... 1
+  Number of Pipes ............... 1337
+  Number of Pumps ............... 3
+  Number of Valves .............. 15
+  Head Loss Model ............... H-W
+  Leakage Model ................. NONE
+  Demand Model .................. FIXED
+  Demand Multiplier ............. 1
+  Number of Emitters ............ 0
+  Head Tolerance ................ 0
+  Flow Tolerance ................ 0
+  Flow Change Limit ............. 0
+  Quality Model ................. AGE
+  Number of Sources ............. 0
+  Hydraulic Time Step ........... 60 minutes
+  Quality Time Step ............. 3600 seconds
+  Report Time Step .............. 60 minutes
+  Total Duration ................ 1 hours
+
+  Hour 0:00:00
+    Pipe S00679-11SE20A-S00677-11SE20A status changed to closed by elapsed time control
+  Network balanced in 5 trials.
+
+  Hour 1:00:00
+  Network balanced in 3 trials.
+
+  Water Quality Mass Balance
+  --------------------------
+  Initial Storage           0
+  Mass Inflow               0
+  Mass Outflow              1.00687
+  Mass Reacted              -51.707
+  Final Storage             3.99964
+  Percent Imbalance         0
+
+  Simulation completed in 0.055 sec.

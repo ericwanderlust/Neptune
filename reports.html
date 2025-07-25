@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="数据报表">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 数据报表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        /* 页面特定样式 */
+        .reports-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 120px);
+            padding: var(--spacing-lg);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        /* 报表分类 */
+        .report-categories {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .category-header {
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .category-list {
+            padding: var(--spacing-sm);
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: var(--font-size-sm);
+            margin-bottom: 2px;
+        }
+
+        .category-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .category-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .category-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .category-count {
+            margin-left: auto;
+            font-size: var(--font-size-xs);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        .category-item.active .category-count {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 快速生成 */
+        .quick-generate {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .quick-options {
+            display: grid;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .quick-option {
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .quick-option:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-1px);
+        }
+
+        .quick-option-icon {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .quick-option-label {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        /* 报表工具栏 */
+        .reports-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        /* 报表模板网格 */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .report-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--border-color);
+        }
+
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .report-card.featured {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(74, 144, 184, 0.05), rgba(74, 144, 184, 0.1));
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .report-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .report-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .report-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .report-description {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            line-height: 1.5;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .report-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .report-tag {
+            padding: 2px 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        .report-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-schedule {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        /* 自定义报表构建器 */
+        .report-builder {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .builder-steps {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .builder-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .builder-step::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: -20px;
+            width: 40px;
+            height: 2px;
+            background: var(--border-color);
+        }
+
+        .builder-step:last-child::after {
+            display: none;
+        }
+
+        .builder-step.active::after {
+            background: var(--primary);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: 50%;
+            margin: 0 auto var(--spacing-sm);
+            font-weight: 600;
+        }
+
+        .builder-step.active .step-number {
+            background: var(--primary);
+            color: white;
+        }
+
+        .builder-step.completed .step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-label {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        .builder-content {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        /* 预览模式 */
+        .report-preview {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .preview-header {
+            padding: var(--spacing-lg);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            padding: var(--spacing-lg);
+            min-height: 400px;
+            background: white;
+            color: #333;
+        }
+
+        .preview-chart {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: var(--spacing-sm);
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        .preview-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .reports-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        /* 状态栏样式 */
+        .status-bar {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .status-bar-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+    <div class="reports-container">
+        <!-- 主内容区 -->
+        <div class="reports-layout">
+            <!-- 左侧导航 -->
+            <div class="sidebar">
+                <!-- 报表分类 -->
+                <div class="report-categories">
+                    <div class="category-header">
+                        <i class="fas fa-folder"></i> 报表分类
+                    </div>
+                    <div class="category-list">
+                        <div class="category-item active" onclick="filterReports('all')">
+                            <i class="fas fa-list category-icon"></i>
+                            <span>全部报表</span>
+                            <span class="category-count">24</span>
+                        </div>
+                        <div class="category-item" onclick="filterReports('operational')">
+                            <i class="fas fa-chart-bar category-icon"></i>
+                            <span>运营报表</span>
+                            <span class="category-count">8</span>
+                        </div>
+                        <div class="category-item" onclick="filterReports('quality')">
+                            <i class="fas fa-flask category-icon"></i>
+                            <span>水质报表</span>
+                            <span class="category-count">6</span>
+                        </div>
+                        <div class="category-item" onclick="filterReports('maintenance')">
+                            <i class="fas fa-wrench category-icon"></i>
+                            <span>维护报表</span>
+                            <span class="category-count">5</span>
+                        </div>
+                        <div class="category-item" onclick="filterReports('financial')">
+                            <i class="fas fa-dollar-sign category-icon"></i>
+                            <span>财务报表</span>
+                            <span class="category-count">3</span>
+                        </div>
+                        <div class="category-item" onclick="filterReports('custom')">
+                            <i class="fas fa-cog category-icon"></i>
+                            <span>自定义报表</span>
+                            <span class="category-count">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速生成 -->
+                <div class="quick-generate">
+                    <h4 class="font-semibold mb-md">快速生成</h4>
+                    <div class="quick-options">
+                        <div class="quick-option" onclick="generateQuickReport('daily')">
+                            <div class="quick-option-icon">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                            <div class="quick-option-label">日报</div>
+                        </div>
+                        <div class="quick-option" onclick="generateQuickReport('weekly')">
+                            <div class="quick-option-icon">
+                                <i class="fas fa-calendar-week"></i>
+                            </div>
+                            <div class="quick-option-label">周报</div>
+                        </div>
+                        <div class="quick-option" onclick="generateQuickReport('monthly')">
+                            <div class="quick-option-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="quick-option-label">月报</div>
+                        </div>
+                        <div class="quick-option" onclick="showCustomBuilder()">
+                            <div class="quick-option-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="quick-option-label">自定义</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧主内容 -->
+            <div class="main-content">
+                <!-- 工具栏 -->
+                <div class="reports-toolbar">
+                    <div class="toolbar-left">
+                        <h2 class="font-semibold">数据报表中心</h2>
+                        <select class="form-control form-select" style="width: 150px;">
+                            <option>全部模板</option>
+                            <option>我的报表</option>
+                            <option>共享报表</option>
+                            <option>定时报表</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="flex gap-sm align-center text-sm text-muted">
+                            <span>排序:</span>
+                            <select class="form-control form-select" style="width: 120px;">
+                                <option>最新创建</option>
+                                <option>使用频率</option>
+                                <option>名称排序</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm" onclick="refreshReports()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="showCustomBuilder()">
+                            <i class="fas fa-plus"></i> 新建报表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 自定义报表构建器（隐藏） -->
+                <div class="report-builder" id="reportBuilder" style="display: none;">
+                    <div class="flex-between mb-lg">
+                        <h3 class="font-semibold">自定义报表构建器</h3>
+                        <button class="btn btn-sm" onclick="hideCustomBuilder()">
+                            <i class="fas fa-times"></i> 关闭
+                        </button>
+                    </div>
+                    
+                    <div class="builder-steps">
+                        <div class="builder-step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">基本信息</div>
+                        </div>
+                        <div class="builder-step">
+                            <div class="step-number">2</div>
+                            <div class="step-label">数据源</div>
+                        </div>
+                        <div class="builder-step">
+                            <div class="step-number">3</div>
+                            <div class="step-label">图表配置</div>
+                        </div>
+                        <div class="builder-step">
+                            <div class="step-number">4</div>
+                            <div class="step-label">预览生成</div>
+                        </div>
+                    </div>
+
+                    <div class="builder-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">报表名称</label>
+                                <input type="text" class="form-control" placeholder="输入报表名称">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">报表类型</label>
+                                <select class="form-control form-select">
+                                    <option>运营分析报表</option>
+                                    <option>水质监测报表</option>
+                                    <option>设备状态报表</option>
+                                    <option>成本效益报表</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">时间范围</label>
+                                <select class="form-control form-select">
+                                    <option>最近24小时</option>
+                                    <option>最近7天</option>
+                                    <option>最近30天</option>
+                                    <option>自定义范围</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">数据范围</label>
+                                <select class="form-control form-select">
+                                    <option>全部区域</option>
+                                    <option>A区</option>
+                                    <option>B区</option>
+                                    <option>C区</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-lg">
+                            <button class="btn btn-primary" onclick="nextStep()">
+                                <i class="fas fa-arrow-right"></i> 下一步
+                            </button>
+                            <button class="btn btn-sm ml-sm" onclick="previewReport()">
+                                <i class="fas fa-eye"></i> 预览
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 报表预览（隐藏） -->
+                <div class="report-preview" id="reportPreview" style="display: none;">
+                    <div class="preview-header">
+                        <h3 class="font-semibold">报表预览</h3>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-sm" onclick="editReport()">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="exportReport()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                            <button class="btn btn-sm" onclick="hidePreview()">
+                                <i class="fas fa-times"></i> 关闭
+                            </button>
+                        </div>
+                    </div>
+                    <div class="preview-content">
+                        <h1 style="text-align: center; margin-bottom: 20px;">水务系统运营日报</h1>
+                        <p style="text-align: center; color: #666; margin-bottom: 30px;">2024年1月10日</p>
+                        
+                        <h2>一、系统运行概况</h2>
+                        <div class="preview-chart">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line" style="font-size: 32px; color: #ccc;"></i>
+                                <p style="margin-top: 10px; color: #666;">供水量趋势图</p>
+                            </div>
+                        </div>
+                        
+                        <h2>二、关键指标统计</h2>
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    <th>指标名称</th>
+                                    <th>当日数值</th>
+                                    <th>标准值</th>
+                                    <th>同比变化</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>总供水量</td>
+                                    <td>1,234.56 万m³</td>
+                                    <td>1,200 万m³</td>
+                                    <td>+2.1%</td>
+                                    <td style="color: #2ed573;">正常</td>
+                                </tr>
+                                <tr>
+                                    <td>压力合格率</td>
+                                    <td>98.5%</td>
+                                    <td>≥95%</td>
+                                    <td>-0.5%</td>
+                                    <td style="color: #2ed573;">达标</td>
+                                </tr>
+                                <tr>
+                                    <td>水质合格率</td>
+                                    <td>99.2%</td>
+                                    <td>≥99%</td>
+                                    <td>+0.3%</td>
+                                    <td style="color: #2ed573;">优秀</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h2>三、异常事件处理</h2>
+                        <p>今日共处理异常事件3起，均已妥善解决，平均响应时间3.2分钟。</p>
+                    </div>
+                </div>
+
+                <!-- 报表模板网格 -->
+                <div class="reports-grid">
+                    <!-- 运营日报 -->
+                    <div class="report-card featured" onclick="useTemplate('daily-operations')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">运营日报</div>
+                        <div class="report-description">
+                            包含供水量、压力、水质等核心指标的每日运营报表，自动汇总关键数据并生成趋势分析。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 今天</span>
+                            <span>使用次数: 156</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">运营</span>
+                            <span class="report-tag">自动化</span>
+                            <span class="report-tag">定时</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">每日 08:00 自动生成</span>
+                            <span class="badge badge-success">推荐</span>
+                        </div>
+                    </div>
+
+                    <!-- 水质监测报告 -->
+                    <div class="report-card" onclick="useTemplate('water-quality')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="far fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">水质监测报告</div>
+                        <div class="report-description">
+                            详细的水质检测数据分析，包括各项指标趋势、异常情况统计和改善建议。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 昨天</span>
+                            <span>使用次数: 89</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">水质</span>
+                            <span class="report-tag">检测</span>
+                            <span class="report-tag">合规</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">每周一 09:00 自动生成</span>
+                            <span class="badge badge-primary">常用</span>
+                        </div>
+                    </div>
+
+                    <!-- 设备维护报表 -->
+                    <div class="report-card" onclick="useTemplate('maintenance')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-wrench"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="far fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">设备维护报表</div>
+                        <div class="report-description">
+                            设备运行状态、维护记录、故障统计和预防性维护计划的综合报表。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 3天前</span>
+                            <span>使用次数: 67</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">设备</span>
+                            <span class="report-tag">维护</span>
+                            <span class="report-tag">预测</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">每月1日 10:00 自动生成</span>
+                            <span class="badge badge-info">月度</span>
+                        </div>
+                    </div>
+
+                    <!-- 成本效益分析 -->
+                    <div class="report-card" onclick="useTemplate('cost-analysis')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="far fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">成本效益分析</div>
+                        <div class="report-description">
+                            运营成本分析、能耗统计、效益评估和成本优化建议的财务类报表。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 1周前</span>
+                            <span>使用次数: 34</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">财务</span>
+                            <span class="report-tag">成本</span>
+                            <span class="report-tag">优化</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">手动生成</span>
+                            <span class="badge badge-warning">管理层</span>
+                        </div>
+                    </div>
+
+                    <!-- 客户服务报告 -->
+                    <div class="report-card" onclick="useTemplate('customer-service')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="far fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">客户服务报告</div>
+                        <div class="report-description">
+                            客户投诉处理、服务质量评估、满意度调查和改进措施的客服类报表。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 5天前</span>
+                            <span>使用次数: 23</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">客服</span>
+                            <span class="report-tag">满意度</span>
+                            <span class="report-tag">改进</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">每周五 16:00 自动生成</span>
+                            <span class="badge badge-info">周度</span>
+                        </div>
+                    </div>
+
+                    <!-- 应急响应统计 -->
+                    <div class="report-card" onclick="useTemplate('emergency-response')">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="far fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="编辑" onclick="editTemplate(event)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">应急响应统计</div>
+                        <div class="report-description">
+                            应急事件处理情况、响应时间分析、预案执行效果和改进建议汇总。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 2周前</span>
+                            <span>使用次数: 18</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">应急</span>
+                            <span class="report-tag">响应</span>
+                            <span class="report-tag">统计</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">手动生成</span>
+                            <span class="badge badge-danger">重要</span>
+                        </div>
+                    </div>
+
+                    <!-- 历史工况对比 -->
+                    <div class="report-card featured" onclick="window.location.href='historical_comparison.html'">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="详情" onclick="event.stopPropagation(); window.location.href='historical_comparison.html'">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">历史工况对比</div>
+                        <div class="report-description">
+                            基于HK Example等历史数据，进行工况对比分析，总结调度经验，优化调度策略。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 今天</span>
+                            <span>使用次数: 42</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">历史数据</span>
+                            <span class="report-tag">工况对比</span>
+                            <span class="report-tag">调度优化</span>
+                            <span class="report-tag">经验规则</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">数据库连接正常</span>
+                            <span class="badge badge-success">推荐</span>
+                        </div>
+                    </div>
+
+                    <!-- 数据分析与经验总结 -->
+                    <div class="report-card featured" onclick="window.location.href='analysis_summary.html'">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-icon" title="收藏" onclick="favoriteReport(event)">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <button class="btn btn-sm btn-icon" title="详情" onclick="event.stopPropagation(); window.location.href='analysis_summary.html'">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="report-title">数据分析与经验总结</div>
+                        <div class="report-description">
+                            数据分析与经验总结平台，包含趋势分析、智能推荐、知识库管理等功能。
+                        </div>
+                        <div class="report-meta">
+                            <span>最近使用: 今天</span>
+                            <span>使用次数: 73</span>
+                        </div>
+                        <div class="report-tags">
+                            <span class="report-tag">趋势分析</span>
+                            <span class="report-tag">智能推荐</span>
+                            <span class="report-tag">知识库</span>
+                            <span class="report-tag">经验总结</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="report-schedule">智能洞察生成</span>
+                            <span class="badge badge-success">推荐</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <div class="status-bar-content">
+            <span><i class="fas fa-chart-bar text-primary"></i> 报表系统运行正常</span>
+            <span>报表模板: 24个</span>
+            <span>今日生成: 8份</span>
+            <span>自动任务: 5个</span>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="safari-compatibility.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof NavigationManager !== 'undefined') { NavigationManager.init(); }
+            if (typeof Clock !== 'undefined') { Clock.init(); }
+            OperationLogger.log('访问页面', { page: '数据报表' });
+
+            // 筛选报表
+            function filterReports(category) {
+                document.querySelectorAll('.category-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.currentTarget.classList.add('active');
+                
+                OperationLogger.log('筛选报表', { category });
+                NotificationManager.show(`显示${event.currentTarget.textContent.trim()}`, 'info');
+            }
+
+            // 使用模板
+            function useTemplate(templateId) {
+                OperationLogger.log('使用报表模板', { templateId });
+                NotificationManager.show('正在加载报表模板...', 'info');
+                
+                setTimeout(() => {
+                    showPreview();
+                    NotificationManager.show('报表生成成功！', 'success');
+                }, 2000);
+            }
+
+            // 收藏报表
+            function favoriteReport(event) {
+                event.stopPropagation();
+                const icon = event.currentTarget.querySelector('i');
+                const isFavorited = icon.classList.contains('fas');
+                
+                if (isFavorited) {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    NotificationManager.show('已取消收藏', 'info');
+                } else {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    NotificationManager.show('已添加到收藏', 'success');
+                }
+                
+                OperationLogger.log('收藏报表', { action: isFavorited ? '取消' : '添加' });
+            }
+
+            // 编辑模板
+            function editTemplate(event) {
+                event.stopPropagation();
+                NotificationManager.show('报表编辑器开发中...', 'info');
+            }
+
+            // 快速生成报表
+            function generateQuickReport(type) {
+                OperationLogger.log('快速生成报表', { type });
+                NotificationManager.show(`正在生成${type}报表...`, 'info');
+                
+                setTimeout(() => {
+                    showPreview();
+                    NotificationManager.show('报表生成完成！', 'success');
+                }, 1500);
+            }
+
+            // 显示自定义构建器
+            function showCustomBuilder() {
+                document.getElementById('reportBuilder').style.display = 'block';
+                document.querySelector('.reports-grid').style.display = 'none';
+            }
+
+            // 隐藏自定义构建器
+            function hideCustomBuilder() {
+                document.getElementById('reportBuilder').style.display = 'none';
+                document.querySelector('.reports-grid').style.display = 'grid';
+            }
+
+            // 显示预览
+            function showPreview() {
+                document.getElementById('reportPreview').style.display = 'block';
+                document.querySelector('.reports-grid').style.display = 'none';
+                hideCustomBuilder();
+            }
+
+            // 隐藏预览
+            function hidePreview() {
+                document.getElementById('reportPreview').style.display = 'none';
+                document.querySelector('.reports-grid').style.display = 'grid';
+            }
+
+            // 下一步
+            function nextStep() {
+                NotificationManager.show('进入下一步配置...', 'info');
+            }
+
+            // 预览报表
+            function previewReport() {
+                showPreview();
+            }
+
+            // 编辑报表
+            function editReport() {
+                hidePreview();
+                showCustomBuilder();
+                NotificationManager.show('进入编辑模式', 'info');
+            }
+
+            // 导出报表
+            function exportReport() {
+                const format = prompt('选择导出格式：\n1. PDF\n2. Excel\n3. Word\n请输入数字：');
+                
+                switch(format) {
+                    case '1':
+                        ExportManager.exportToPDF([], '运营日报.pdf');
+                        break;
+                    case '2':
+                        ExportManager.exportToExcel([], '运营日报.xlsx');
+                        break;
+                    case '3':
+                        NotificationManager.show('Word导出功能开发中...', 'info');
+                        break;
+                    default:
+                        NotificationManager.show('无效选择', 'warning');
+                }
+                
+                OperationLogger.log('导出报表', { format });
+            }
+
+            // 刷新报表
+            function refreshReports() {
+                OperationLogger.log('刷新报表列表');
+                NotificationManager.show('报表列表已刷新', 'success');
+            }
+        });
+    </script>
+
+    <!-- 悬浮主题切换按钮 -->
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题">
+        <i class="fas fa-moon"></i>
+    </button>
+</body>
+</html> 

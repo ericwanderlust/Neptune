@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Safari兼容性meta标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="水力模型系统">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线水力模型系统 - 首页</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(74, 144, 184, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+        }
+
+        .hero-section {
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .quick-start {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin: 3rem 0;
+        }
+
+        .quick-start-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .user-roles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .role-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .role-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(74, 144, 184, 0.2);
+        }
+
+        .role-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .role-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .role-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .system-status {
+            background: rgba(46, 213, 115, 0.1);
+            border: 1px solid rgba(46, 213, 115, 0.2);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .footer {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(74, 144, 184, 0.1);
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-roles {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-water"></i>
+                在线水力模型系统
+            </div>
+            <div class="nav-buttons">
+                <a href="login.html" class="btn btn-outline">
+                    <i class="fas fa-sign-in-alt"></i>
+                    登录系统
+                </a>
+                <button class="btn btn-primary" onclick="showDemo()">
+                    <i class="fas fa-play"></i>
+                    快速演示
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <div class="hero-section">
+            <h1 class="hero-title">智能水务管理平台</h1>
+            <p class="hero-subtitle">
+                基于云端的在线水力模型系统，为城市供水提供全方位的监控、分析和决策支持服务。
+                支持实时数据监控、智能调度、应急响应、模拟仿真等核心功能。
+            </p>
+
+            <!-- 系统状态 -->
+            <div class="system-status">
+                <i class="fas fa-check-circle"></i>
+                系统运行正常 | 数据更新: 实时
+            </div>
+
+            <!-- 功能特性 -->
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3 class="feature-title">实时监控</h3>
+                    <p class="feature-description">
+                        全面监控管网设备状态、水质参数、流量压力等关键指标，提供实时数据可视化
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-broadcast-tower"></i>
+                    </div>
+                    <h3 class="feature-title">智能调度</h3>
+                    <p class="feature-description">
+                        基于AI算法的智能调度系统，自动优化供水方案，提高运营效率和服务质量
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3 class="feature-title">模拟仿真</h3>
+                    <p class="feature-description">
+                        集成EPANET水力建模引擎，支持管网仿真分析、优化设计和应急预案
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">应急响应</h3>
+                    <p class="feature-description">
+                        完善的应急响应机制，快速定位故障、自动告警通知、辅助决策支持
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="feature-title">数据分析</h3>
+                    <p class="feature-description">
+                        深度数据挖掘分析，生成专业报表，支持运营决策和合规报送
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h3 class="feature-title">协同管理</h3>
+                    <p class="feature-description">
+                        多角色权限管理，支持团队协作、工作流编排和操作审计
+                    </p>
+                </div>
+            </div>
+
+            <!-- 快速开始 -->
+            <div class="quick-start">
+                <h2 class="quick-start-title">选择您的角色，立即体验</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    不同角色拥有不同的功能权限和工作界面，请选择最符合您身份的角色进行体验
+                </p>
+
+                <div class="user-roles">
+                    <a href="login.html" class="role-card" onclick="fillRole('executive')">
+                        <div class="role-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="role-name">管理决策层</div>
+                        <div class="role-desc">全局KPI、风险态势</div>
+                    </a>
+
+                    <a href="login.html" class="role-card" onclick="fillRole('dispatcher')">
+                        <div class="role-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="role-name">调度员</div>
+                        <div class="role-desc">调度指令、应急处置</div>
+                    </a>
+
+                    <a href="login.html" class="role-card" onclick="fillRole('engineer')">
+                        <div class="role-icon">
+                            <i class="fas fa-hard-hat"></i>
+                        </div>
+                        <div class="role-name">建模工程师</div>
+                        <div class="role-desc">模型维护、参数校核</div>
+                    </a>
+
+                    <a href="login.html" class="role-card" onclick="fillRole('service')">
+                        <div class="role-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="role-name">客服专员</div>
+                        <div class="role-desc">工单处理、客户回访</div>
+                    </a>
+
+                    <a href="login.html" class="role-card" onclick="fillRole('analyst')">
+                        <div class="role-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="role-name">数据分析师</div>
+                        <div class="role-desc">数据挖掘、报表生成</div>
+                    </a>
+
+                    <a href="login.html" class="role-card" onclick="fillRole('admin')">
+                        <div class="role-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="role-name">系统管理员</div>
+                        <div class="role-desc">系统配置、用户管理</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>© 2024 在线水力模型系统 v2.0.1 | 建议使用现代浏览器访问</p>
+        <p style="margin-top: 0.5rem;">
+            技术支持：EPANET引擎 | 实时数据处理 | 智能分析算法
+        </p>
+    </footer>
+
+    <script src="common.js"></script>
+    
+    <!-- Safari兼容性JavaScript修复 -->
+    <script>
+        // Safari兼容性修复
+        (function() {
+            // 检测Safari浏览器
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            if (isSafari) {
+                // 修复Safari中的CSS变量兼容性
+                if (!CSS || !CSS.supports || !CSS.supports('color', 'var(--fake-var)')) {
+                    console.warn('Safari版本较低，某些样式可能显示异常');
+                }
+                
+                // 修复Safari中的flexbox问题
+                document.documentElement.style.webkitBoxSizing = 'border-box';
+                
+                // 修复Safari中的transition兼容性
+                const style = document.createElement('style');
+                style.textContent = `
+                    * {
+                        -webkit-transition-property: all;
+                        -webkit-transition-duration: inherit;
+                        -webkit-transition-timing-function: inherit;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // 修复Safari中的transform兼容性
+                setTimeout(() => {
+                    const transforms = document.querySelectorAll('[style*="transform"]');
+                    transforms.forEach(el => {
+                        const transform = el.style.transform;
+                        if (transform) {
+                            el.style.webkitTransform = transform;
+                        }
+                    });
+                }, 100);
+            }
+            
+            // 修复Safari中的viewport问题
+            if (window.screen && window.screen.width <= 768) {
+                const viewport = document.querySelector('meta[name="viewport"]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+                }
+            }
+        })();
+    </script>
+    
+    <script>
+        // 角色选择处理
+        function fillRole(role) {
+            // 在localStorage中临时存储选择的角色
+            localStorage.setItem('selectedRole', role);
+        }
+
+        // 快速演示
+        function showDemo() {
+            // 设置演示用户
+            const demoUser = {
+                id: 'demo_user',
+                name: '演示用户',
+                role: 'executive',
+                department: '演示',
+                permissions: ['view', 'drill_down', 'export']
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(demoUser));
+            
+            // 显示加载提示
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 启动演示...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 清理之前的登录状态
+            localStorage.removeItem('currentUser');
+            
+            // 检查是否有预选角色
+            const selectedRole = localStorage.getItem('selectedRole');
+            if (selectedRole) {
+                localStorage.removeItem('selectedRole');
+            }
+            
+            // 记录页面访问
+            if (typeof OperationLogger !== 'undefined') {
+                OperationLogger.log('访问首页', { 
+                    referrer: document.referrer,
+                    userAgent: navigator.userAgent.substring(0, 100)
+                });
+            }
+            
+            // 添加浮动动画
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeInUp 0.6s ease forwards';
+            });
+        });
+
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .feature-card {
+                opacity: 0;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html> 
