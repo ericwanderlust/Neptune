@@ -1696,19 +1696,41 @@ const NavigationManager = {
           a.textContent = section.name;
           const base = section.basePath || (section.children && section.children[0] && section.children[0].path.split('/').slice(0,2).join('/'));
           if (!base) return;
-          a.href = base;
           a.setAttribute('data-basepath', base);
           if (section.icon){ a.innerHTML = `<i class="${section.icon}"></i>${section.name}`; }
           // hover 解释：一级菜单 summary
           if (section.summary){ try{ if (window.TooltipWrapper){ TooltipWrapper.attach(a, section.summary); } else { a.title = section.summary; } }catch(e){ a.title = section.summary; } }
-          a.addEventListener('click', function(e){ e.preventDefault();
-            if (window.Router && Router.navigateTo){ Router.navigateTo(base); return; }
-            loadJSON('config/routes.json').then(rs=>{ const m = rs.find(r=>r.path===base); if(!m){ console.warn('未找到落地路由', base); const dash = rs.find(r=>r.path==='/dashboard'); window.location.href = (dash?dash.component:'dashboard_overview.html'); return; } window.location.href = m.component + '?path=' + encodeURIComponent(base); });
-          });
+
+          // 首页驾驶舱：不使用 Router 跳转，直接停留/打开首页页面
+          if (base === '/dashboard'){
+            a.href = 'dashboard_overview.html';
+            a.addEventListener('click', function(e){
+              e.preventDefault();
+              var currentPage = (window.location.pathname.split('/').pop() || 'index.html');
+              if (currentPage === 'dashboard_overview.html' || currentPage === 'dashboard.html'){
+                return; // 已经在首页驾驶舱，避免跳转
+              }
+              window.location.href = 'dashboard_overview.html';
+            });
+          } else {
+            a.href = base;
+            a.addEventListener('click', function(e){ e.preventDefault();
+              if (window.Router && Router.navigateTo){ Router.navigateTo(base); return; }
+              loadJSON('config/routes.json').then(rs=>{ const m = rs.find(r=>r.path===base); if(!m){ console.warn('未找到落地路由', base); const dash = rs.find(r=>r.path==='/dashboard'); window.location.href = (dash?dash.component:'dashboard_overview.html'); return; } window.location.href = m.component + '?path=' + encodeURIComponent(base); });
+            });
+          }
+
           // 选中视觉：当 URL 中 path 属于该 basePath 时高亮
           if (currentPathParam && (currentPathParam === base || currentPathParam.indexOf(base + '/') === 0)){
             a.classList.add('active');
+          } else {
+            // 当直接处于首页驾驶舱文件时，高亮首页
+            var cp = (window.location.pathname.split('/').pop() || 'index.html');
+            if (base === '/dashboard' && (cp === 'dashboard_overview.html' || cp === 'dashboard.html')){
+              a.classList.add('active');
+            }
           }
+
           navLinksContainer.appendChild(a);
         });
         try{ if (window.TooltipWrapper){ TooltipWrapper.attachForMenu(navLinksContainer.querySelectorAll('.nav-link'), menu); } }catch(e){}
@@ -3094,9 +3116,23 @@ window.setDemoUser = function(role) {
 
 window.clearUser = function() {
   localStorage.removeItem('currentUser');
+  try { localStorage.removeItem('rbacRole'); } catch(e) {}
   console.log('已清除用户信息，将重定向到登录页');
   window.location.href = 'login.html';
 };
+
+// 兼容首页等页面使用的全局退出方法
+// 部分页面调用 logout()，这里提供别名以避免未定义错误
+if (typeof window.logout !== 'function') {
+  window.logout = function(){
+    if (typeof window.clearUser === 'function') {
+      window.clearUser();
+    } else {
+      try { localStorage.removeItem('currentUser'); localStorage.removeItem('rbacRole'); } catch(e) {}
+      window.location.href = 'login.html';
+    }
+  }
+}
 
 // 在控制台输出帮助信息
 if (typeof window !== 'undefined') {
