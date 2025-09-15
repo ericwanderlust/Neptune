@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水质优化建议</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/water/optimize');
+                var host = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '水质优化建议';
+                var desc = document.createElement('div');
+                desc.textContent = '提供投加、冲洗等水质优化方案（占位页面）';
+                host.appendChild(title);
+                host.appendChild(desc);
+                var tableWrap = document.createElement('div');
+                host.appendChild(tableWrap);
+                layout.mountContent(host);
+                // 表格占位
+                var dtHost = document.createElement('div');
+                tableWrap.appendChild(dtHost);
+                new DataTable(dtHost, {
+                    columns: [
+                        { key: 'dma', title: '分区' },
+                        { key: 'action', title: '优化措施' },
+                        { key: 'impact', title: '预计效果' }
+                    ],
+                    rows: [
+                        { dma: 'A1', action: '加氯0.2mg/L', impact: '余氯+0.1mg/L' },
+                        { dma: 'B3', action: '夜间冲洗30min', impact: '浊度-15%' }
+                    ]
+                });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

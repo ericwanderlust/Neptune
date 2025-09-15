@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运维派单</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/ops/dispatch');
+                var host = document.createElement('div');
+                var title = document.createElement('h2'); title.textContent = '运维派单';
+                var desc = document.createElement('div'); desc.textContent = '派发巡检或维修任务，支持优先级排序（占位页面）';
+                host.appendChild(title); host.appendChild(desc);
+                var table = document.createElement('div'); host.appendChild(table);
+                layout.mountContent(host);
+                new DataTable(table, { columns:[{key:'id',title:'工单号'},{key:'area',title:'区域'},{key:'priority',title:'优先级'}], rows:[{id:'WO-2025-001',area:'A区',priority:'高'},{id:'WO-2025-002',area:'B区',priority:'中'}] });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

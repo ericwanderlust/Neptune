@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="数据报表">
     <meta name="format-detection" content="telephone=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>在线水力模型系统 - 数据报表</title>
+    <title>智慧管网管理系统 - 数据报表</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="common_styles.css">
     <style>
@@ -252,6 +252,23 @@
             color: var(--text-secondary);
         }
 
+        /* 顶部运行状态小卡片 */
+        .top-stats {
+            padding: 0 var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+        .top-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+        }
+        @media (max-width: 1200px) {
+            .top-stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .top-stats-grid { grid-template-columns: 1fr; }
+        }
+
         /* 自定义报表构建器 */
         .report-builder {
             background: var(--bg-primary);
@@ -491,7 +508,7 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-left">
-                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
                 <div class="nav-links"></div>
             </div>
             <div class="navbar-right">
@@ -501,6 +518,27 @@
             </div>
         </div>
     </nav>
+    <!-- 顶部运行状态卡片 -->
+    <div class="top-stats">
+        <div class="top-stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">24</div>
+                <div class="stat-label">报表模板</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">8</div>
+                <div class="stat-label">今日生成</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">自动任务</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">156</div>
+                <div class="stat-label">本月使用</div>
+            </div>
+        </div>
+    </div>
     <div class="reports-container">
         <!-- 主内容区 -->
         <div class="reports-layout">
@@ -1030,15 +1068,7 @@
         </div>
     </div>
 
-    <!-- 底部状态栏 -->
-    <div class="status-bar">
-        <div class="status-bar-content">
-            <span><i class="fas fa-chart-bar text-primary"></i> 报表系统运行正常</span>
-            <span>报表模板: 24个</span>
-            <span>今日生成: 8份</span>
-            <span>自动任务: 5个</span>
-        </div>
-    </div>
+    
 
     <script src="common.js"></script>
     <script src="safari-compatibility.js"></script>

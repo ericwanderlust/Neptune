@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管网健康评估</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/network/health');
+                var host = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '管网健康评估';
+                var desc = document.createElement('div');
+                desc.textContent = '基于模型计算管道爆管概率与风险评分（占位页面）';
+                host.appendChild(title);
+                host.appendChild(desc);
+                var chartHolder = document.createElement('div');
+                host.appendChild(chartHolder);
+                layout.mountContent(host);
+                var cc = new ChartCard(chartHolder, { title: '高风险管段', tooltip: '点击卡片可从驾驶舱深链跳转到此页', height: 360 });
+                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">健康评分占位</div>'; });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>模块首页</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="common_styles.css">
+</head>
+<body>
+	<nav class="navbar">
+		<div class="navbar-content">
+			<div class="navbar-left">
+				<div class="logo">
+					<i class="fas fa-water"></i>
+					<span>智慧管网管理系统</span>
+				</div>
+				<div class="nav-links"></div>
+			</div>
+			<div class="navbar-right">
+				<div class="user-info"></div>
+				<div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+				<button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'">
+					<i class="fas fa-sign-out-alt"></i> 退出
+				</button>
+			</div>
+		</div>
+	</nav>
+
+	<div class="main-container" style="max-width:1200px;margin:0 auto;">
+		<div id="moduleHeader" style="margin:8px 0 16px 0;"></div>
+		<div id="moduleKPI" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;"></div>
+		<div id="moduleQuick" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+		<div id="moduleCards"></div>
+	</div>
+
+	<script src="common.js"></script>
+	<script src="modules/core/ModuleCards.js"></script>
+	<script>
+	(function(){
+		function getQuery(name){
+			var m = location.search.match(new RegExp('[?&]'+name+'=([^&]+)'));
+			return m ? decodeURIComponent(m[1]) : '';
+		}
+		function normalizePath(p){ return (p||'').replace(/\/?$/, ''); }
+		var currentPath = normalizePath(getQuery('path'));
+		if (!currentPath){
+			// 兜底：从 hash 或默认 dashboard
+			currentPath = '/dashboard';
+		}
+
+		fetch('config/menu.json', { cache: 'no-store' })
+			.then(function(r){ return r.json(); })
+			.then(function(menu){
+				var section = (menu||[]).find(function(s){ return normalizePath(s.basePath) === currentPath; }) || menu[0];
+				if (!section){ return; }
+				// 头部
+				var header = document.getElementById('moduleHeader');
+				header.innerHTML = '\
+					<div style="display:flex;align-items:center;gap:10px">\
+						<div class="kpi-icon-wrapper" style="width:44px;height:44px"><i class="' + (section.icon||'fas fa-layer-group') + '"></i></div>\
+						<div>\
+							<div class="section-title" style="font-size:18px">' + section.name + '</div>\
+							<div style="font-size:12px;color:var(--text-secondary)">' + (section.summary||'') + '</div>\
+						</div>\
+					</div>';
+				// KPI 与 快捷操作
+				renderKPIs(section);
+				renderQuick(section);
+
+				// 卡片
+				ModuleCards.injectStyles();
+				ModuleCards.render(document.getElementById('moduleCards'), section);
+			});
+
+		function kpiBox(title, value){
+			var box = document.createElement('div');
+			box.className = 'kpi-card';
+			box.style.cssText = 'background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:12px;box-shadow:var(--shadow,0 2px 8px rgba(0,0,0,.06));display:flex;flex-direction:column;gap:6px;';
+			box.innerHTML = '<div style="font-size:12px;color:var(--text-secondary,#666)">'+title+'</div><div style="font-size:22px;font-weight:700;color:var(--text-primary,#333)">'+value+'</div>';
+			return box;
+		}
+
+		function renderKPIs(section){
+			var wrap = document.getElementById('moduleKPI'); if(!wrap) return; wrap.innerHTML='';
+			if (section.basePath === '/dispatch'){
+				wrap.appendChild(kpiBox('今日执行工单','12'));
+				wrap.appendChild(kpiBox('进行中的计划','3'));
+				wrap.appendChild(kpiBox('累计完成','19'));
+				wrap.appendChild(kpiBox('按时完成率','98.6%'));
+			} else if (section.basePath === '/monitor'){
+				wrap.appendChild(kpiBox('在线设备','128'));
+				wrap.appendChild(kpiBox('实时告警','5'));
+				wrap.appendChild(kpiBox('处理中','2'));
+				wrap.appendChild(kpiBox('系统可用性','99.9%'));
+			} else {
+				wrap.style.display='none';
+			}
+		}
+
+		function quickBtn(text, path){
+			var a=document.createElement('a'); a.href='#'; a.className='btn btn-sm'; a.style.margin='2px'; a.textContent=text;
+			a.addEventListener('click', function(e){ e.preventDefault();
+				fetch('config/routes.json').then(r=>r.json()).then(rs=>{
+					var m = rs.find(function(r){ return r.path===path; });
+					if(m){ window.location.href = m.component + '?path=' + encodeURIComponent(path); }
+				});
+			});
+			return a;
+		}
+
+		function renderQuick(section){
+			var wrap = document.getElementById('moduleQuick'); if(!wrap) return; wrap.innerHTML='';
+			(section.children||[]).slice(0,4).forEach(function(c){ if(c.path){ wrap.appendChild(quickBtn(c.name, c.path)); } });
+		}
+
+		// 初始化导航
+		if (typeof NavigationManager !== 'undefined') { NavigationManager.init(); }
+		if (typeof Clock !== 'undefined') { Clock.init(); }
+	})();
+	</script>
+</body>
+</html>
+
+

@@ -1,0 +1,115 @@
+[
+  {
+    "name": "首页驾驶舱",
+    "basePath": "/dashboard",
+    "summary": "全局运营KPI、趋势与风险概览",
+    "icon": "fas fa-tachometer-alt",
+    "children": [
+      { "name": "运行总览",       "path": "/dashboard/overview",   "tooltip": "展示全网供水运行状态与关键指标", "icon": "fas fa-gauge" },
+      { "name": "模型指标总览",   "path": "/dashboard/model-kpi",  "tooltip": "对比模型与实测数据，呈现全局水力指标", "icon": "fas fa-chart-line" },
+      { "name": "风险预警",       "path": "/dashboard/alerts",     "tooltip": "汇总异常报警与模型预测风险", "icon": "fas fa-exclamation-triangle" },
+      { "name": "水质看板",       "path": "/dashboard/water",      "tooltip": "总览水质监测与模型趋势", "icon": "fas fa-flask" }
+    ]
+  },
+  {
+    "name": "监控与预警",
+    "basePath": "/monitor",
+    "summary": "实时监控态势与异常报警联动处理",
+    "icon": "fas fa-desktop",
+    "children": [
+      { "name": "实时监控",       "path": "/monitor/realtime",      "tooltip": "查看压力、流量、水质等实时运行数据", "icon": "fas fa-eye" },
+      { "name": "异常报警",       "path": "/monitor/alarms",        "tooltip": "接收模型与实测驱动的异常告警", "icon": "fas fa-bell" },
+      { "name": "事件追踪",       "path": "/monitor/incidents",     "tooltip": "跟踪异常事件的处置流程与进展", "icon": "fas fa-stream" }
+    ]
+  },
+  {
+    "name": "调度管理",
+    "basePath": "/dispatch",
+    "summary": "计划、执行与应急调度的一站式工作台",
+    "icon": "fas fa-route",
+    "children": [
+      { "name": "调度计划制定",    "path": "/dispatch/planning",    "tooltip": "制定日/周/月度供水调度计划", "icon": "fas fa-calendar-alt" },
+      { "name": "日常调度执行",    "path": "/dispatch/execute",     "tooltip": "调用模型推荐方案，执行日常调度", "icon": "fas fa-play-circle" },
+      { "name": "应急工况调度",    "path": "/dispatch/emergency",   "tooltip": "基于模型推演，生成应急工况调度预案", "icon": "fas fa-bolt" },
+      { "name": "调度记录追溯",    "path": "/dispatch/history",     "tooltip": "查询历史调度方案与执行情况", "icon": "fas fa-history" }
+    ]
+  },
+  {
+    "name": "水质管理",
+    "basePath": "/water",
+    "summary": "水质监测、趋势预测与污染溯源",
+    "icon": "fas fa-flask",
+    "children": [
+      { "name": "水质监测",       "path": "/water/observe",         "tooltip": "管理各监测点的水质实测数据", "icon": "fas fa-tint" },
+      { "name": "模型趋势预测",   "path": "/water/forecast",        "tooltip": "预测水质指标未来变化趋势", "icon": "fas fa-chart-area" },
+      { "name": "污染源溯追",     "path": "/water/trace",           "tooltip": "模型推演污染事件路径与溯源分析", "icon": "fas fa-route" },
+      { "name": "水质报表",       "path": "/water/reports",         "tooltip": "自动生成分区或全网水质报表", "icon": "fas fa-file-alt" },
+      { "name": "水质优化建议",   "path": "/water/optimize",        "tooltip": "提供投加、冲洗等水质优化方案", "icon": "fas fa-lightbulb" }
+    ]
+  },
+  {
+    "name": "漏损与管网健康",
+    "basePath": "/risk-health",
+    "summary": "漏损量化、压力优化与健康评估",
+    "icon": "fas fa-heartbeat",
+    "children": [
+      { "name": "漏损量分析",     "path": "/loss/analysis",         "tooltip": "计算分区及全网漏损量与漏损率", "icon": "fas fa-chart-pie" },
+      { "name": "模型漏损定位",   "path": "/loss/localize",         "tooltip": "对比模型与实测，推断疑似漏损区域", "icon": "fas fa-map-marker-alt" },
+      { "name": "压力监控优化",   "path": "/pressure/optimize",     "tooltip": "监控分区压力并给出优化方案", "icon": "fas fa-gauge-high" },
+      { "name": "减压阀管理",     "path": "/pressure/prv",          "tooltip": "管理PRV运行工况与优化调节", "icon": "fas fa-sliders-h" },
+      { "name": "动态分区模拟",   "path": "/dma/dynamic",           "tooltip": "模拟DMA合并/拆分，评估调整效果", "icon": "fas fa-project-diagram" },
+      { "name": "管网健康评估",   "path": "/network/health",        "tooltip": "基于模型计算管道爆管概率与风险评分", "icon": "fas fa-heartbeat" },
+      { "name": "巡检优先级",     "path": "/network/priority",      "tooltip": "推荐高风险管段，优化巡检派工", "icon": "fas fa-flag-checkered" }
+    ]
+  },
+  {
+    "name": "智能分析",
+    "basePath": "/ai",
+    "summary": "仿真推演与智能优化专题分析",
+    "icon": "fas fa-brain",
+    "children": [
+      { "name": "调度方案仿真",   "path": "/ai/dispatch-sim",      "tooltip": "推演不同调度方案的供水效果", "icon": "fas fa-flask" },
+      { "name": "极端工况模拟",   "path": "/ai/extreme",           "tooltip": "模拟停泵、爆管等极端工况影响", "icon": "fas fa-radiation" },
+      { "name": "历史事件复盘",   "path": "/ai/review",            "tooltip": "结合模型复盘重大供水事件", "icon": "fas fa-history" },
+      { "name": "分区优化专题",   "path": "/ai/zone-opt",          "tooltip": "分析并优化DMA或分区结构", "icon": "fas fa-sitemap" },
+      { "name": "跨区联合调度",   "path": "/ai/cross-district",    "tooltip": "模拟跨区调度的水力与水质影响", "icon": "fas fa-object-group" },
+      { "name": "供水平衡分析",   "path": "/ai/water-balance",     "tooltip": "计算产销差，生成水量平衡分析结果", "icon": "fas fa-balance-scale" },
+      { "name": "模型实测对比",   "path": "/ai/model-vs-measure",  "tooltip": "评估模型与实测数据的差异", "icon": "fas fa-balance-scale-left" }
+    ]
+  },
+  {
+    "name": "工单与运维",
+    "basePath": "/ops",
+    "summary": "故障工单流转与运维派工管理",
+    "icon": "fas fa-tools",
+    "children": [
+      { "name": "工单处理",       "path": "/ops/workorders",        "tooltip": "登记、处理供水故障和运维工单", "icon": "fas fa-tasks" },
+      { "name": "运维派单",       "path": "/ops/dispatch",          "tooltip": "派发巡检或维修任务，支持优先级排序", "icon": "fas fa-paper-plane" },
+      { "name": "事件归档",       "path": "/ops/archive",           "tooltip": "归档工单与事件，形成历史记录", "icon": "fas fa-archive" }
+    ]
+  },
+  {
+    "name": "数据与报表",
+    "basePath": "/reports",
+    "summary": "运营数据与专题报表统一出口",
+    "icon": "fas fa-chart-bar",
+    "children": [
+      { "name": "运营报表",       "path": "/reports/ops",           "tooltip": "查看供水运行、能耗等运营报表", "icon": "fas fa-chart-bar" },
+      { "name": "模型专题报表",   "path": "/reports/model",         "tooltip": "输出基于模型计算的专题报告", "icon": "fas fa-file-alt" },
+      { "name": "历史数据查询",   "path": "/reports/history",       "tooltip": "查询历史运行与模型数据", "icon": "fas fa-database" },
+      { "name": "数据导出",       "path": "/reports/export",        "tooltip": "批量导出业务与分析数据", "icon": "fas fa-file-export" }
+    ]
+  },
+  {
+    "name": "系统管理",
+    "basePath": "/admin",
+    "summary": "用户、权限与系统参数配置",
+    "icon": "fas fa-cogs",
+    "children": [
+      { "name": "用户权限管理",   "path": "/admin/users",           "tooltip": "管理用户角色与权限分级", "icon": "fas fa-user-shield" },
+      { "name": "参数模型配置",   "path": "/admin/model-config",    "tooltip": "维护模型参数与系统配置", "icon": "fas fa-sliders-h" },
+      { "name": "操作日志",       "path": "/admin/audit-log",       "tooltip": "查看用户操作与系统日志", "icon": "fas fa-clipboard-list" }
+    ]
+  }
+]
+

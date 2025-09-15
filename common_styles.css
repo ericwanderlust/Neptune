@@ -1429,9 +1429,10 @@ body {
 
 /* 主体容器 */
 .main-container {
-  display: flex;
-  height: calc(100vh - 60px); /* 减去导航栏高度 */
-  overflow: hidden;
+  display: block; /* 让子内容自然流式布局 */
+  height: auto !important; /* 不锁定视口高度 */
+  min-height: calc(100vh - 60px);
+  overflow: visible; /* 统一用浏览器滚动 */
 }
 
 /* 地图容器 - 固定尺寸，不受浮动面板影响 */

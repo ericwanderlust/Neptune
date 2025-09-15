@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巡检优先级</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/network/priority');
+                var host = document.createElement('div');
+                var title = document.createElement('h2'); title.textContent = '巡检优先级';
+                var desc = document.createElement('div'); desc.textContent = '推荐高风险管段，优化巡检派工（占位页面）';
+                host.appendChild(title); host.appendChild(desc);
+                var table = document.createElement('div'); host.appendChild(table);
+                layout.mountContent(host);
+                new DataTable(table, { columns:[{key:'pipe',title:'管段'},{key:'score',title:'风险评分'},{key:'suggest',title:'巡检建议'}], rows:[{pipe:'P-1021',score:92,suggest:'优先巡检'},{pipe:'P-2144',score:84,suggest:'本周内巡检'}] });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

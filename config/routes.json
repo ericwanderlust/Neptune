@@ -1,0 +1,60 @@
+[
+  { "path": "/dashboard",         "component": "pages/dashboard/overview.html" },
+  { "path": "/dashboard/overview",   "component": "pages/dashboard/overview.html" },
+  { "path": "/dashboard/model-kpi",  "component": "analysis_summary.html" },
+  { "path": "/dashboard/alerts",     "component": "monitor.html" },
+  { "path": "/dashboard/water",      "component": "water_quality.html" },
+
+  { "path": "/dispatch",             "component": "dispatch_portal.html" },
+  { "path": "/dispatch/planning",    "component": "schedule_planning.html" },
+  { "path": "/dispatch/execute",     "component": "daily_dispatch.html" },
+  { "path": "/dispatch/emergency",   "component": "dispatch_emergency.html" },
+  { "path": "/dispatch/history",     "component": "historical_comparison.html" },
+
+  { "path": "/monitor",              "component": "monitor.html" },
+  { "path": "/monitor/realtime",     "component": "monitor_realtime_map.html" },
+  { "path": "/monitor/alarms",       "component": "monitor_v3.html" },
+  { "path": "/monitor/incidents",    "component": "report_event_archive.html" },
+
+  { "path": "/water",                "component": "water_portal.html" },
+  { "path": "/water/observe",        "component": "water_quality.html" },
+  { "path": "/water/forecast",       "component": "pages/water/forecast/index.html" },
+  { "path": "/water/trace",          "component": "quality_trace_analysis.html" },
+  { "path": "/water/reports",        "component": "reports.html" },
+  { "path": "/water/optimize",       "component": "pages/water/optimize/index.html" },
+
+  { "path": "/risk-health",          "component": "risk_health_portal.html" },
+  { "path": "/loss/analysis",        "component": "pages/loss/analysis/index.html" },
+  { "path": "/loss/localize",        "component": "pages/loss/localize/index.html" },
+  { "path": "/pressure/optimize",    "component": "pages/pressure/optimize/index.html" },
+  { "path": "/pressure/prv",         "component": "pages/pressure/prv/index.html" },
+  { "path": "/dma/dynamic",          "component": "simulation.html" },
+  { "path": "/network/health",       "component": "pages/network/health/index.html" },
+  { "path": "/network/priority",     "component": "pages/network/priority/index.html" },
+
+  { "path": "/ops",                  "component": "tickets.html" },
+  { "path": "/ops/workorders",       "component": "tickets.html" },
+  { "path": "/ops/dispatch",         "component": "pages/ops/dispatch/index.html" },
+  { "path": "/ops/archive",          "component": "report_event_archive.html" },
+
+  { "path": "/ai",                   "component": "ai_portal.html" },
+  { "path": "/ai/dispatch-sim",      "component": "dispatch_workflow_builder.html" },
+  { "path": "/ai/extreme",           "component": "dispatch_emergency_main.html" },
+  { "path": "/ai/review",            "component": "historical_comparison.html" },
+  { "path": "/ai/zone-opt",          "component": "pages/ai/zone-opt/index.html" },
+  { "path": "/ai/cross-district",    "component": "pages/ai/cross-district/index.html" },
+  { "path": "/ai/water-balance",     "component": "visual_comparison.html" },
+  { "path": "/ai/model-vs-measure",  "component": "visual_comparison.html" },
+
+  { "path": "/reports",              "component": "reports.html" },
+  { "path": "/reports/ops",          "component": "reports.html" },
+  { "path": "/reports/model",        "component": "analysis_summary.html" },
+  { "path": "/reports/history",      "component": "reports.html" },
+  { "path": "/reports/export",       "component": "reports.html" },
+
+  { "path": "/admin",                "component": "admin.html" },
+  { "path": "/admin/users",          "component": "system_admin_panel.html" },
+  { "path": "/admin/model-config",   "component": "model_maintenance.html" },
+  { "path": "/admin/audit-log",      "component": "pages/admin/audit-log/index.html" }
+]
+

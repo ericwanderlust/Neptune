@@ -1,0 +1,24 @@
+{
+  "roles": [
+    "EXECUTIVE", "OPERATOR", "ENGINEER", "ADMIN"
+  ],
+  "whitelist": {
+    "EXECUTIVE": [
+      "/dashboard/overview", "/dashboard/model-kpi", "/dashboard/alerts", "/dashboard/water",
+      "/ai/water-balance", "/ai/model-vs-measure", "/reports/ops", "/reports/model", "/reports/history"
+    ],
+    "OPERATOR": [
+      "/dashboard/overview", "/dashboard/alerts",
+      "/monitor/realtime", "/monitor/alarms", "/monitor/incidents",
+      "/ops/workorders", "/ops/dispatch", "/ops/archive"
+    ],
+    "ENGINEER": [
+      "/dashboard/overview", "/dashboard/model-kpi", "/dashboard/water",
+      "/water/observe", "/water/forecast", "/water/trace", "/water/reports", "/water/optimize",
+      "/ai/dispatch-sim", "/ai/extreme", "/ai/review", "/ai/zone-opt", "/ai/cross-district", "/ai/model-vs-measure",
+      "/simulation"
+    ],
+    "ADMIN": ["*"]
+  }
+}
+

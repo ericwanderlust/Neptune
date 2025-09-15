@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型趋势预测</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/water/forecast');
+                var cardHost = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '模型趋势预测';
+                var desc = document.createElement('div');
+                desc.textContent = '预测水质指标未来变化趋势（占位页面，待接入ECharts与后端数据）';
+                cardHost.appendChild(title);
+                cardHost.appendChild(desc);
+                // 图表占位
+                var chartWrap = document.createElement('div');
+                layout.mountContent(cardHost);
+                var container = document.createElement('div');
+                cardHost.appendChild(container);
+                var cc = new ChartCard(container, { title: '余氯趋势预测', tooltip: '基于模型与历史数据的趋势预测', height: 320 });
+                cc.mountTo(function(el){
+                    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">图表占位</div>';
+                });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>减压阀管理</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/pressure/prv');
+                var host = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '减压阀管理';
+                var desc = document.createElement('div');
+                desc.textContent = '管理PRV运行工况与优化调节（占位页面）';
+                host.appendChild(title);
+                host.appendChild(desc);
+                var table = document.createElement('div');
+                host.appendChild(table);
+                layout.mountContent(host);
+                new DataTable(table, { columns:[{key:'prv',title:'PRV'},{key:'set',title:'设定值'},{key:'status',title:'状态'}], rows:[{prv:'PRV-01',set:'1.5bar',status:'正常'},{prv:'PRV-07',set:'1.2bar',status:'需巡检'}] });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

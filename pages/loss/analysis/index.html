@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漏损量分析</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/loss/analysis');
+                var host = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '漏损量分析';
+                var desc = document.createElement('div');
+                desc.textContent = '计算分区及全网漏损量与漏损率（占位页面）';
+                host.appendChild(title);
+                host.appendChild(desc);
+                var tableWrap = document.createElement('div');
+                host.appendChild(tableWrap);
+                layout.mountContent(host);
+                var dtHost = document.createElement('div');
+                tableWrap.appendChild(dtHost);
+                new DataTable(dtHost, { columns:[{key:'dma',title:'DMA'},{key:'mnf',title:'最小夜流'},{key:'leak',title:'估算漏损'}], rows:[{dma:'A1',mnf:12,leak:'8%'},{dma:'B2',mnf:20,leak:'12%'}] });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线水力模型系统 - 工单中心</title>
+    <title>智慧管网管理系统 - 工单中心</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="common_styles.css">
     <style>
@@ -339,6 +339,23 @@
             margin-top: var(--spacing-xs);
         }
 
+        /* 顶部运行状态小卡片 */
+        .top-stats {
+            padding: 0 var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+        .top-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+        }
+        @media (max-width: 1200px) {
+            .top-stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .top-stats-grid { grid-template-columns: 1fr; }
+        }
+
         /* 响应式 */
         @media (max-width: 1200px) {
             .tickets-layout {
@@ -444,7 +461,7 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-left">
-                <div class="logo"><i class="fas fa-water"></i><span>在线水力模型系统</span></div>
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
                 <div class="nav-links"></div>
             </div>
             <div class="navbar-right">
@@ -454,6 +471,27 @@
             </div>
         </div>
     </nav>
+    <!-- 顶部运行状态卡片 -->
+    <div class="top-stats">
+        <div class="top-stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">15</div>
+                <div class="stat-label">今日新增</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">8</div>
+                <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">处理中</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">45</div>
+                <div class="stat-label">已完成</div>
+            </div>
+        </div>
+    </div>
     <div class="tickets-layout">
         <!-- 左侧筛选器 -->
         <div class="sidebar">
@@ -823,15 +861,7 @@
         </div>
     </div>
 
-    <!-- 底部状态栏 -->
-    <div class="status-bar">
-        <div class="status-bar-content">
-            <span><i class="fas fa-ticket-alt text-primary"></i> 工单系统运行正常</span>
-            <span>今日新增: 15个</span>
-            <span>待处理: 8个</span>
-            <span>我的工单: 3个</span>
-        </div>
-    </div>
+    
 
     <script src="common.js"></script>
     <script>

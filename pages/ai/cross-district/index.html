@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跨区联合调度</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/ai/cross-district');
+                var host = document.createElement('div');
+                var title = document.createElement('h2'); title.textContent = '跨区联合调度';
+                var desc = document.createElement('div'); desc.textContent = '模拟跨区调度的水力与水质影响（占位页面）';
+                host.appendChild(title); host.appendChild(desc);
+                var chartHolder = document.createElement('div'); host.appendChild(chartHolder);
+                layout.mountContent(host);
+                var cc = new ChartCard(chartHolder, { title: '跨区调度方案对比', tooltip: '不同方案下压力/流量的变化', height: 360 });
+                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">图表占位</div>'; });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

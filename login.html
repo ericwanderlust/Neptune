@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="水力模型系统">
     <meta name="format-detection" content="telephone=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>在线水力模型系统 - 用户登录</title>
+    <title>智慧管网管理系统 - 用户登录</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="common_styles.css">
     <style>
@@ -1100,7 +1100,7 @@
                     </div>
                 </div>
                 
-                <h1 class="brand-title">在线水力模型系统</h1>
+                <h1 class="brand-title">智慧管网管理系统</h1>
                 <p class="brand-subtitle">
                     基于云端的智能水务管理平台<br>
                     为城市供水提供全方位的监控、分析和决策支持服务
@@ -1220,65 +1220,40 @@
                 <!-- 角色选择 -->
                 <div class="role-selection">
                     <label class="form-label">选择登录角色（自动填入用户名密码）</label>
-                    <div class="role-grid">
-                        <label class="role-option">
-                            <input type="radio" name="role" value="admin" class="role-input">
-                            <div class="role-card" onclick="fillDemoAccount('admin')">
-                                <div class="role-icon">
-                                    <i class="fas fa-crown"></i>
-                                </div>
-                                <div class="role-name">系统管理员</div>
-                                <div class="role-desc">平台管理权限</div>
-                            </div>
-                        </label>
+                    <div class="role-grid" style="grid-template-columns: repeat(2, 1fr);">
                         <label class="role-option">
                             <input type="radio" name="role" value="executive" class="role-input" checked>
                             <div class="role-card" onclick="fillDemoAccount('executive')">
-                                <div class="role-icon">
-                                    <i class="fas fa-user-tie"></i>
-                                </div>
-                                <div class="role-name">管理决策层</div>
-                                <div class="role-desc">决策支持督查</div>
+                                <div class="role-icon"><i class="fas fa-chess-king"></i></div>
+                                <div class="role-name">领导层</div>
+                                <div class="role-desc">驾驶舱 + 专题报表</div>
                             </div>
                         </label>
+                        
                         <label class="role-option">
                             <input type="radio" name="role" value="dispatcher" class="role-input">
                             <div class="role-card" onclick="fillDemoAccount('dispatcher')">
-                                <div class="role-icon">
-                                    <i class="fas fa-headset"></i>
-                                </div>
-                                <div class="role-name">调度员</div>
-                                <div class="role-desc">调度应急处置</div>
+                                <div class="role-icon"><i class="fas fa-bolt"></i></div>
+                                <div class="role-name">操作员</div>
+                                <div class="role-desc">监控与预警 + 工单闭环</div>
                             </div>
                         </label>
+                        
                         <label class="role-option">
                             <input type="radio" name="role" value="engineer" class="role-input">
                             <div class="role-card" onclick="fillDemoAccount('engineer')">
-                                <div class="role-icon">
-                                    <i class="fas fa-hard-hat"></i>
-                                </div>
-                                <div class="role-name">建模工程师</div>
-                                <div class="role-desc">模型维护校核</div>
+                                <div class="role-icon"><i class="fas fa-flask"></i></div>
+                                <div class="role-name">专家层</div>
+                                <div class="role-desc">业务闭环 + 智能分析</div>
                             </div>
                         </label>
+                        
                         <label class="role-option">
-                            <input type="radio" name="role" value="service" class="role-input">
-                            <div class="role-card" onclick="fillDemoAccount('service')">
-                                <div class="role-icon">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <div class="role-name">客服专员</div>
-                                <div class="role-desc">工单事件处理</div>
-                            </div>
-                        </label>
-                        <label class="role-option">
-                            <input type="radio" name="role" value="analyst" class="role-input">
-                            <div class="role-card" onclick="fillDemoAccount('analyst')">
-                                <div class="role-icon">
-                                    <i class="fas fa-chart-bar"></i>
-                                </div>
-                                <div class="role-name">数据分析师</div>
-                                <div class="role-desc">数据挖掘分析</div>
+                            <input type="radio" name="role" value="admin" class="role-input">
+                            <div class="role-card" onclick="fillDemoAccount('admin')">
+                                <div class="role-icon"><i class="fas fa-user-shield"></i></div>
+                                <div class="role-name">系统运维</div>
+                                <div class="role-desc">平台管理与安全</div>
                             </div>
                         </label>
                     </div>
@@ -1325,7 +1300,7 @@
     </div>
 
     <div class="version-info">
-        <p>© 2024 在线水力模型系统 v2.0.1 | 建议使用现代浏览器访问</p>
+        <p>© 2024 智慧管网管理系统 v2.0.1 | 建议使用现代浏览器访问</p>
     </div>
 
     <script src="common.js"></script>
@@ -1405,18 +1380,14 @@
                 admin: { username: 'admin', password: '123456', role: 'admin' },
                 executive: { username: 'executive', password: '123456', role: 'executive' },
                 dispatcher: { username: 'dispatcher', password: '123456', role: 'dispatcher' },
-                engineer: { username: 'engineer', password: '123456', role: 'engineer' },
-                service: { username: 'service', password: '123456', role: 'service' },
-                analyst: { username: 'analyst', password: '123456', role: 'analyst' }
+                engineer: { username: 'engineer', password: '123456', role: 'engineer' }
             };
             
             const roleNames = {
-                admin: '系统管理员',
-                executive: '管理决策层',
-                dispatcher: '调度员',
-                engineer: '建模工程师',
-                service: '客服专员',
-                analyst: '数据分析师'
+                admin: '系统运维',
+                executive: '领导层',
+                dispatcher: '操作员',
+                engineer: '专家层'
             };
             
             const account = accounts[type];
@@ -1454,8 +1425,6 @@
                     'executive': '123456', 
                     'dispatcher': '123456',
                     'engineer': '123456',
-                    'service': '123456',
-                    'analyst': '123456',
                     'demo': 'demo123'
                 };
                 
@@ -1471,32 +1440,20 @@
                         'executive': { 
                             name: '张总', 
                             department: '水司中高层/管理办', 
-                            permissions: ['view', 'drill_down', 'export', 'remote_control_limited', 'meeting_mode', 'dashboard_custom'],
-                            description: '全局运营KPI监控，决策支持，督查问题闭环'
+                            permissions: ['view', 'drill_down', 'export', 'meeting_mode', 'dashboard_custom'],
+                            description: '驾驶舱看全局，专题报表抓重点'
                         },
                         'dispatcher': { 
                             name: '李调度', 
                             department: '总调度中心/一线班组', 
-                            permissions: ['view', 'operate', 'dispatch', 'emergency', 'simulate', 'workflow', 'batch_operation', 'shift_handover'],
-                            description: '实时调度操作，工况模拟，异常应急响应'
+                            permissions: ['view', 'operate', 'dispatch', 'emergency', 'workflow', 'batch_operation', 'shift_handover'],
+                            description: '监控与预警，高效执行，工单闭环'
                         },
                         'engineer': { 
                             name: '王工程师', 
                             department: '模型专家/系统技术支持', 
-                            permissions: ['view', 'model', 'analyze', 'calibrate', 'export', 'collaborate', 'version_control', 'api_access'],
-                            description: '模型建设维护，参数校核，数据溯源分析'
-                        },
-                        'service': { 
-                            name: '陈客服', 
-                            department: '水司客服中心/服务热线', 
-                            permissions: ['view_limited', 'ticket', 'communicate', 'report', 'trace_simple', 'customer_feedback'],
-                            description: '投诉报修登记，事件跟踪，简易溯源查询'
-                        },
-                        'analyst': { 
-                            name: '赵分析师', 
-                            department: '信息中心/大数据/BI', 
-                            permissions: ['view', 'analyze', 'report', 'export', 'custom_analysis', 'data_governance', 'api_management'],
-                            description: '数据治理标签管理，专题报表，接口对接'
+                            permissions: ['view', 'model', 'analyze', 'calibrate', 'export', 'version_control', 'api_access'],
+                            description: '业务模块闭环，智能分析实验室'
                         },
                         'demo': { name: '演示用户', department: '演示', permissions: ['view'] }
                     };
@@ -1514,6 +1471,17 @@
                     
                     // 保存用户信息到localStorage
                     localStorage.setItem('currentUser', JSON.stringify(userInfo));
+
+                    // 规范化RBAC角色并存储，用于新菜单/权限系统
+                    const rbacMap = {
+                        admin: 'ADMIN',
+                        executive: 'EXECUTIVE',
+                        dispatcher: 'OPERATOR',
+                        engineer: 'ENGINEER'
+                    };
+                    const rbacRole = rbacMap[role] || role.toUpperCase();
+                    localStorage.setItem('rbacRole', rbacRole);
+                    window.__USER_ROLE__ = rbacRole;
                     
                     // 记住密码
                     if (document.getElementById('remember').checked) {
@@ -1540,10 +1508,8 @@
                     const defaultPages = {
                         'admin': 'admin.html',
                         'executive': 'dashboard.html', 
-                        'dispatcher': 'daily_dispatch.html',
-                        'engineer': 'simulation.html',
-                        'service': 'tickets.html',
-                        'analyst': 'reports.html'
+                        'dispatcher': 'monitor.html',
+                        'engineer': 'simulation.html'
                     };
                     
                     const targetPage = defaultPages[role] || 'dashboard.html';
@@ -1600,6 +1566,8 @@
             
             // 保存用户信息到localStorage
             localStorage.setItem('currentUser', JSON.stringify(demoUser));
+            localStorage.setItem('rbacRole', 'MANAGER');
+            window.__USER_ROLE__ = 'MANAGER';
             
             // 显示提示
             showMessage('正在启动快速体验模式...', 'success');

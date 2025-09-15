@@ -1260,7 +1260,7 @@ HK Example Network
 // 导航菜单管理器
 const NavigationManager = {
   // 统一一级菜单结构 - 按照用户要求的顺序排列
-  unifiedMenus: ['dashboard', 'monitor', 'daily_dispatch', 'dispatch_emergency', 'simulation', 'water_quality', 'tickets', 'reports', 'admin'],
+  unifiedMenus: ['dashboard', 'monitor', 'dispatch', 'water', 'risk_health', 'ai', 'tickets', 'reports', 'admin'],
   
   // 角色配置 - 按照用户要求重新优化权限
   roleConfig: {
@@ -1294,6 +1294,9 @@ const NavigationManager = {
         'historical_comparison': 'active', // ✓ 调度员需要对比历史方案
         'analysis_summary': 'active',      // ✓ 调度员需要完整权限
         'water_quality': 'active',
+        'water': 'active',
+        'risk_health': 'active',
+        'ai': 'active',
         'reports': 'active',
         'admin': 'hidden'
       }
@@ -1311,6 +1314,9 @@ const NavigationManager = {
         'historical_comparison': 'active', // ✓ 建模工程师需要历史对比
         'analysis_summary': 'active',      // ✓ 建模工程师需要数据分析
         'water_quality': 'active',
+        'water': 'active',
+        'risk_health': 'active',
+        'ai': 'active',
         'reports': 'active',
         'admin': 'hidden'
       }
@@ -1328,6 +1334,9 @@ const NavigationManager = {
         'historical_comparison': 'active', // ✓ 数据分析师需要历史对比
         'analysis_summary': 'active',      // ✓ 数据分析师核心功能
         'water_quality': 'disabled',
+        'water': 'view',
+        'risk_health': 'view',
+        'ai': 'active',
         'reports': 'active',
         'admin': 'hidden'
       }
@@ -1362,6 +1371,9 @@ const NavigationManager = {
         'historical_comparison': 'view',   // ✓ 管理层查看历史对比
         'analysis_summary': 'active',     // ✓ 管理层需要数据分析
         'water_quality': 'view',
+        'water': 'view',
+        'risk_health': 'view',
+        'ai': 'active',
         'reports': 'active',
         'admin': 'view'
       }
@@ -1394,6 +1406,12 @@ const NavigationManager = {
       icon: 'fas fa-calendar-alt',
       description: '日常调度计划和操作管理'
     },
+    'dispatch': {
+      href: 'dispatch_portal.html',
+      label: '调度管理',
+      icon: 'fas fa-route',
+      description: '计划、执行与应急调度的一站式工作台'
+    },
     'simulation': { 
       href: 'simulation.html', 
       label: '仿真模拟', 
@@ -1411,6 +1429,24 @@ const NavigationManager = {
       label: '数据分析', 
       icon: 'fas fa-chart-pie',
       description: '数据分析与经验总结'
+    },
+    'water': { 
+      href: 'water_portal.html', 
+      label: '水质管理', 
+      icon: 'fas fa-flask',
+      description: '水质监测、趋势预测与污染溯源'
+    },
+    'risk_health': { 
+      href: 'risk_health_portal.html', 
+      label: '漏损与管网健康', 
+      icon: 'fas fa-heartbeat',
+      description: '漏损量化、压力优化与健康评估'
+    },
+    'ai': { 
+      href: 'ai_portal.html', 
+      label: '智能分析', 
+      icon: 'fas fa-brain',
+      description: '仿真推演与智能优化专题分析'
     },
     'tickets': { 
       href: 'tickets.html', 
@@ -1521,6 +1557,10 @@ const NavigationManager = {
       'historical_comparison.html': 'historical_comparison',
       'analysis_summary.html': 'analysis_summary',
       'water_quality.html': 'water_quality',
+      'water_portal.html': 'water',
+      'risk_health_portal.html': 'risk_health',
+      'ai_portal.html': 'ai',
+      'dispatch_portal.html': 'dispatch',
       'quality_trace_analysis.html': 'water_quality',
       'reports.html': 'reports',
       'admin.html': 'admin',
@@ -1621,7 +1661,7 @@ const NavigationManager = {
     const brandElement = document.querySelector('.logo span');
     if (brandElement) {
       // 保持统一的系统名称，不因角色而改变
-      brandElement.textContent = '在线水力模型系统';
+      brandElement.textContent = '智慧管网管理系统';
     }
     
     // 更新浏览器标题，包含角色工作台信息
@@ -1630,94 +1670,75 @@ const NavigationManager = {
   
 
 
-  // 更新导航链接 - 统一菜单显示，权限控制状态
+  // 更新导航链接 - 新版支持一级菜单+下拉二级，带 tooltip 与 RBAC
   updateNavLinks(roleConfig) {
     const navLinksContainer = document.querySelector('.nav-links');
-    if (!navLinksContainer) {
-      console.warn('NavigationManager: 找不到 .nav-links 容器');
-      return;
+    if (!navLinksContainer) { console.warn('NavigationManager: 找不到 .nav-links 容器'); return; }
+    const self = this;
+    const role = (window.__USER_ROLE__ || localStorage.getItem('rbacRole') || (UserPermissions.currentUser && UserPermissions.currentUser.role) || 'OPERATOR');
+
+    function loadJSON(url){ return fetch(url, { cache: 'no-store' }).then(r=>r.json()); }
+
+    function renderFromMenu(menu){
+      try{
+        navLinksContainer.innerHTML='';
+        navLinksContainer.classList.add('nav2');
+        const roleNorm = (window.RBAC && RBAC.normalizeRole) ? RBAC.normalizeRole(role) : String(role).toUpperCase();
+        const whitelist = (window.RBAC && RBAC.getWhitelist) ? RBAC.getWhitelist(roleNorm) : null;
+        const allow = function(path){ if(!whitelist) return true; if (roleNorm==='ADMIN') return true; if (whitelist.indexOf('*')>=0) return true; return whitelist.indexOf(path)>=0; };
+        // 当前路径用于高亮
+        var currentPathParam = new URLSearchParams(window.location.search||'').get('path');
+
+        // 单级导航：每个一级菜单跳转 basePath 落地页
+        menu.forEach(section=>{
+          const a = document.createElement('a');
+          a.className = 'nav-link';
+          a.textContent = section.name;
+          const base = section.basePath || (section.children && section.children[0] && section.children[0].path.split('/').slice(0,2).join('/'));
+          if (!base) return;
+          a.href = base;
+          a.setAttribute('data-basepath', base);
+          if (section.icon){ a.innerHTML = `<i class="${section.icon}"></i>${section.name}`; }
+          // hover 解释：一级菜单 summary
+          if (section.summary){ try{ if (window.TooltipWrapper){ TooltipWrapper.attach(a, section.summary); } else { a.title = section.summary; } }catch(e){ a.title = section.summary; } }
+          a.addEventListener('click', function(e){ e.preventDefault();
+            if (window.Router && Router.navigateTo){ Router.navigateTo(base); return; }
+            loadJSON('config/routes.json').then(rs=>{ const m = rs.find(r=>r.path===base); if(!m){ console.warn('未找到落地路由', base); const dash = rs.find(r=>r.path==='/dashboard'); window.location.href = (dash?dash.component:'dashboard_overview.html'); return; } window.location.href = m.component + '?path=' + encodeURIComponent(base); });
+          });
+          // 选中视觉：当 URL 中 path 属于该 basePath 时高亮
+          if (currentPathParam && (currentPathParam === base || currentPathParam.indexOf(base + '/') === 0)){
+            a.classList.add('active');
+          }
+          navLinksContainer.appendChild(a);
+        });
+        try{ if (window.TooltipWrapper){ TooltipWrapper.attachForMenu(navLinksContainer.querySelectorAll('.nav-link'), menu); } }catch(e){}
+        self.addNavigationStyles();
+      }catch(err){ console.error('渲染新菜单失败，回退旧菜单', err); renderFallback(); }
     }
-    
-    console.log('NavigationManager: 开始更新统一导航链接');
-    
-    // 清空现有链接
-    navLinksContainer.innerHTML = '';
-    
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    
-    // 生成统一的一级菜单
-    this.unifiedMenus.forEach(menuKey => {
-      const menuDef = this.menuDefinitions[menuKey];
-      if (!menuDef) {
-        console.warn(`NavigationManager: 找不到菜单定义 ${menuKey}`);
-        return;
-      }
-      
-      // 获取当前用户对此菜单的权限状态
-      const permission = roleConfig.permissions[menuKey] || 'hidden';
-      
-      // 如果是hidden，跳过不显示
-      if (permission === 'hidden') {
-        return;
-      }
-      
-      const link = document.createElement('a');
-      link.className = 'nav-link';
-      link.title = menuDef.description;
-      link.innerHTML = `
-        <i class="${menuDef.icon}"></i>
-        ${menuDef.label}
-      `;
-      
-      // 根据权限状态设置链接属性和样式
-      switch (permission) {
-        case 'active':
-          link.href = menuDef.href;
-          link.classList.add('nav-active');
-          break;
-        case 'view':
-          link.href = menuDef.href;
-          link.classList.add('nav-view');
-          // 添加只读图标
-          link.innerHTML = `
-            <i class="${menuDef.icon}"></i>
-            ${menuDef.label}
-            <i class="fas fa-eye nav-view-icon"></i>
-          `;
-          break;
-        case 'disabled':
-          link.href = '#';
-          link.classList.add('nav-disabled');
-          // 添加锁图标
-          link.innerHTML = `
-            <i class="${menuDef.icon}"></i>
-            ${menuDef.label}
-            <i class="fas fa-lock nav-lock-icon"></i>
-          `;
-          link.onclick = (e) => {
-            e.preventDefault();
-            NotificationManager.show('您没有权限访问此功能', 'warning');
-          };
-          break;
-        case 'notify':
-          link.href = menuDef.href;
-          link.classList.add('nav-notify');
-          link.innerHTML += '<span class="nav-notification-dot"></span>';
-          break;
-      }
-      
-      // 检查当前页面
-      if (currentPage === menuDef.href || currentPage === menuDef.href.split('/').pop()) {
-        link.classList.add('active');
-      }
-      
-      navLinksContainer.appendChild(link);
-      console.log(`NavigationManager: 添加菜单 ${menuKey} (${permission})`);
-    });
-    
-    // 添加样式
-    this.addNavigationStyles();
-    console.log('NavigationManager: 统一导航链接更新完成');
+
+    function renderFallback(){
+      navLinksContainer.innerHTML='';
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      self.unifiedMenus.forEach(menuKey=>{
+        const menuDef = self.menuDefinitions[menuKey]; if(!menuDef) return;
+        const permission = roleConfig.permissions[menuKey] || 'hidden'; if (permission==='hidden') return;
+        const link=document.createElement('a'); link.className='nav-link'; link.title=menuDef.description; link.innerHTML=`<i class="${menuDef.icon}"></i>${menuDef.label}`;
+        switch(permission){
+          case 'active': link.href=menuDef.href; link.classList.add('nav-active'); break;
+          case 'view': link.href=menuDef.href; link.classList.add('nav-view'); link.innerHTML=`<i class="${menuDef.icon}"></i>${menuDef.label}<i class="fas fa-eye nav-view-icon"></i>`; break;
+          case 'disabled': link.href='#'; link.classList.add('nav-disabled'); link.innerHTML=`<i class=\"${menuDef.icon}\"></i>${menuDef.label}<i class=\"fas fa-lock nav-lock-icon\"></i>`; link.onclick=(e)=>{e.preventDefault(); NotificationManager.show('您没有权限访问此功能','warning');}; break;
+          case 'notify': link.href=menuDef.href; link.classList.add('nav-notify'); link.innerHTML+='<span class="nav-notification-dot"></span>'; break;
+        }
+        if (currentPage===menuDef.href || currentPage===menuDef.href.split('/').pop()) link.classList.add('active');
+        navLinksContainer.appendChild(link);
+      });
+      self.addNavigationStyles();
+    }
+
+    fetch('config/menu.json', { cache: 'no-store' })
+      .then(r=> r.ok ? r.json() : Promise.reject('menu.json not found'))
+      .then(menu => renderFromMenu(menu))
+      .catch(()=> renderFallback());
   },
 
   // 更新用户显示
@@ -1744,48 +1765,7 @@ const NavigationManager = {
     style.id = 'navigation-styles';
     style.textContent = `
       /* 导航链接基础样式 */
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 4px;
-        border-radius: 12px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        max-width: calc(100vw - 450px); /* 调整宽度以适应右侧控件 */
-        overflow-x: auto;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(74, 144, 184, 0.5) transparent;
-        transition: scrollbar-color 0.3s ease;
-      }
-      
-      .nav-links:hover {
-        scrollbar-color: rgba(74, 144, 184, 0.8) transparent;
-      }
-
-      .nav-links::-webkit-scrollbar {
-        height: 5px;
-        width: 5px;
-      }
-      
-      .nav-links::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      
-      .nav-links::-webkit-scrollbar-thumb {
-        background: rgba(var(--primary-rgb, 74, 144, 184), 0.3);
-        border-radius: 10px;
-        transition: background 0.3s ease;
-      }
-      
-      .nav-links:hover::-webkit-scrollbar-thumb {
-        background: rgba(var(--primary-rgb, 74, 144, 184), 0.6);
-      }
-
-      .nav-links::-webkit-scrollbar-thumb:hover {
-        background: rgba(var(--primary-rgb, 74, 144, 184), 0.9);
-      }
+      .nav-links { display:flex; align-items:center; gap:8px; }
       
       .nav-link {
         display: flex;
@@ -1999,6 +1979,16 @@ const NavigationManager = {
         border-radius: 8px;
         font-weight: 500;
       }
+
+      /* 二级菜单布局（新） */
+      .nav2{display:flex;gap:8px}
+      .nav2-top{position:relative}
+      .nav2-topbtn{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;text-decoration:none;color:#333;border:1px solid transparent}
+      .nav2-topbtn:hover{background:rgba(74,144,184,.12);border-color:rgba(74,144,184,.2)}
+      .nav2-submenu{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.15);padding:6px;display:none;z-index:50}
+      .nav2-top.open .nav2-submenu{display:block}
+      .nav2-item{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#374151}
+      .nav2-item:hover{background:#eef2ff}
 
       .navbar-divider {
         width: 1px;
@@ -3110,7 +3100,7 @@ window.clearUser = function() {
 
 // 在控制台输出帮助信息
 if (typeof window !== 'undefined') {
-  console.log('%c在线水力模型系统 - 开发工具', 'color: #4A90B8; font-weight: bold; font-size: 16px;');
+  console.log('%c智慧管网管理系统 - 开发工具', 'color: #4A90B8; font-weight: bold; font-size: 16px;');
   console.log('%c可用命令:', 'color: #2ecc71; font-weight: bold;');
   console.log('setDemoUser("角色") - 设置演示用户');
   console.log('clearUser() - 清除用户信息');

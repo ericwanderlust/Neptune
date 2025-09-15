@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网管理系统 - 水质管理</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        .module-layout { padding: var(--spacing-lg); max-width: 1400px; margin: 0 auto; }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-xl); padding-bottom:var(--spacing-lg); border-bottom:2px solid var(--border-color); }
+        .header-info h1 { font-size:28px; font-weight:700; color:var(--text-primary); margin-bottom:var(--spacing-sm); }
+        .header-desc { color:var(--text-secondary); font-size:var(--font-size-lg); }
+        .header-actions { display:flex; gap:var(--spacing-md); }
+
+        .status-overview { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:var(--spacing-lg); margin-bottom:var(--spacing-xl); }
+        .status-card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:var(--spacing-lg); text-align:center; }
+        .status-value { font-size:32px; font-weight:700; color:var(--primary); margin-bottom:var(--spacing-sm); }
+        .status-label { color:var(--text-secondary); font-size:var(--font-size-sm); font-weight:500; }
+
+        .quick-actions { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:var(--spacing-xl); margin-bottom:var(--spacing-xl); }
+        .quick-actions-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+        .quick-actions-header h2 { font-size:20px; font-weight:600; color:var(--text-primary); margin:0; }
+        .actions-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:var(--spacing-md); }
+        .action-btn { display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-md); background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-lg); text-decoration:none; color:var(--text-primary); transition:all 0.3s ease; font-weight:500; }
+        .action-btn:hover { background:var(--bg-tertiary); border-color:var(--primary); color:var(--primary); transform:translateY(-2px); }
+        .action-btn.removable { position:relative; }
+        .remove-action-btn { position:absolute; top:-8px; right:-8px; width:20px; height:20px; background:var(--danger); color:white; border:none; border-radius:50%; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:10px; z-index:10; }
+        .action-btn:hover .remove-action-btn { display:flex; }
+        .action-icon { width:32px; height:32px; background:var(--primary); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; color:white; font-size:14px; }
+
+        .function-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(350px, 1fr)); gap:var(--spacing-xl); margin-bottom:var(--spacing-xl); }
+        .function-card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:var(--spacing-xl); transition:all 0.3s ease; cursor:pointer; position:relative; overflow:hidden; }
+        .function-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--primary), var(--success)); transform:scaleX(0); transition:transform 0.3s ease; }
+        .function-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.15); border-color:var(--primary); }
+        .function-card:hover::before { transform:scaleX(1); }
+        .card-header { display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-lg); }
+        .card-icon { width:56px; height:56px; background:linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:24px; color:white; box-shadow:0 8px 24px rgba(74,144,184,0.3); }
+        .card-title { flex:1; }
+        .card-title h3 { font-size:20px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
+        .card-subtitle { color:var(--text-secondary); font-size:var(--font-size-sm); }
+        .card-content { margin-bottom:var(--spacing-lg); }
+        .card-description { color:var(--text-secondary); line-height:1.6; margin-bottom:var(--spacing-md); }
+        .feature-list { list-style:none; }
+        .feature-list li { display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs); color:var(--text-secondary); font-size:var(--font-size-sm); }
+        .feature-list li::before { content:'✓'; color:var(--success); font-weight:bold; }
+        .card-footer { display:flex; justify-content:space-between; align-items:center; }
+        .card-status { display:flex; align-items:center; gap:var(--spacing-xs); font-size:var(--font-size-sm); color:var(--text-tertiary); }
+        .status-dot { width:8px; height:8px; border-radius:50%; background:var(--success); }
+
+        @media (max-width: 1200px) { .function-grid { grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); } }
+        @media (max-width: 768px) { .module-layout { padding:var(--spacing-md); } .page-header { flex-direction:column; align-items:flex-start; gap:var(--spacing-md); } .function-grid { grid-template-columns:1fr; } .actions-grid { grid-template-columns:1fr; } }
+
+        .modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; display:none; align-items:center; justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .config-modal { background:var(--bg-primary); border-radius:var(--radius-lg); padding:var(--spacing-xl); max-width:600px; width:90vw; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); padding-bottom:var(--spacing-md); border-bottom:1px solid var(--border-color); }
+        .modal-title { font-size:var(--font-size-lg); font-weight:600; color:var(--text-primary); }
+        .close-btn { background:none; border:none; font-size:24px; color:var(--text-secondary); cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:var(--radius-sm); transition:all var(--transition-fast); }
+        .close-btn:hover { background:var(--bg-secondary); color:var(--text-primary); }
+        .available-actions-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:var(--spacing-md); margin-top:var(--spacing-lg); }
+        .available-action { display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-md); background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-md); cursor:pointer; transition:all var(--transition-fast); }
+        .available-action:hover { background:var(--bg-tertiary); border-color:var(--primary); }
+        .available-action.favorited { background:rgba(74,144,184,0.1); border-color:var(--primary); color:var(--primary); }
+        .available-action .action-icon { width:24px; height:24px; font-size:12px; }
+        .action-text { flex:1; font-size:var(--font-size-sm); font-weight:500; }
+        .favorite-indicator { color:var(--primary); font-size:14px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout">
+        <div class="page-header">
+            <div class="header-info">
+                <h1><i class="fas fa-flask"></i> 水质管理中心</h1>
+                <p class="header-desc">保障供水水质，覆盖监测、趋势预测、溯源与优化，支持二供与污染事件</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
+                <button class="btn btn-outline" onclick="showHelp()"><i class="fas fa-question-circle"></i> 帮助</button>
+            </div>
+        </div>
+
+        <div class="status-overview">
+            <div class="status-card"><div class="status-value" id="stationCount">128</div><div class="status-label">监测点位</div></div>
+            <div class="status-card"><div class="status-value" id="activeAlerts">6</div><div class="status-label">异常预警</div></div>
+            <div class="status-card"><div class="status-value" id="forecastTasks">8</div><div class="status-label">预测任务</div></div>
+            <div class="status-card"><div class="status-value" id="complianceRate">99.2%</div><div class="status-label">水质达标率</div></div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <h2><i class="fas fa-bolt"></i> 快速操作</h2>
+                <button class="btn btn-sm btn-outline" onclick="openQuickActionsConfig()"><i class="fas fa-cog"></i> 配置</button>
+            </div>
+            <div class="actions-grid" id="quickActionsGrid"></div>
+        </div>
+
+        <div class="function-grid">
+            <div class="function-card" onclick="navigateToFunction('water_quality.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-tint"></i></div><div class="card-title"><h3>水质监测</h3><p class="card-subtitle">污染源/二供/在线监测</p></div></div>
+                <div class="card-content"><p class="card-description">统一管理监测点数据并联动地图，以异常告警驱动快速响应与复核。</p>
+                    <ul class="feature-list"><li>多源监测点管理</li><li>异常阈值预警</li><li>地图联动</li><li>数据质检</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>数据接入正常</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('water_quality.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-layer-group"></i></div><div class="card-title"><h3>水质分布图</h3><p class="card-subtitle">模型可视化热力图</p></div></div>
+                <div class="card-content"><p class="card-description">以热力图/等值线展示全网水质空间分布，支持时序回放。</p>
+                    <ul class="feature-list"><li>热力层渲染</li><li>等值线/阈值高亮</li><li>时间轴回放</li><li>叠层对比</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>模型渲染就绪</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('pages/water/forecast/index.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-chart-area"></i></div><div class="card-title"><h3>水质趋势预测</h3><p class="card-subtitle">未来6/12/24小时</p></div></div>
+                <div class="card-content"><p class="card-description">结合模型与历史数据预测关键水质指标的未来变化，提前预警。</p>
+                    <ul class="feature-list"><li>多时段预测</li><li>指标阈值预警</li><li>曲线与地图联动</li><li>结果导出</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>预测引擎在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('quality_trace_analysis.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-route"></i></div><div class="card-title"><h3>污染溯源</h3><p class="card-subtitle">反推扩散路径</p></div></div>
+                <div class="card-content"><p class="card-description">基于水力-水质耦合模型反推污染扩散路径与潜在源头，支持报告输出。</p>
+                    <ul class="feature-list"><li>起点反推</li><li>路径可视化</li><li>关键节点识别</li><li>证据链导出</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>算法库可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('pages/water/optimize/index.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-wand-magic-sparkles"></i></div><div class="card-title"><h3>水质优化</h3><p class="card-subtitle">冲洗/投加方案</p></div></div>
+                <div class="card-content"><p class="card-description">针对异常区域生成冲洗或投加方案，支持参数化仿真与执行清单输出。</p>
+                    <ul class="feature-list"><li>多策略生成</li><li>执行清单导出</li><li>效果预测</li><li>联动工单</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>优化模块就绪</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('reports.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-file-alt"></i></div><div class="card-title"><h3>水质报表</h3><p class="card-subtitle">操作员日常导出</p></div></div>
+                <div class="card-content"><p class="card-description">按区域与时间维度生成水质专题报表，支持模板化导出。</p>
+                    <ul class="feature-list"><li>模板配置</li><li>分区汇总</li><li>导出共享</li><li>归档留痕</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>报表服务在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="configModal">
+        <div class="config-modal">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-star"></i> 配置收藏操作</h3>
+                <button class="close-btn" onclick="closeQuickActionsConfig()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-content">
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">点击下方操作添加到快速操作面板，已收藏的操作会显示星标</p>
+                <div class="available-actions-grid" id="availableActionsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const QuickActionsManager = {
+            allActions: [
+                { id: 'observe', name: '水质监测', icon: 'fas fa-tint', href: 'water_quality.html', description: '查看水质监测点与异常' },
+                { id: 'map_layer', name: '水质分布图', icon: 'fas fa-layer-group', href: 'water_quality.html', description: '查看模型热力图' },
+                { id: 'forecast', name: '趋势预测', icon: 'fas fa-chart-area', href: 'pages/water/forecast/index.html', description: '预测未来趋势' },
+                { id: 'trace', name: '污染溯源', icon: 'fas fa-route', href: 'quality_trace_analysis.html', description: '反推污染路径' },
+                { id: 'optimize', name: '水质优化', icon: 'fas fa-wand-magic-sparkles', href: 'pages/water/optimize/index.html', description: '生成优化方案' },
+                { id: 'reports', name: '水质报表', icon: 'fas fa-file-alt', href: 'reports.html', description: '导出水质报表' }
+            ],
+            defaultFavorites: ['observe', 'forecast', 'trace', 'optimize'],
+            getFavorites(){ const saved = localStorage.getItem('waterQuickActions'); return saved ? JSON.parse(saved) : this.defaultFavorites; },
+            saveFavorites(f){ localStorage.setItem('waterQuickActions', JSON.stringify(f)); },
+            renderQuickActions(){ const fav=this.getFavorites(); const grid=document.getElementById('quickActionsGrid'); if(!grid) return; grid.innerHTML=fav.map(id=>{ const a=this.allActions.find(x=>x.id===id); if(!a) return ''; return `<a href="${a.href}" class="action-btn removable" title="${a.description}"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><span>${a.name}</span><button class=\"remove-action-btn\" onclick=\"QuickActionsManager.removeFavorite('${a.id}'); event.preventDefault(); event.stopPropagation();\" title=\"移除\"><i class=\"fas fa-times\"></i></button></a>`; }).join(''); },
+            renderAvailableActions(){ const fav=this.getFavorites(); const grid=document.getElementById('availableActionsGrid'); if(!grid) return; grid.innerHTML=this.allActions.map(a=>{ const ok=fav.includes(a.id); return `<div class=\"available-action ${ok?'favorited':''}\" onclick=\"QuickActionsManager.toggleFavorite('${a.id}')\" title=\"${a.description}\"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><div class=\"action-text\">${a.name}</div>${ok?'<i class=\"fas fa-star favorite-indicator\"></i>':''}</div>`; }).join(''); },
+            toggleFavorite(id){ let fav=this.getFavorites(); fav = fav.includes(id) ? fav.filter(x=>x!==id) : [...fav, id]; this.saveFavorites(fav); this.renderQuickActions(); this.renderAvailableActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(fav.includes(id)?`已添加"${a.name}"到快速操作`:`已从快速操作中移除"${a.name}"`,'success'); } },
+            removeFavorite(id){ let fav=this.getFavorites().filter(x=>x!==id); this.saveFavorites(fav); this.renderQuickActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(`已移除"${a.name}"`,'success'); } },
+            init(){ this.renderQuickActions(); }
+        };
+
+        function openQuickActionsConfig(){ QuickActionsManager.renderAvailableActions(); document.getElementById('configModal').classList.add('show'); if(typeof OperationLogger!=='undefined'){ OperationLogger.log('打开水质管理-快速操作配置',{ timestamp:new Date().toISOString() }); } }
+        function closeQuickActionsConfig(){ document.getElementById('configModal').classList.remove('show'); }
+        document.addEventListener('click', e=>{ const m=document.getElementById('configModal'); if(e.target===m) closeQuickActionsConfig(); });
+
+        function navigateToFunction(url){ if(typeof OperationLogger!=='undefined'){ OperationLogger.log('访问水质管理功能',{ target:url, timestamp:new Date().toISOString() }); } window.location.href=url; }
+
+        function updateStatusData(){ const el={ stationCount:document.getElementById('stationCount'), activeAlerts:document.getElementById('activeAlerts'), forecastTasks:document.getElementById('forecastTasks'), complianceRate:document.getElementById('complianceRate') }; if(el.stationCount) el.stationCount.textContent = 120 + Math.floor(Math.random()*20); if(el.activeAlerts) el.activeAlerts.textContent = Math.floor(Math.random()*8); if(el.forecastTasks) el.forecastTasks.textContent = Math.floor(Math.random()*10)+3; if(el.complianceRate) el.complianceRate.textContent = (98.5 + Math.random()*1.2).toFixed(1) + '%'; }
+
+        function showQuickStart(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('快速开始功能开发中，敬请期待！','info'); } else { alert('快速开始功能开发中，敬请期待！'); } }
+        function showHelp(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('帮助文档功能开发中，如有问题请联系系统管理员。','info'); } else { alert('帮助文档功能开发中，如有问题请联系系统管理员。'); } }
+
+        function initializePage(){ if (typeof NavigationManager==='undefined' || typeof OperationLogger==='undefined' || typeof UserPermissions==='undefined'){ setTimeout(initializePage,100); return; } try{ NavigationManager.init(); QuickActionsManager.init(); updateStatusData(); setInterval(updateStatusData,30000); OperationLogger.log('访问水质管理中心',{ timestamp:new Date().toISOString(), userRole: UserPermissions.currentUser?.role || 'unknown' }); }catch(e){ console.error('页面初始化失败:', e); setTimeout(initializePage,500); } }
+        if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initializePage); } else { initializePage(); }
+    </script>
+
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题"><i class="fas fa-moon"></i></button>
+</body>
+</html>
+
+

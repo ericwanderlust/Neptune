@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网管理系统 - 智能分析</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        .module-layout { padding: var(--spacing-lg); max-width: 1400px; margin: 0 auto; }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-xl); padding-bottom:var(--spacing-lg); border-bottom:2px solid var(--border-color); }
+        .header-info h1 { font-size:28px; font-weight:700; color:var(--text-primary); margin-bottom:var(--spacing-sm); }
+        .header-desc { color:var(--text-secondary); font-size:var(--font-size-lg); }
+        .header-actions { display:flex; gap:var(--spacing-md); }
+
+        .status-overview { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:var(--spacing-lg); margin-bottom:var(--spacing-xl); }
+        .status-card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:var(--spacing-lg); text-align:center; }
+        .status-value { font-size:32px; font-weight:700; color:var(--primary); margin-bottom:var(--spacing-sm); }
+        .status-label { color:var(--text-secondary); font-size:var(--font-size-sm); font-weight:500; }
+
+        .quick-actions { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:var(--spacing-xl); margin-bottom:var(--spacing-xl); }
+        .quick-actions-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+        .quick-actions-header h2 { font-size:20px; font-weight:600; color:var(--text-primary); margin:0; }
+        .actions-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:var(--spacing-md); }
+        .action-btn { display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-md); background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-lg); text-decoration:none; color:var(--text-primary); transition:all 0.3s ease; font-weight:500; }
+        .action-btn:hover { background:var(--bg-tertiary); border-color:var(--primary); color:var(--primary); transform:translateY(-2px); }
+        .action-btn.removable { position:relative; }
+        .remove-action-btn { position:absolute; top:-8px; right:-8px; width:20px; height:20px; background:var(--danger); color:white; border:none; border-radius:50%; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:10px; z-index:10; }
+        .action-btn:hover .remove-action-btn { display:flex; }
+        .action-icon { width:32px; height:32px; background:var(--primary); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; color:white; font-size:14px; }
+
+        .function-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(350px, 1fr)); gap:var(--spacing-xl); margin-bottom:var(--spacing-xl); }
+        .function-card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:var(--spacing-xl); transition:all 0.3s ease; cursor:pointer; position:relative; overflow:hidden; }
+        .function-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--primary), var(--success)); transform:scaleX(0); transition:transform 0.3s ease; }
+        .function-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.15); border-color:var(--primary); }
+        .function-card:hover::before { transform:scaleX(1); }
+        .card-header { display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-lg); }
+        .card-icon { width:56px; height:56px; background:linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:24px; color:white; box-shadow:0 8px 24px rgba(74,144,184,0.3); }
+        .card-title { flex:1; }
+        .card-title h3 { font-size:20px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
+        .card-subtitle { color:var(--text-secondary); font-size:var(--font-size-sm); }
+        .card-content { margin-bottom:var(--spacing-lg); }
+        .card-description { color:var(--text-secondary); line-height:1.6; margin-bottom:var(--spacing-md); }
+        .feature-list { list-style:none; }
+        .feature-list li { display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs); color:var(--text-secondary); font-size:var(--font-size-sm); }
+        .feature-list li::before { content:'✓'; color:var(--success); font-weight:bold; }
+        .card-footer { display:flex; justify-content:space-between; align-items:center; }
+        .card-status { display:flex; align-items:center; gap:var(--spacing-xs); font-size:var(--font-size-sm); color:var(--text-tertiary); }
+        .status-dot { width:8px; height:8px; border-radius:50%; background:var(--success); }
+
+        @media (max-width: 1200px) { .function-grid { grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); } }
+        @media (max-width: 768px) { .module-layout { padding:var(--spacing-md); } .page-header { flex-direction:column; align-items:flex-start; gap:var(--spacing-md); } .function-grid { grid-template-columns:1fr; } .actions-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout">
+        <div class="page-header">
+            <div class="header-info">
+                <h1><i class="fas fa-brain"></i> 智能分析（规划实验室）</h1>
+                <p class="header-desc">跨业务/跨时间的假设推演与全局优化，支持规划评估与极端事件演练</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
+                <button class="btn btn-outline" onclick="showHelp()"><i class="fas fa-question-circle"></i> 帮助</button>
+            </div>
+        </div>
+
+        <div class="status-overview">
+            <div class="status-card"><div class="status-value" id="runningTasks">3</div><div class="status-label">运行中的分析</div></div>
+            <div class="status-card"><div class="status-value" id="scenarioCount">12</div><div class="status-label">可复用场景</div></div>
+            <div class="status-card"><div class="status-value" id="suggestions">7</div><div class="status-label">AI优化建议</div></div>
+            <div class="status-card"><div class="status-value" id="benefit">12.3%</div><div class="status-label">节能/减耗潜力</div></div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <h2><i class="fas fa-bolt"></i> 快速操作</h2>
+                <button class="btn btn-sm btn-outline" onclick="openQuickActionsConfig()"><i class="fas fa-cog"></i> 配置</button>
+            </div>
+            <div class="actions-grid" id="quickActionsGrid"></div>
+        </div>
+
+        <div class="function-grid">
+            <div class="function-card" onclick="navigateToFunction('dispatch_workflow_builder.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-flask"></i></div><div class="card-title"><h3>规划工况推演</h3><p class="card-subtitle">中长期供水调整模拟</p></div></div>
+                <div class="card-content"><p class="card-description">基于规划场景库进行多方案推演，对供水能力、压力与水质指标进行综合评估。</p>
+                    <ul class="feature-list"><li>场景管理</li><li>参数批量化</li><li>指标权重可配</li><li>报告导出</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>引擎在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('dispatch_emergency_main.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-radiation"></i></div><div class="card-title"><h3>极端事件模拟</h3><p class="card-subtitle">爆管/停电/多泵停运</p></div></div>
+                <div class="card-content"><p class="card-description">快速构建极端事件场景，评估系统韧性并生成应对策略。</p>
+                    <ul class="feature-list"><li>多点事件</li><li>连锁反应</li><li>应对策略库</li><li>演练报告</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>模板可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('historical_comparison.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-history"></i></div><div class="card-title"><h3>历史事件复盘</h3><p class="card-subtitle">典型事件模型回放</p></div></div>
+                <div class="card-content"><p class="card-description">结合历史事件与模型回放，提炼经验规则并形成知识库。</p>
+                    <ul class="feature-list"><li>事件库管理</li><li>回放对比</li><li>经验沉淀</li><li>知识推送</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>数据接入正常</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('pages/ai/zone-opt/index.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-sitemap"></i></div><div class="card-title"><h3>分区优化专题</h3><p class="card-subtitle">DMA结构优化</p></div></div>
+                <div class="card-content"><p class="card-description">从供需与漏损双重视角评估分区结构，提供合并/拆分建议。</p>
+                    <ul class="feature-list"><li>结构评估</li><li>优化建议</li><li>实施清单</li><li>成效预测</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>分析模块在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('pages/ai/cross-district/index.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-object-group"></i></div><div class="card-title"><h3>跨区联合调度</h3><p class="card-subtitle">全局联动优化</p></div></div>
+                <div class="card-content"><p class="card-description">模拟跨水厂/跨DMA联动，优化系统整体运行成本与风险。</p>
+                    <ul class="feature-list"><li>多区域联动</li><li>成本/风险平衡</li><li>多目标优化</li><li>方案优选</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>优化器可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('visual_comparison.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-balance-scale"></i></div><div class="card-title"><h3>供水平衡分析</h3><p class="card-subtitle">产销差/水量平衡</p></div></div>
+                <div class="card-content"><p class="card-description">从供、输、配、售各环节梳理水量平衡，量化损失并提出治理建议。</p>
+                    <ul class="feature-list"><li>环节分解</li><li>指标归因</li><li>治理建议</li><li>可视化报告</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>数据模型在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const QuickActionsManager = {
+            allActions: [
+                { id: 'plan_scenario', name: '规划工况推演', icon: 'fas fa-flask', href: 'dispatch_workflow_builder.html', description: '多方案推演' },
+                { id: 'extreme', name: '极端事件模拟', icon: 'fas fa-radiation', href: 'dispatch_emergency_main.html', description: '爆管/停电演练' },
+                { id: 'review', name: '历史事件复盘', icon: 'fas fa-history', href: 'historical_comparison.html', description: '回放与复盘' },
+                { id: 'zone_opt', name: '分区优化', icon: 'fas fa-sitemap', href: 'pages/ai/zone-opt/index.html', description: 'DMA结构优化' },
+                { id: 'cross', name: '跨区联合调度', icon: 'fas fa-object-group', href: 'pages/ai/cross-district/index.html', description: '全局联动优化' },
+                { id: 'balance', name: '供水平衡分析', icon: 'fas fa-balance-scale', href: 'visual_comparison.html', description: '产销差分析' }
+            ],
+            defaultFavorites: ['plan_scenario', 'extreme', 'zone_opt', 'cross'],
+            getFavorites(){ const s=localStorage.getItem('aiQuickActions'); return s?JSON.parse(s):this.defaultFavorites; },
+            saveFavorites(f){ localStorage.setItem('aiQuickActions', JSON.stringify(f)); },
+            renderQuickActions(){ const fav=this.getFavorites(); const grid=document.getElementById('quickActionsGrid'); if(!grid) return; grid.innerHTML=fav.map(id=>{ const a=this.allActions.find(x=>x.id===id); if(!a) return ''; return `<a href="${a.href}" class="action-btn removable" title="${a.description}"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><span>${a.name}</span><button class=\"remove-action-btn\" onclick=\"QuickActionsManager.removeFavorite('${a.id}'); event.preventDefault(); event.stopPropagation();\" title=\"移除\"><i class=\"fas fa-times\"></i></button></a>`; }).join(''); },
+            renderAvailableActions(){ const fav=this.getFavorites(); const grid=document.getElementById('availableActionsGrid'); if(!grid) return; grid.innerHTML=this.allActions.map(a=>{ const ok=fav.includes(a.id); return `<div class=\"available-action ${ok?'favorited':''}\" onclick=\"QuickActionsManager.toggleFavorite('${a.id}')\" title=\"${a.description}\"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><div class=\"action-text\">${a.name}</div>${ok?'<i class=\"fas fa-star favorite-indicator\"></i>':''}</div>`; }).join(''); },
+            toggleFavorite(id){ let fav=this.getFavorites(); fav = fav.includes(id) ? fav.filter(x=>x!==id) : [...fav, id]; this.saveFavorites(fav); this.renderQuickActions(); this.renderAvailableActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(fav.includes(id)?`已添加"${a.name}"到快速操作`:`已从快速操作中移除"${a.name}"`,'success'); } },
+            removeFavorite(id){ let fav=this.getFavorites().filter(x=>x!==id); this.saveFavorites(fav); this.renderQuickActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(`已移除"${a.name}"`,'success'); } },
+            init(){ this.renderQuickActions(); }
+        };
+
+        function openQuickActionsConfig(){ const m=document.createElement('div'); m.className='modal-overlay show'; m.id='configModal'; m.innerHTML=`<div class=\"config-modal\"><div class=\"modal-header\"><h3 class=\"modal-title\"><i class=\"fas fa-star\"></i> 配置收藏操作</h3><button class=\"close-btn\" onclick=\"document.getElementById('configModal').remove()\"><i class=\"fas fa-times\"></i></button></div><div class=\"modal-content\"><p style=\"color: var(--text-secondary); margin-bottom: var(--spacing-lg);\">点击下方操作添加到快速操作面板，已收藏的操作会显示星标</p><div class=\"available-actions-grid\" id=\"availableActionsGrid\"></div></div></div>`; document.body.appendChild(m); QuickActionsManager.renderAvailableActions(); }
+        function closeQuickActionsConfig(){ const m=document.getElementById('configModal'); if(m) m.remove(); }
+        document.addEventListener('click', e=>{ const m=document.getElementById('configModal'); if(m && e.target===m) closeQuickActionsConfig(); });
+
+        function navigateToFunction(url){ if(typeof OperationLogger!=='undefined'){ OperationLogger.log('访问智能分析功能',{ target:url, timestamp:new Date().toISOString() }); } window.location.href=url; }
+        function updateStatusData(){ const el={ runningTasks:document.getElementById('runningTasks'), scenarioCount:document.getElementById('scenarioCount'), suggestions:document.getElementById('suggestions'), benefit:document.getElementById('benefit') }; if(el.runningTasks) el.runningTasks.textContent = Math.floor(Math.random()*5) + 1; if(el.scenarioCount) el.scenarioCount.textContent = Math.floor(Math.random()*10) + 8; if(el.suggestions) el.suggestions.textContent = Math.floor(Math.random()*10) + 3; if(el.benefit) el.benefit.textContent = (10 + Math.random()*5).toFixed(1) + '%'; }
+        function showQuickStart(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('快速开始功能开发中，敬请期待！','info'); } else { alert('快速开始功能开发中，敬请期待！'); } }
+        function showHelp(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('帮助文档功能开发中，如有问题请联系系统管理员。','info'); } else { alert('帮助文档功能开发中，如有问题请联系系统管理员。'); } }
+
+        function initializePage(){ if (typeof NavigationManager==='undefined' || typeof OperationLogger==='undefined' || typeof UserPermissions==='undefined'){ setTimeout(initializePage,100); return; } try{ NavigationManager.init(); QuickActionsManager.init(); updateStatusData(); setInterval(updateStatusData,30000); OperationLogger.log('访问智能分析中心',{ timestamp:new Date().toISOString(), userRole: UserPermissions.currentUser?.role || 'unknown' }); }catch(e){ console.error('页面初始化失败:', e); setTimeout(initializePage,500); } }
+        if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initializePage); } else { initializePage(); }
+    </script>
+
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题"><i class="fas fa-moon"></i></button>
+</body>
+</html>
+
+

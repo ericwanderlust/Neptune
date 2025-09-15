@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>压力监控优化</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/ChartCard.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/pressure/optimize');
+                var host = document.createElement('div');
+                var title = document.createElement('h2');
+                title.textContent = '压力监控优化';
+                var desc = document.createElement('div');
+                desc.textContent = '监控分区压力并给出优化方案（占位页面）';
+                host.appendChild(title);
+                host.appendChild(desc);
+                var holder = document.createElement('div');
+                host.appendChild(holder);
+                layout.mountContent(host);
+                var cc = new ChartCard(holder, { title: '关键节点压力趋势', tooltip: '支持缩放与悬停提示', height: 320 });
+                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">趋势图占位</div>'; });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网管理系统 - 调度事务</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="common_styles.css">
+    <style>
+        .dispatch-layout {
+            padding: var(--spacing-lg);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header-info h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .header-desc {
+            color: var(--text-secondary);
+            font-size: var(--font-size-lg);
+        }
+
+        .header-actions { display: flex; gap: var(--spacing-md); }
+
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .function-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .function-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .function-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); border-color: var(--primary); }
+        .function-card:hover::before { transform: scaleX(1); }
+
+        .card-header { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+        .card-icon { width: 56px; height: 56px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; box-shadow: 0 8px 24px rgba(74,144,184,0.3); }
+        .card-title { flex: 1; }
+        .card-title h3 { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+        .card-subtitle { color: var(--text-secondary); font-size: var(--font-size-sm); }
+        .card-content { margin-bottom: var(--spacing-lg); }
+        .card-description { color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--spacing-md); }
+        .feature-list { list-style: none; }
+        .feature-list li { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs); color: var(--text-secondary); font-size: var(--font-size-sm); }
+        .feature-list li::before { content: '✓'; color: var(--success); font-weight: bold; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; }
+        .card-status { display: flex; align-items: center; gap: var(--spacing-xs); font-size: var(--font-size-sm); color: var(--text-tertiary); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+
+        .quick-actions { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--spacing-xl); margin-bottom: var(--spacing-xl); }
+        .quick-actions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg); }
+        .quick-actions-header h2 { font-size: 20px; font-weight: 600; color: var(--text-primary); margin: 0; }
+        .actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--spacing-md); }
+        .action-btn { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); text-decoration: none; color: var(--text-primary); transition: all 0.3s ease; font-weight: 500; }
+        .action-btn:hover { background: var(--bg-tertiary); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+        .action-btn.removable { position: relative; }
+        .remove-action-btn { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--danger); color: white; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 10px; z-index: 10; }
+        .action-btn:hover .remove-action-btn { display: flex; }
+        .action-icon { width: 32px; height: 32px; background: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
+
+        .status-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-lg); margin-bottom: var(--spacing-xl); }
+        .status-card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--spacing-lg); text-align: center; }
+        .status-value { font-size: 32px; font-weight: 700; color: var(--primary); margin-bottom: var(--spacing-sm); }
+        .status-label { color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 500; }
+
+        @media (max-width: 1200px) { .function-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
+        @media (max-width: 768px) {
+            .dispatch-layout { padding: var(--spacing-md); }
+            .page-header { flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
+            .function-grid { grid-template-columns: 1fr; }
+            .actions-grid { grid-template-columns: 1fr; }
+        }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .config-modal { background: var(--bg-primary); border-radius: var(--radius-lg); padding: var(--spacing-xl); max-width: 600px; width: 90vw; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg); padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
+        .modal-title { font-size: var(--font-size-lg); font-weight: 600; color: var(--text-primary); }
+        .close-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: all var(--transition-fast); }
+        .close-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+        .available-actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-lg); }
+        .available-action { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
+        .available-action:hover { background: var(--bg-tertiary); border-color: var(--primary); }
+        .available-action.favorited { background: rgba(74,144,184,0.1); border-color: var(--primary); color: var(--primary); }
+        .available-action .action-icon { width: 24px; height: 24px; font-size: 12px; }
+        .action-text { flex: 1; font-size: var(--font-size-sm); font-weight: 500; }
+        .favorite-indicator { color: var(--primary); font-size: 14px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="nav-links"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container"><i class="fas fa-clock"></i><span class="current-time"></span></div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dispatch-layout">
+        <div class="page-header">
+            <div class="header-info">
+                <h1><i class="fas fa-briefcase"></i> 调度事务中心</h1>
+                <p class="header-desc">负责日常/应急/计划性调度操作，承载调度员日常工作</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
+                <button class="btn btn-outline" onclick="showHelp()"><i class="fas fa-question-circle"></i> 帮助</button>
+            </div>
+        </div>
+
+        <div class="status-overview">
+            <div class="status-card">
+                <div class="status-value" id="planTotal">12</div>
+                <div class="status-label">计划总数</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="inProgress">5</div>
+                <div class="status-label">执行中计划</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="completedPlans">22</div>
+                <div class="status-label">已完成</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="onTimeRate">98.6%</div>
+                <div class="status-label">按时率</div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <h2><i class="fas fa-bolt"></i> 快速操作</h2>
+                <button class="btn btn-sm btn-outline" onclick="openQuickActionsConfig()"><i class="fas fa-cog"></i> 配置</button>
+            </div>
+            <div class="actions-grid" id="quickActionsGrid"></div>
+        </div>
+
+        <div class="function-grid">
+            <div class="function-card" onclick="navigateToFunction('schedule_planning.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="card-title">
+                        <h3>调度计划</h3>
+                        <p class="card-subtitle">制定月/周/日供水运行计划</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">覆盖泵站排班、阀门调整、流量分配等计划性工作，生成可追踪的执行清单。</p>
+                    <ul class="feature-list">
+                        <li>计划模板与版本管理</li>
+                        <li>阀门/泵站运行时序</li>
+                        <li>执行监控与预警</li>
+                        <li>留痕与追踪</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>计划模块就绪</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('daily_dispatch.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="card-title">
+                        <h3>日常调度</h3>
+                        <p class="card-subtitle">执行日常调度并记录留痕</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">结合模型与现场数据，完成日常的阀门调整与泵站调度，自动生成操作记录。</p>
+                    <ul class="feature-list">
+                        <li>操作清单与确认</li>
+                        <li>模型辅助校核</li>
+                        <li>执行留痕与回放</li>
+                        <li>异常提示</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>工作台正常</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('dispatch_emergency.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="card-title">
+                        <h3>应急调度</h3>
+                        <p class="card-subtitle">停泵/停电/设备故障/大用户需求</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">面向突发事件的调度处置，内置常见场景模板与快速校核能力。</p>
+                    <ul class="feature-list">
+                        <li>应急模板库</li>
+                        <li>范围与时长参数化</li>
+                        <li>影响评估与通知</li>
+                        <li>联动工单派发</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>应急预案可用</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('simulation.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-flask"></i></div>
+                    <div class="card-title">
+                        <h3>调度预演</h3>
+                        <p class="card-subtitle">执行前快速校核单方案可行性</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">基于水力模型的轻量校核，分钟级反馈影响范围与关键指标，辅助快速决策。</p>
+                    <ul class="feature-list">
+                        <li>一键运行仿真</li>
+                        <li>关键点位对比</li>
+                        <li>可行性提示</li>
+                        <li>结果导出</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>仿真引擎就绪</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('historical_comparison.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-sliders"></i></div>
+                    <div class="card-title">
+                        <h3>多方案对比</h3>
+                        <p class="card-subtitle">对比不同调度方案并辅助决策</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">将多套方案在同一指标体系下横向对比，支持地图与曲线联动展示。</p>
+                    <ul class="feature-list">
+                        <li>方案管理与标记</li>
+                        <li>多维指标对比</li>
+                        <li>可视化联动</li>
+                        <li>优选建议</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>对比工具可用</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('report_event_archive.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-book"></i></div>
+                    <div class="card-title">
+                        <h3>调度记录</h3>
+                        <p class="card-subtitle">历史调度执行与方案存档</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">统一管理历史调度记录与方案版本，支持检索、回放与复盘。</p>
+                    <ul class="feature-list">
+                        <li>按事件/日期检索</li>
+                        <li>方案版本对照</li>
+                        <li>回放与复盘</li>
+                        <li>权限与留痕</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>记录库可用</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('reports.html')">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="card-title">
+                        <h3>调度报表</h3>
+                        <p class="card-subtitle">日常报表导出与统计</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">形成操作员面向的日/周/月报，支持模板化导出，服务班组管理。</p>
+                    <ul class="feature-list">
+                        <li>模板配置</li>
+                        <li>一键导出</li>
+                        <li>指标汇总</li>
+                        <li>分享与归档</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="card-status"><div class="status-dot"></div><span>报表模块就绪</span></div>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="configModal">
+        <div class="config-modal">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-star"></i> 配置收藏操作</h3>
+                <button class="close-btn" onclick="closeQuickActionsConfig()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-content">
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">点击下方操作添加到快速操作面板，已收藏的操作会显示星标</p>
+                <div class="available-actions-grid" id="availableActionsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const QuickActionsManager = {
+            allActions: [
+                { id: 'new_schedule', name: '新建调度计划', icon: 'fas fa-plus', href: 'schedule_planning.html', description: '创建新的调度计划' },
+                { id: 'daily_dispatch', name: '进入日常调度', icon: 'fas fa-clipboard-list', href: 'daily_dispatch.html', description: '前往日常调度工作台' },
+                { id: 'emergency_dispatch', name: '应急调度', icon: 'fas fa-exclamation-triangle', href: 'dispatch_emergency.html', description: '处理突发事件' },
+                { id: 'precheck', name: '调度预演', icon: 'fas fa-flask', href: 'simulation.html', description: '执行前快速校核' },
+                { id: 'scheme_compare', name: '多方案对比', icon: 'fas fa-sliders', href: 'historical_comparison.html', description: '对比多套调度方案' },
+                { id: 'dispatch_records', name: '查看调度记录', icon: 'fas fa-book', href: 'report_event_archive.html', description: '查看历史记录与方案存档' },
+                { id: 'dispatch_reports', name: '调度报表', icon: 'fas fa-chart-bar', href: 'reports.html', description: '导出日常报表' }
+            ],
+            defaultFavorites: ['new_schedule', 'emergency_dispatch', 'precheck', 'scheme_compare'],
+            getFavorites() { const saved = localStorage.getItem('dispatchQuickActions'); return saved ? JSON.parse(saved) : this.defaultFavorites; },
+            saveFavorites(favorites) { localStorage.setItem('dispatchQuickActions', JSON.stringify(favorites)); },
+            renderQuickActions() {
+                const favorites = this.getFavorites();
+                const grid = document.getElementById('quickActionsGrid');
+                if (!grid) return;
+                grid.innerHTML = favorites.map(actionId => {
+                    const action = this.allActions.find(a => a.id === actionId);
+                    if (!action) return '';
+                    return `
+                        <a href="${action.href}" class="action-btn removable" title="${action.description}">
+                            <div class="action-icon"><i class="${action.icon}"></i></div>
+                            <span>${action.name}</span>
+                            <button class="remove-action-btn" onclick="QuickActionsManager.removeFavorite('${action.id}'); event.preventDefault(); event.stopPropagation();" title="移除"><i class="fas fa-times"></i></button>
+                        </a>
+                    `;
+                }).join('');
+            },
+            renderAvailableActions() {
+                const favorites = this.getFavorites();
+                const grid = document.getElementById('availableActionsGrid');
+                if (!grid) return;
+                grid.innerHTML = this.allActions.map(action => {
+                    const isFavorited = favorites.includes(action.id);
+                    return `
+                        <div class="available-action ${isFavorited ? 'favorited' : ''}" onclick="QuickActionsManager.toggleFavorite('${action.id}')" title="${action.description}">
+                            <div class="action-icon"><i class="${action.icon}"></i></div>
+                            <div class="action-text">${action.name}</div>
+                            ${isFavorited ? '<i class="fas fa-star favorite-indicator"></i>' : ''}
+                        </div>
+                    `;
+                }).join('');
+            },
+            toggleFavorite(actionId) {
+                let favorites = this.getFavorites();
+                favorites = favorites.includes(actionId) ? favorites.filter(id => id !== actionId) : [...favorites, actionId];
+                this.saveFavorites(favorites);
+                this.renderQuickActions();
+                this.renderAvailableActions();
+                const action = this.allActions.find(a => a.id === actionId);
+                if (action && typeof NotificationManager !== 'undefined') {
+                    const message = favorites.includes(actionId) ? `已添加"${action.name}"到快速操作` : `已从快速操作中移除"${action.name}"`;
+                    NotificationManager.show(message, 'success');
+                }
+            },
+            removeFavorite(actionId) {
+                let favorites = this.getFavorites().filter(id => id !== actionId);
+                this.saveFavorites(favorites);
+                this.renderQuickActions();
+                const action = this.allActions.find(a => a.id === actionId);
+                if (action && typeof NotificationManager !== 'undefined') { NotificationManager.show(`已移除"${action.name}"`, 'success'); }
+            },
+            init() { this.renderQuickActions(); }
+        };
+
+        function openQuickActionsConfig() {
+            QuickActionsManager.renderAvailableActions();
+            const modal = document.getElementById('configModal');
+            modal.classList.add('show');
+            if (typeof OperationLogger !== 'undefined') { OperationLogger.log('打开调度事务-快速操作配置', { timestamp: new Date().toISOString() }); }
+        }
+        function closeQuickActionsConfig() { document.getElementById('configModal').classList.remove('show'); }
+        document.addEventListener('click', function(e){ const modal = document.getElementById('configModal'); if (e.target === modal) closeQuickActionsConfig(); });
+
+        function navigateToFunction(url) {
+            if (typeof OperationLogger !== 'undefined') { OperationLogger.log('访问调度事务功能', { target: url, timestamp: new Date().toISOString() }); }
+            window.location.href = url;
+        }
+
+        function updateStatusData() {
+            const el = {
+                planTotal: document.getElementById('planTotal'),
+                inProgress: document.getElementById('inProgress'),
+                completedPlans: document.getElementById('completedPlans'),
+                onTimeRate: document.getElementById('onTimeRate')
+            };
+            if (el.planTotal) el.planTotal.textContent = Math.floor(Math.random()*10) + 10;
+            if (el.inProgress) el.inProgress.textContent = Math.floor(Math.random()*6) + 3;
+            if (el.completedPlans) el.completedPlans.textContent = Math.floor(Math.random()*20) + 15;
+            if (el.onTimeRate) el.onTimeRate.textContent = (95 + Math.random()*4).toFixed(1) + '%';
+        }
+
+        function showQuickStart(){ if (typeof NotificationManager !== 'undefined') { NotificationManager.show('快速开始功能开发中，敬请期待！', 'info'); } else { alert('快速开始功能开发中，敬请期待！'); } }
+        function showHelp(){ if (typeof NotificationManager !== 'undefined') { NotificationManager.show('帮助文档功能开发中，如有问题请联系系统管理员。', 'info'); } else { alert('帮助文档功能开发中，如有问题请联系系统管理员。'); } }
+
+        function initializePage(){
+            if (typeof NavigationManager === 'undefined' || typeof OperationLogger === 'undefined' || typeof UserPermissions === 'undefined') { setTimeout(initializePage, 100); return; }
+            try {
+                NavigationManager.init();
+                QuickActionsManager.init();
+                updateStatusData();
+                setInterval(updateStatusData, 30000);
+                OperationLogger.log('访问调度事务中心', { timestamp: new Date().toISOString(), userRole: UserPermissions.currentUser?.role || 'unknown' });
+            } catch (e) { console.error('页面初始化失败:', e); setTimeout(initializePage, 500); }
+        }
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initializePage); } else { initializePage(); }
+    </script>
+
+    <button class="theme-toggle-float" onclick="ThemeManager.toggle()" title="切换主题"><i class="fas fa-moon"></i></button>
+</body>
+</html>
+
+

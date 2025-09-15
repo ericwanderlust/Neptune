@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作日志</title>
+    <link rel="stylesheet" href="../../../components/common/layout.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script src="../../../components/common/TooltipWrapper.js"></script>
+    <script src="../../../components/common/Breadcrumb.js"></script>
+    <script src="../../../components/common/DataTable.js"></script>
+    <script src="../../../components/common/Layout.js"></script>
+    <script src="../../../modules/utils/rbac.js"></script>
+    <script src="../../../modules/utils/router.js"></script>
+    <script>
+        (function(){
+            var app = document.getElementById('app');
+            var layout = new AppLayout(app);
+            Router.init(layout).then(function(){
+                layout.setPath('/admin/audit-log');
+                var host = document.createElement('div');
+                var title = document.createElement('h2'); title.textContent = '操作日志';
+                var desc = document.createElement('div'); desc.textContent = '查看用户操作与系统日志（占位页面）';
+                host.appendChild(title); host.appendChild(desc);
+                var table = document.createElement('div'); host.appendChild(table);
+                layout.mountContent(host);
+                new DataTable(table, { columns:[{key:'time',title:'时间'},{key:'user',title:'用户'},{key:'action',title:'动作'}], rows:[{time:'2025-06-26 10:00',user:'admin',action:'修改参数'},{time:'2025-06-26 09:15',user:'manager',action:'导出报表'}] });
+            });
+        })();
+    </script>
+</body>
+<\/html>
+
+
