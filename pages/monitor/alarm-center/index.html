@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 告警中心</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将通过JavaScript生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-bell"></i> 告警中心</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">统一告警管理与处置跟踪（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="confirmBtn"><i class="fas fa-check"></i> 确认</button>
+                <button class="btn btn-outline" id="dispatchBtn"><i class="fas fa-paper-plane"></i> 派单</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <!-- 告警统计卡片 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">今日告警总数</div>
+                <div style="font-size:22px;font-weight:700;color:#111827;">27</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">未处理告警</div>
+                <div style="font-size:22px;font-weight:700;color:#dc2626;">8</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">处理中告警</div>
+                <div style="font-size:22px;font-weight:700;color:#f59e0b;">12</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">已处理告警</div>
+                <div style="font-size:22px;font-weight:700;color:#10b981;">7</div>
+            </div>
+        </div>
+
+        <!-- 告警列表 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">实时告警列表</div>
+            <table class="table" style="width:100%;">
+                <thead>
+                    <tr><th>告警时间</th><th>告警类型</th><th>设备/区域</th><th>告警内容</th><th>严重程度</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>14:35:22</td>
+                        <td>压力异常</td>
+                        <td>A区主管</td>
+                        <td>压力骤降至0.25MPa</td>
+                        <td><span style="color:#dc2626;">紧急</span></td>
+                        <td><span style="color:#f59e0b;">未处理</span></td>
+                        <td><button class="btn btn-sm btn-primary">确认</button></td>
+                    </tr>
+                    <tr>
+                        <td>14:28:15</td>
+                        <td>流量异常</td>
+                        <td>B区泵站</td>
+                        <td>流量超出正常范围15%</td>
+                        <td><span style="color:#f59e0b;">警告</span></td>
+                        <td><span style="color:#10b981;">处理中</span></td>
+                        <td><button class="btn btn-sm btn-outline">跟踪</button></td>
+                    </tr>
+                    <tr>
+                        <td>14:20:33</td>
+                        <td>水质告警</td>
+                        <td>C区监测点</td>
+                        <td>余氯浓度偏低</td>
+                        <td><span style="color:#6b7280;">提醒</span></td>
+                        <td><span style="color:#374151;">已处理</span></td>
+                        <td><button class="btn btn-sm btn-outline">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td>14:12:08</td>
+                        <td>设备故障</td>
+                        <td>D区阀门</td>
+                        <td>电动阀门响应异常</td>
+                        <td><span style="color:#f59e0b;">警告</span></td>
+                        <td><span style="color:#f59e0b;">待派单</span></td>
+                        <td><button class="btn btn-sm btn-primary">派单</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html', active: true},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+                
+                console.log('Alarm center page initialized');
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 事件监听
+            document.getElementById('confirmBtn').addEventListener('click', function(){ 
+                alert('已确认选中的告警');
+            });
+            
+            document.getElementById('dispatchBtn').addEventListener('click', function(){ 
+                alert('已派发工单给相关人员');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '告警时间,告警类型,设备区域,告警内容,严重程度,状态\n14:35:22,压力异常,A区主管,压力骤降至0.25MPa,紧急,未处理\n14:28:15,流量异常,B区泵站,流量超出正常范围15%,警告,处理中\n14:20:33,水质告警,C区监测点,余氯浓度偏低,提醒,已处理\n14:12:08,设备故障,D区阀门,电动阀门响应异常,警告,待派单';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='alarms.csv'; 
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

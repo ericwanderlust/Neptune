@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能工作区管理系统 - 演示</title>
+    
+    <!-- 引入现有样式 -->
+    <link rel="stylesheet" href="common_styles.css">
+    <link rel="stylesheet" href="modules/core/workspace-manager.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* 演示页面特定样式 */
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: var(--radius-lg);
+            color: white;
+        }
+        
+        .demo-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+        }
+        
+        .demo-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .demo-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .demo-btn {
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .demo-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        .demo-btn.secondary {
+            background: var(--secondary-color);
+        }
+        
+        .demo-btn.outline {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-card {
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+        }
+        
+        .feature-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-card ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .feature-card li {
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+        }
+        
+        .hotkeys-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .hotkeys-table th,
+        .hotkeys-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .hotkeys-table th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .hotkeys-table kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-indicator.active {
+            background: var(--success-light);
+            color: var(--success-color);
+        }
+        
+        .status-indicator.inactive {
+            background: var(--warning-light);
+            color: var(--warning-color);
+        }
+        
+        .demo-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: var(--bg-accent);
+            border-radius: var(--radius-md);
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* 模拟内容区域 */
+        .content-area {
+            min-height: 400px;
+            padding: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-top: 20px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏（模拟现有系统） -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-water"></i>
+                智慧管网管理系统
+            </div>
+            <div class="nav-links">
+                <a href="#"><i class="fas fa-tachometer-alt"></i> 首页</a>
+                <a href="#"><i class="fas fa-desktop"></i> 监控</a>
+                <a href="#"><i class="fas fa-route"></i> 调度</a>
+                <a href="#"><i class="fas fa-tools"></i> 运维</a>
+            </div>
+            <div class="nav-user">
+                <span>演示用户</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 工作区管理器容器将自动插入到这里 -->
+
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1><i class="fas fa-briefcase"></i> 智能工作区管理系统</h1>
+            <p>解决频繁切换工具和菜单的复杂性问题，提供现代化的工作台体验</p>
+            <div class="status-indicator active">
+                <i class="fas fa-check-circle"></i>
+                系统已激活
+            </div>
+        </div>
+
+        <!-- 功能演示区域 -->
+        <div class="demo-section">
+            <h3><i class="fas fa-rocket"></i> 快速开始</h3>
+            <p>通过以下操作体验工作区管理系统的强大功能：</p>
+            <div class="demo-actions">
+                <button class="demo-btn" onclick="demoCreateWorkspace()">
+                    <i class="fas fa-plus"></i> 创建调度工作区
+                </button>
+                <button class="demo-btn secondary" onclick="demoStartTaskFlow()">
+                    <i class="fas fa-list-check"></i> 启动任务流程
+                </button>
+                <button class="demo-btn outline" onclick="demoShowQuickOpen()">
+                    <i class="fas fa-search"></i> 快速打开 (Ctrl+T)
+                </button>
+                <button class="demo-btn outline" onclick="demoShowCommandPalette()">
+                    <i class="fas fa-terminal"></i> 命令面板 (Ctrl+P)
+                </button>
+            </div>
+            
+            <div class="demo-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="workspaceCount">0</div>
+                    <div class="stat-label">工作区数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="tabCount">0</div>
+                    <div class="stat-label">打开的标签页</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="groupCount">0</div>
+                    <div class="stat-label">标签组数量</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心功能介绍 -->
+        <div class="demo-section">
+            <h3><i class="fas fa-star"></i> 核心功能</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4><i class="fas fa-briefcase"></i> 智能工作区</h4>
+                    <p>将相关的工具和页面组织成工作区，快速切换不同的工作环境。</p>
+                    <ul>
+                        <li>预定义工作区模板（调度、监控、分析、运维）</li>
+                        <li>自定义工作区布局和配置</li>
+                        <li>工作区状态自动保存和恢复</li>
+                        <li>支持工作区导入导出</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4><i class="fas fa-layer-group"></i> 标签页管理</h4>
+                    <p>强大的标签页系统，支持分组、固定、搜索等高级功能。</p>
+                    <ul>
+                        <li>标签页分组和颜色标记</li>
+                        <li>重要标签页固定防误关</li>
+                        <li>拖拽重排序标签页</li>
+                        <li>最近使用和收藏夹功能</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4><i class="fas fa-route"></i> 任务流程导向</h4>
+                    <p>基于实际业务流程的导航，引导用户完成复杂的工作任务。</p>
+                    <ul>
+                        <li>预定义常用业务流程</li>
+                        <li>流程进度实时跟踪</li>
+                        <li>必选和可选步骤区分</li>
+                        <li>流程执行历史记录</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4><i class="fas fa-bolt"></i> 快速切换</h4>
+                    <p>多种快速访问方式，大幅提升操作效率。</p>
+                    <ul>
+                        <li>全局快捷键支持</li>
+                        <li>智能搜索和筛选</li>
+                        <li>命令面板快速操作</li>
+                        <li>最近使用记录</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷键指南 -->
+        <div class="demo-section">
+            <h3><i class="fas fa-keyboard"></i> 快捷键指南</h3>
+            <p>掌握这些快捷键，让您的操作更加高效：</p>
+            <table class="hotkeys-table">
+                <thead>
+                    <tr>
+                        <th>快捷键</th>
+                        <th>功能</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>T</kbd></td>
+                        <td>新建标签页</td>
+                        <td>打开快速搜索面板</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>W</kbd></td>
+                        <td>关闭当前标签页</td>
+                        <td>固定标签页不会被关闭</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Tab</kbd></td>
+                        <td>切换到下一个标签页</td>
+                        <td>循环切换打开的标签页</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd></td>
+                        <td>切换到上一个标签页</td>
+                        <td>反向循环切换</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>P</kbd></td>
+                        <td>命令面板</td>
+                        <td>快速执行各种操作</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>1-9</kbd></td>
+                        <td>切换到指定位置的标签页</td>
+                        <td>快速定位标签页</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 集成指南 -->
+        <div class="demo-section">
+            <h3><i class="fas fa-code"></i> 集成指南</h3>
+            <p>将工作区管理系统集成到您的现有页面中只需要几个简单步骤：</p>
+            
+            <h4>1. 引入必要文件</h4>
+            <pre><code>&lt;!-- CSS 样式 --&gt;
+&lt;link rel="stylesheet" href="modules/core/workspace-manager.css"&gt;
+
+&lt;!-- JavaScript 核心 --&gt;
+&lt;script src="modules/core/WorkspaceManager.js"&gt;&lt;/script&gt;
+&lt;script src="components/WorkspaceManagerUI.js"&gt;&lt;/script&gt;</code></pre>
+
+            <h4>2. 初始化系统</h4>
+            <pre><code>// 系统会自动初始化，或者手动初始化：
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.workspaceManager && window.workspaceManagerUI) {
+        window.workspaceManagerUI.init();
+    }
+});</code></pre>
+
+            <h4>3. 打开新标签页</h4>
+            <pre><code>// 在您的页面链接中调用：
+workspaceManager.openTab({
+    id: 'monitor-realtime',
+    title: '实时监控',
+    url: '/monitor/realtime',
+    icon: 'fas fa-desktop',
+    group: 'monitor'
+});</code></pre>
+
+            <h4>4. 创建自定义工作区</h4>
+            <pre><code>// 创建专门的工作区：
+workspaceManager.createWorkspace('my-workspace', {
+    name: '我的工作台',
+    icon: 'fas fa-user',
+    description: '个人定制工作区',
+    defaultTabs: ['dashboard', 'monitor', 'reports']
+});</code></pre>
+        </div>
+    </div>
+
+    <!-- 模拟内容区域 -->
+    <div class="content-area">
+        <div id="content-dashboard" class="tab-content active">
+            <h2><i class="fas fa-tachometer-alt"></i> 仪表板</h2>
+            <p>这里是仪表板内容区域。在实际应用中，这里会显示对应标签页的内容。</p>
+        </div>
+        <div id="content-monitor" class="tab-content">
+            <h2><i class="fas fa-desktop"></i> 实时监控</h2>
+            <p>这里是实时监控内容区域。</p>
+        </div>
+        <div id="content-dispatch" class="tab-content">
+            <h2><i class="fas fa-route"></i> 调度管理</h2>
+            <p>这里是调度管理内容区域。</p>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script src="common.js"></script>
+    <script src="modules/core/WorkspaceManager.js"></script>
+    <script src="components/WorkspaceManagerUI.js"></script>
+    
+    <script>
+        // 演示脚本
+        function updateStats() {
+            if (window.workspaceManager) {
+                document.getElementById('workspaceCount').textContent = workspaceManager.workspaces.size;
+                document.getElementById('tabCount').textContent = workspaceManager.tabs.size;
+                document.getElementById('groupCount').textContent = workspaceManager.tabGroups.size;
+            }
+        }
+
+        function demoCreateWorkspace() {
+            if (window.workspaceManager) {
+                workspaceManager.createWorkspaceFromTemplate('dispatch', '演示调度工作区');
+                updateStats();
+                
+                // 模拟打开一些标签页
+                setTimeout(() => {
+                    workspaceManager.openTab({
+                        id: 'demo-forecast',
+                        title: '水量预测',
+                        icon: 'fas fa-chart-line',
+                        component: 'content-dashboard'
+                    });
+                    
+                    workspaceManager.openTab({
+                        id: 'demo-monitor',
+                        title: '实时监控',
+                        icon: 'fas fa-desktop',
+                        component: 'content-monitor'
+                    });
+                    
+                    updateStats();
+                }, 500);
+            }
+        }
+
+        function demoStartTaskFlow() {
+            if (window.workspaceManager) {
+                workspaceManager.startTaskFlow('daily-dispatch');
+                updateStats();
+            }
+        }
+
+        function demoShowQuickOpen() {
+            if (window.workspaceManager) {
+                workspaceManager.showQuickOpen();
+            }
+        }
+
+        function demoShowCommandPalette() {
+            if (window.workspaceManager) {
+                workspaceManager.showCommandPalette();
+            }
+        }
+
+        // 页面加载完成后更新统计
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateStats, 1000);
+            
+            // 监听工作区变化事件
+            document.addEventListener('workspace:workspaceChanged', updateStats);
+            document.addEventListener('workspace:tabActivated', updateStats);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 水质风险提示</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将通过JavaScript生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-triangle-exclamation"></i> 水质风险提示</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">实时水质风险预警与处置建议（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="refreshBtn"><i class="fas fa-sync"></i> 刷新</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出CSV</button>
+                <button class="btn btn-outline" id="batchBtn"><i class="fas fa-tasks"></i> 批量处理</button>
+            </div>
+        </div>
+
+        <!-- 过滤器 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 180px);gap:8px;margin-bottom:12px;">
+            <label>时间范围<select id="timeRange" class="form-control"><option value="24h">近24小时</option><option value="7d">近7天</option></select></label>
+            <label>区域<select id="regionFilter" class="form-control"><option value="">全部区域</option><option value="A区">A区</option><option value="B区">B区</option></select></label>
+            <label>风险类型<select id="typeFilter" class="form-control"><option value="">全部类型</option><option value="余氯">余氯异常</option><option value="浊度">浊度超标</option></select></label>
+            <label>处理状态<select id="statusFilter" class="form-control"><option value="">全部状态</option><option value="待处理">待处理</option><option value="处理中">处理中</option></select></label>
+        </div>
+
+        <!-- 水质风险列表 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">水质风险列表</div>
+            <table class="table" style="width:100%;">
+                <thead>
+                    <tr><th>监测点</th><th>风险类型</th><th>当前值</th><th>标准值</th><th>风险等级</th><th>检测时间</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody id="riskTableBody">
+                    <tr>
+                        <td>A区水厂出口</td>
+                        <td>余氯偏低</td>
+                        <td>0.15 mg/L</td>
+                        <td>≥0.3 mg/L</td>
+                        <td><span style="color:#dc2626;">高风险</span></td>
+                        <td>2025-09-15 14:30</td>
+                        <td><span style="color:#f59e0b;">待处理</span></td>
+                        <td><button class="btn btn-sm btn-primary">处理</button></td>
+                    </tr>
+                    <tr>
+                        <td>B区管网末端</td>
+                        <td>浊度升高</td>
+                        <td>1.8 NTU</td>
+                        <td>≤1.0 NTU</td>
+                        <td><span style="color:#f59e0b;">中风险</span></td>
+                        <td>2025-09-15 14:15</td>
+                        <td><span style="color:#10b981;">处理中</span></td>
+                        <td><button class="btn btn-sm btn-outline">跟踪</button></td>
+                    </tr>
+                    <tr>
+                        <td>C区供水点</td>
+                        <td>余氯波动</td>
+                        <td>0.25 mg/L</td>
+                        <td>0.3-1.0 mg/L</td>
+                        <td><span style="color:#10b981;">低风险</span></td>
+                        <td>2025-09-15 14:00</td>
+                        <td><span style="color:#6b7280;">监控中</span></td>
+                        <td><button class="btn btn-sm btn-outline">查看</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html', active: true},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+                
+                console.log('Water risks page initialized');
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 事件监听
+            document.getElementById('refreshBtn').addEventListener('click', function(){ 
+                window.location.reload();
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '监测点,风险类型,当前值,标准值,风险等级,检测时间,状态\nA区水厂出口,余氯偏低,0.15 mg/L,≥0.3 mg/L,高风险,2025-09-15 14:30,待处理\nB区管网末端,浊度升高,1.8 NTU,≤1.0 NTU,中风险,2025-09-15 14:15,处理中\nC区供水点,余氯波动,0.25 mg/L,0.3-1.0 mg/L,低风险,2025-09-15 14:00,监控中';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='water_risks.csv'; 
+                a.click();
+            });
+            
+            document.getElementById('batchBtn').addEventListener('click', function(){ 
+                alert('批量处理功能：已选择高风险和中风险项目');
+            });
+        });
+    </script>
+</body>
+</html>

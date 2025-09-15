@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧管网管理系统 - 调度事务</title>
+    <title>智慧管网运维平台 - 调度事务中心</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="common_styles.css">
@@ -123,7 +123,7 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-left">
-                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网运维平台</span></div>
                 <div class="nav-links"></div>
             </div>
             <div class="navbar-right">
@@ -138,7 +138,7 @@
         <div class="page-header">
             <div class="header-info">
                 <h1><i class="fas fa-briefcase"></i> 调度事务中心</h1>
-                <p class="header-desc">负责日常/应急/计划性调度操作，承载调度员日常工作</p>
+                <p class="header-desc">进入执行前的调度分析面板：水量预测、时段差异、压力与漏损、能耗，以及历史方案对比</p>
             </div>
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
@@ -162,6 +162,31 @@
             <div class="status-card">
                 <div class="status-value" id="onTimeRate">98.6%</div>
                 <div class="status-label">按时率</div>
+            </div>
+        </div>
+
+        <!-- 调度分析面板 -->
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <h2><i class="fas fa-chart-line"></i> 调度分析</h2>
+            </div>
+            <div class="actions-grid">
+                <a href="#" data-route="/dispatch/forecast" class="action-btn" title="中短期用水预测">
+                    <div class="action-icon"><i class="fas fa-chart-line"></i></div>
+                    <span>水量预测</span>
+                </a>
+                <a href="#" data-route="/dispatch/period" class="action-btn" title="峰谷特性与时段差异">
+                    <div class="action-icon"><i class="fas fa-clock"></i></div>
+                    <span>时段差异</span>
+                </a>
+                <a href="#" data-route="/dispatch/loss-pressure" class="action-btn" title="压力与漏损关系分析">
+                    <div class="action-icon"><i class="fas fa-gauge-high"></i></div>
+                    <span>压力与漏损</span>
+                </a>
+                <a href="#" data-route="/dispatch/energy" class="action-btn" title="能耗分析与节能建议">
+                    <div class="action-icon"><i class="fas fa-bolt"></i></div>
+                    <span>能耗分析</span>
+                </a>
             </div>
         </div>
 
@@ -351,7 +376,22 @@
     </div>
 
     <script src="common.js"></script>
+    <script src="modules/utils/router.js"></script>
     <script>
+        // 初始化 Router（用于页面内导航与保持高亮）
+        try{ if (window.Router && !window.__ROUTER_INITED__) { window.__ROUTER_INITED__ = true; Router.init(); } }catch(e){}
+
+        // 统一使用 Router 导航（绑定 data-route 链接）
+        (function bindRouteLinks(){
+            document.addEventListener('click', function(e){
+                var a = e.target.closest('a[data-route]');
+                if (!a) return;
+                e.preventDefault();
+                var p = a.getAttribute('data-route');
+                if (window.Router && Router.navigateTo) Router.navigateTo(p);
+            });
+        })();
+
         const QuickActionsManager = {
             allActions: [
                 { id: 'new_schedule', name: '新建调度计划', icon: 'fas fa-plus', href: 'schedule_planning.html', description: '创建新的调度计划' },

@@ -3,41 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漏损量分析</title>
-    <link rel="stylesheet" href="../../../components/common/layout.css">
+    <title>智慧管网运维平台 - 漏损量分析</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../../../components/common/TooltipWrapper.js"></script>
-    <script src="../../../components/common/Breadcrumb.js"></script>
-    <script src="../../../components/common/ChartCard.js"></script>
-    <script src="../../../components/common/Layout.js"></script>
-    <script src="../../../components/common/DataTable.js"></script>
-    <script src="../../../modules/utils/rbac.js"></script>
-    <script src="../../../modules/utils/router.js"></script>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将由NavigationManager生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-chart-pie"></i> 漏损量分析</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">分区与全网漏损量/漏损率、最小夜流（MNF）与对比基线（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="calcBtn"><i class="fas fa-play"></i> 计算</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出CSV</button>
+                <button class="btn btn-outline" id="dispatchBtn"><i class="fas fa-paper-plane"></i> 派发巡检</button>
+            </div>
+        </div>
+
+        <!-- 过滤器 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 220px);gap:8px;margin-bottom:12px;">
+            <label>时间范围<select id="timeRange" class="form-control"><option value="24h">近24小时</option><option value="7d">近7天</option></select></label>
+            <label>区域<select id="area" class="form-control"><option value="ALL">全网</option><option value="A">A区</option><option value="B">B区</option><option value="C">C区</option></select></label>
+            <label>对比基线<select id="baseline" class="form-control"><option value="yesterday">昨日</option><option value="lastweek">上周同日</option></select></label>
+            <label>方法<select id="method" class="form-control"><option value="mnf">MNF法</option><option value="balance">水平衡法</option></select></label>
+        </div>
+
+        <!-- KPI 简卡 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">全网漏损量(万m³/日)</div>
+                <div id="kpiTotalLeak" style="font-size:22px;font-weight:700;color:#111827;">336.9</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">全网漏损率</div>
+                <div id="kpiLeakRate" style="font-size:22px;font-weight:700;color:#111827;">9.4%</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">平均MNF(m³/h)</div>
+                <div id="kpiMNF" style="font-size:22px;font-weight:700;color:#111827;">17.1</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">最高漏损DMA</div>
+                <div id="kpiTopDMA" style="font-size:22px;font-weight:700;color:#111827;">B2</div>
+            </div>
+        </div>
+
+        <!-- 趋势图表和数据表格 -->
+        <div style="display:grid;grid-template-columns:1fr;gap:16px;">
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">分区漏损量趋势</div>
+                <canvas id="chartCanvas" width="900" height="300" style="width:100%;height:300px;"></canvas>
+            </div>
+            
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">DMA漏损详情</div>
+                <table class="table" style="width:100%;">
+                    <thead>
+                        <tr><th>DMA</th><th>供水量(万m³/日)</th><th>MNF(m³/h)</th><th>漏损率</th><th>可疑评分</th></tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr><td>A1</td><td>652.3</td><td>18.4</td><td>12.3%</td><td>75</td></tr>
+                        <tr><td>A2</td><td>598.7</td><td>15.2</td><td>8.9%</td><td>42</td></tr>
+                        <tr><td>B1</td><td>734.1</td><td>22.1</td><td>14.6%</td><td>89</td></tr>
+                        <tr><td>B2</td><td>567.9</td><td>19.8</td><td>16.2%</td><td>95</td></tr>
+                        <tr><td>C1</td><td>623.4</td><td>16.7</td><td>10.1%</td><td>58</td></tr>
+                        <tr><td>C2</td><td>589.2</td><td>17.9</td><td>11.7%</td><td>67</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- <script src="../../../common.js"></script> -->
     <script>
-        (function(){
-            var app = document.getElementById('app');
-            var layout = new AppLayout(app);
-            Router.init(layout).then(function(){
-                layout.setPath('/loss/analysis');
-                var host = document.createElement('div');
-                var title = document.createElement('h2');
-                title.textContent = '漏损量分析';
-                var desc = document.createElement('div');
-                desc.textContent = '计算分区及全网漏损量与漏损率（占位页面）';
-                host.appendChild(title);
-                host.appendChild(desc);
-                var tableWrap = document.createElement('div');
-                host.appendChild(tableWrap);
-                layout.mountContent(host);
-                var dtHost = document.createElement('div');
-                tableWrap.appendChild(dtHost);
-                new DataTable(dtHost, { columns:[{key:'dma',title:'DMA'},{key:'mnf',title:'最小夜流'},{key:'leak',title:'估算漏损'}], rows:[{dma:'A1',mnf:12,leak:'8%'},{dma:'B2',mnf:20,leak:'12%'}] });
+        // 简单的图表绘制
+        function drawTrend(canvas){
+            var ctx = canvas.getContext('2d');
+            var W=canvas.width, H=canvas.height, L=40, R=10, T=10, B=24;
+            ctx.clearRect(0,0,W,H);
+            var arr = Array.from({length:24}, function(_,i){ return 50 + 20*Math.sin((i/24)*Math.PI*2) + (Math.random()-0.5)*10; });
+            var minY = Math.min.apply(null, arr)*0.9, maxY = Math.max.apply(null, arr)*1.1;
+            function xAt(i){ return L + (i/23)*(W-L-R); }
+            function yAt(v){ return T + (1-(v-minY)/(maxY-minY))*(H-T-B); }
+            
+            // 网格
+            ctx.strokeStyle='#e5e7eb'; ctx.beginPath();
+            for(var g=0; g<=4; g++){ var y=T+g*(H-T-B)/4; ctx.moveTo(L,y); ctx.lineTo(W-R,y);} ctx.stroke();
+            
+            // 数据线
+            ctx.strokeStyle='#4A90B8'; ctx.lineWidth=1.8; ctx.beginPath();
+            arr.forEach(function(v,i){ var x=xAt(i), y=yAt(v); if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); });
+            ctx.stroke();
+            
+            // 标签
+            ctx.fillStyle='#64748b'; ctx.font='12px sans-serif';
+            for(var h=0; h<24; h+=3){ var x=xAt(h); ctx.fillText(String(h).padStart(2,'0')+':00', x-14, H-6); }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin; // http://localhost:8000
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html', active: true},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        console.log('Navigating to:', fullUrl);
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+                
+                console.log('Clean page initialized - Base URL:', baseUrl);
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('chartCanvas');
+            if(canvas) drawTrend(canvas);
+            
+            // 事件监听
+            document.getElementById('calcBtn').addEventListener('click', function(){ 
+                if(canvas) drawTrend(canvas);
+                if (window.NotificationManager) NotificationManager.show('计算完成','success'); 
             });
-        })();
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = 'DMA,供水量,MNF,漏损率,评分\nA1,652.3,18.4,12.3%,75\nA2,598.7,15.2,8.9%,42\nB1,734.1,22.1,14.6%,89\nB2,567.9,19.8,16.2%,95\nC1,623.4,16.7,10.1%,58\nC2,589.2,17.9,11.7%,67';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='loss_analysis.csv'; 
+                a.click();
+            });
+            
+            document.getElementById('dispatchBtn').addEventListener('click', function(){ 
+                if (window.NotificationManager) NotificationManager.show('已派发巡检：B1,B2','success'); 
+            });
+        });
+    </script>
+
+    <script>
+        // 修复导航路径问题 - 确保从子页面正确跳转到根目录
+        function fixNavigationPaths() {
+            // 等待NavigationManager初始化完成
+            setTimeout(function(){
+                const links = document.querySelectorAll('.nav-links a');
+                links.forEach(function(link){
+                    const href = link.getAttribute('href');
+                    if(href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                        // 如果是相对路径，转换为从当前深度到根目录的路径
+                        if(!href.startsWith('/') && !href.includes('../')) {
+                            link.setAttribute('href', '../../../' + href);
+                            console.log('Fixed navigation link:', href, '->', '../../../' + href);
+                        }
+                    }
+                });
+                
+                // 修复logo链接
+                const logoLinks = document.querySelectorAll('.logo');
+                logoLinks.forEach(function(logo){
+                    logo.style.cursor = 'pointer';
+                    logo.onclick = function(){ window.location.href = '../../../dashboard_overview.html'; };
+                });
+            }, 600);
+        }
+        
+        // 在页面加载完成后执行修复
+        if(document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fixNavigationPaths);
+        } else {
+            fixNavigationPaths();
+        }
     </script>
 </body>
-<\/html>
-
-
+</html>

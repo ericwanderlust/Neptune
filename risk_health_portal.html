@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧管网管理系统 - 漏损与管网健康</title>
+    <title>智慧管网运维平台 - 漏损与爆管</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="common_styles.css">
@@ -57,7 +57,7 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-left">
-                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网运维平台</span></div>
                 <div class="nav-links"></div>
             </div>
             <div class="navbar-right">
@@ -71,8 +71,8 @@
     <div class="module-layout">
         <div class="page-header">
             <div class="header-info">
-                <h1><i class="fas fa-heartbeat"></i> 漏损与管网健康</h1>
-                <p class="header-desc">漏损量化、压力优化、PRV管理与高风险管道评估，支撑资产健康与巡检优先级</p>
+                <h1><i class="fas fa-heartbeat"></i> 漏损与爆管</h1>
+                <p class="header-desc">两条线：漏损治理（压力诊断、PRV、动态分区）与爆管管理（风险评估、修复管理、舆论预案）</p>
             </div>
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
@@ -95,8 +95,9 @@
             <div class="actions-grid" id="quickActionsGrid"></div>
         </div>
 
+        <h2 style="margin: 8px 0 12px; font-size: 18px; font-weight: 600; color: var(--text-primary);"><i class="fas fa-droplet" style="margin-right:8px;color:#4A90B8"></i>漏损治理线</h2>
         <div class="function-grid">
-            <div class="function-card" onclick="navigateToFunction('pages/loss/analysis/index.html')">
+            <div class="function-card" onclick="navigateToFunction('/loss/analysis')">
                 <div class="card-header"><div class="card-icon"><i class="fas fa-chart-pie"></i></div><div class="card-title"><h3>漏损量分析</h3><p class="card-subtitle">分区/全网量化评估</p></div></div>
                 <div class="card-content"><p class="card-description">基于产销差与模型差异计算漏损指标，定位重点分区与时段。</p>
                     <ul class="feature-list"><li>DMA漏损率统计</li><li>时段对比</li><li>可疑区域标记</li><li>联动巡检</li></ul>
@@ -104,7 +105,7 @@
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>数据加载正常</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
 
-            <div class="function-card" onclick="navigateToFunction('pages/loss/localize/index.html')">
+            <div class="function-card" onclick="navigateToFunction('/loss/localize')">
                 <div class="card-header"><div class="card-icon"><i class="fas fa-map-marker-alt"></i></div><div class="card-title"><h3>模型漏损定位</h3><p class="card-subtitle">疑似漏点推断</p></div></div>
                 <div class="card-content"><p class="card-description">对比模型与实测差异，结合夜间最小流量快速识别疑似漏点区域。</p>
                     <ul class="feature-list"><li>差异热力图</li><li>夜间最小流量</li><li>打分排序</li><li>证据汇总</li></ul>
@@ -112,7 +113,7 @@
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>算法库可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
 
-            <div class="function-card" onclick="navigateToFunction('pages/pressure/optimize/index.html')">
+            <div class="function-card" onclick="navigateToFunction('/pressure/optimize')">
                 <div class="card-header"><div class="card-icon"><i class="fas fa-gauge-high"></i></div><div class="card-title"><h3>压力诊断与优化</h3><p class="card-subtitle">分区压力诊断与调节</p></div></div>
                 <div class="card-content"><p class="card-description">诊断分区压力异常，生成调压建议并评估影响范围与收益。</p>
                     <ul class="feature-list"><li>异常检测</li><li>调压建议</li><li>影响评估</li><li>联动PRV</li></ul>
@@ -120,7 +121,7 @@
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>优化模块就绪</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
 
-            <div class="function-card" onclick="navigateToFunction('pages/pressure/prv/index.html')">
+            <div class="function-card" onclick="navigateToFunction('/pressure/prv')">
                 <div class="card-header"><div class="card-icon"><i class="fas fa-sliders-h"></i></div><div class="card-title"><h3>减压阀管理</h3><p class="card-subtitle">PRV运行与调节</p></div></div>
                 <div class="card-content"><p class="card-description">集中管理PRV设备工况与控制策略，支撑远程调节与版本回退。</p>
                     <ul class="feature-list"><li>在线工况</li><li>控制策略</li><li>远程调节</li><li>版本留痕</li></ul>
@@ -135,40 +136,66 @@
                 </div>
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>仿真引擎就绪</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
+        </div>
 
-            <div class="function-card" onclick="navigateToFunction('pages/network/health/index.html')">
-                <div class="card-header"><div class="card-icon"><i class="fas fa-stethoscope"></i></div><div class="card-title"><h3>管网健康评估</h3><p class="card-subtitle">爆管概率与风险评分</p></div></div>
-                <div class="card-content"><p class="card-description">基于管龄、材质、压力与故障历史评估管道健康，标记高风险段。</p>
+        <h2 style="margin: 8px 0 12px; font-size: 18px; font-weight: 600; color: var(--text-primary);"><i class="fas fa-burst" style="margin-right:8px;color:#ef4444"></i>爆管治理线</h2>
+        <div class="function-grid">
+            <div class="function-card" onclick="navigateToFunction('/network/health')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-stethoscope"></i></div><div class="card-title"><h3>爆管风险评估</h3><p class="card-subtitle">概率评估与高风险段</p></div></div>
+                <div class="card-content"><p class="card-description">评估爆管概率，定位高风险管段，为修复与巡检提供依据。</p>
                     <ul class="feature-list"><li>风险评分</li><li>寿命预测</li><li>地图高亮</li><li>年度计划支撑</li></ul>
                 </div>
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>评估模型在线</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
 
-            <div class="function-card" onclick="navigateToFunction('pages/network/priority/index.html')">
+            <div class="function-card" onclick="navigateToFunction('/network/priority')">
                 <div class="card-header"><div class="card-icon"><i class="fas fa-flag-checkered"></i></div><div class="card-title"><h3>巡检优先级</h3><p class="card-subtitle">任务清单推荐</p></div></div>
                 <div class="card-content"><p class="card-description">基于风险与影响生成巡检优先级与任务清单，联动工单派发。</p>
                     <ul class="feature-list"><li>优先级排序</li><li>范围与路线</li><li>工单联动</li><li>闭环追踪</li></ul>
                 </div>
                 <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>策略生成可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
             </div>
+
+            <!-- 修复管理（联动工单） -->
+            <div class="function-card" onclick="navigateToFunction('/repair/manage')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-wrench"></i></div><div class="card-title"><h3>修复管理</h3><p class="card-subtitle">爆管/漏损处置闭环</p></div></div>
+                <div class="card-content"><p class="card-description">对接工单与维修流程，跟踪修复进度与成效复盘，形成闭环管理。</p>
+                    <ul class="feature-list"><li>自动派单</li><li>进度追踪</li><li>复盘评估</li><li>报表归档</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>流程接入正常</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <!-- 舆情预案（预案化管理） -->
+            <div class="function-card" onclick="navigateToFunction('/public/opinion')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-bullhorn"></i></div><div class="card-title"><h3>舆情预案</h3><p class="card-subtitle">事件沟通与响应</p></div></div>
+                <div class="card-content"><p class="card-description">预设舆情沟通模板与应对流程，爆管/停水等事件快速发布通知与复盘。</p>
+                    <ul class="feature-list"><li>预案模板库</li><li>多渠道通知</li><li>职责分工</li><li>复盘与优化</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>模板库可用</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
         </div>
     </div>
 
     <script src="common.js"></script>
+    <script src="modules/utils/router.js"></script>
     <script>
+        // 初始化 Router
+        try{ if (window.Router && !window.__ROUTER_INITED__) { window.__ROUTER_INITED__ = true; Router.init(); } }catch(e){}
         const QuickActionsManager = {
             allActions: [
-                { id: 'loss', name: '漏损量分析', icon: 'fas fa-chart-pie', href: 'pages/loss/analysis/index.html', description: '计算漏损指标' },
-                { id: 'localize', name: '模型漏损定位', icon: 'fas fa-map-marker-alt', href: 'pages/loss/localize/index.html', description: '识别疑似漏点' },
-                { id: 'pressure', name: '压力优化', icon: 'fas fa-gauge-high', href: 'pages/pressure/optimize/index.html', description: '诊断与调压建议' },
-                { id: 'prv', name: '减压阀管理', icon: 'fas fa-sliders-h', href: 'pages/pressure/prv/index.html', description: '管理PRV设备' },
-                { id: 'health', name: '健康评估', icon: 'fas fa-stethoscope', href: 'pages/network/health/index.html', description: '评估管道健康' },
-                { id: 'priority', name: '巡检优先级', icon: 'fas fa-flag-checkered', href: 'pages/network/priority/index.html', description: '生成巡检清单' }
+                { id: 'loss', name: '漏损量分析', icon: 'fas fa-chart-pie', href: '/loss/analysis', description: '计算漏损指标' },
+                { id: 'localize', name: '模型漏损定位', icon: 'fas fa-map-marker-alt', href: '/loss/localize', description: '识别疑似漏点' },
+                { id: 'pressure', name: '压力优化', icon: 'fas fa-gauge-high', href: '/pressure/optimize', description: '诊断与调压建议' },
+                { id: 'prv', name: '减压阀管理', icon: 'fas fa-sliders-h', href: '/pressure/prv', description: '管理PRV设备' },
+                { id: 'health', name: '健康评估', icon: 'fas fa-stethoscope', href: '/network/health', description: '评估管道健康' },
+                { id: 'priority', name: '巡检优先级', icon: 'fas fa-flag-checkered', href: '/network/priority', description: '生成巡检清单' },
+                { id: 'repair', name: '修复管理', icon: 'fas fa-wrench', href: '/repair/manage', description: '闭环修复管理' },
+                { id: 'opinion', name: '舆情预案', icon: 'fas fa-bullhorn', href: '/public/opinion', description: '事件沟通预案' }
             ],
             defaultFavorites: ['loss', 'localize', 'pressure', 'health'],
             getFavorites(){ const s=localStorage.getItem('riskQuickActions'); return s?JSON.parse(s):this.defaultFavorites; },
             saveFavorites(f){ localStorage.setItem('riskQuickActions', JSON.stringify(f)); },
-            renderQuickActions(){ const fav=this.getFavorites(); const grid=document.getElementById('quickActionsGrid'); if(!grid) return; grid.innerHTML=fav.map(id=>{ const a=this.allActions.find(x=>x.id===id); if(!a) return ''; return `<a href="${a.href}" class="action-btn removable" title="${a.description}"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><span>${a.name}</span><button class=\"remove-action-btn\" onclick=\"QuickActionsManager.removeFavorite('${a.id}'); event.preventDefault(); event.stopPropagation();\" title=\"移除\"><i class=\"fas fa-times\"></i></button></a>`; }).join(''); },
+            renderQuickActions(){ const fav=this.getFavorites(); const grid=document.getElementById('quickActionsGrid'); if(!grid) return; grid.innerHTML=fav.map(id=>{ const a=this.allActions.find(x=>x.id===id); if(!a) return ''; const isRoute=/^\//.test(a.href); return `<a ${isRoute?`href=\"#\" data-route=\"${a.href}\"`:`href=\"${a.href}\"`} class=\"action-btn removable\" title=\"${a.description}\"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><span>${a.name}</span><button class=\"remove-action-btn\" onclick=\"QuickActionsManager.removeFavorite('${a.id}'); event.preventDefault(); event.stopPropagation();\" title=\"移除\"><i class=\"fas fa-times\"></i></button></a>`; }).join(''); },
             renderAvailableActions(){ const fav=this.getFavorites(); const grid=document.getElementById('availableActionsGrid'); if(!grid) return; grid.innerHTML=this.allActions.map(a=>{ const ok=fav.includes(a.id); return `<div class=\"available-action ${ok?'favorited':''}\" onclick=\"QuickActionsManager.toggleFavorite('${a.id}')\" title=\"${a.description}\"><div class=\"action-icon\"><i class=\"${a.icon}\"></i></div><div class=\"action-text\">${a.name}</div>${ok?'<i class=\"fas fa-star favorite-indicator\"></i>':''}</div>`; }).join(''); },
             toggleFavorite(id){ let fav=this.getFavorites(); fav = fav.includes(id) ? fav.filter(x=>x!==id) : [...fav, id]; this.saveFavorites(fav); this.renderQuickActions(); this.renderAvailableActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(fav.includes(id)?`已添加"${a.name}"到快速操作`:`已从快速操作中移除"${a.name}"`,'success'); } },
             removeFavorite(id){ let fav=this.getFavorites().filter(x=>x!==id); this.saveFavorites(fav); this.renderQuickActions(); const a=this.allActions.find(x=>x.id===id); if(a && typeof NotificationManager!=='undefined'){ NotificationManager.show(`已移除"${a.name}"`,'success'); } },
@@ -179,7 +206,19 @@
         function closeQuickActionsConfig(){ const m=document.getElementById('configModal'); if(m) m.remove(); }
         document.addEventListener('click', e=>{ const m=document.getElementById('configModal'); if(m && e.target===m) closeQuickActionsConfig(); });
 
-        function navigateToFunction(url){ if(typeof OperationLogger!=='undefined'){ OperationLogger.log('访问漏损与健康功能',{ target:url, timestamp:new Date().toISOString() }); } window.location.href=url; }
+        // 统一导航：路由路径交给 Router，其他交给浏览器
+        function navigateToFunction(url){
+            if(typeof OperationLogger!=='undefined'){ OperationLogger.log('访问漏损与健康功能',{ target:url, timestamp:new Date().toISOString() }); }
+            if (/^\//.test(url) && window.Router && Router.navigateTo){ Router.navigateTo(url); return; }
+            window.location.href=url;
+        }
+        // 代理 data-route 链接
+        (function bindRouteLinks(){
+            document.addEventListener('click', function(e){
+                var a = e.target.closest('a[data-route]');
+                if (!a) return; e.preventDefault(); var p=a.getAttribute('data-route'); if (window.Router && Router.navigateTo) Router.navigateTo(p);
+            });
+        })();
         function updateStatusData(){ const el={ lossRate:document.getElementById('lossRate'), highRisk:document.getElementById('highRisk'), prvNum:document.getElementById('prvNum'), pressureOk:document.getElementById('pressureOk') }; if(el.lossRate) el.lossRate.textContent = (10 + Math.random()*5).toFixed(1) + '%'; if(el.highRisk) el.highRisk.textContent = 30 + Math.floor(Math.random()*20); if(el.prvNum) el.prvNum.textContent = 20 + Math.floor(Math.random()*10); if(el.pressureOk) el.pressureOk.textContent = (92 + Math.random()*3).toFixed(1) + '%'; }
         function showQuickStart(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('快速开始功能开发中，敬请期待！','info'); } else { alert('快速开始功能开发中，敬请期待！'); } }
         function showHelp(){ if(typeof NotificationManager!=='undefined'){ NotificationManager.show('帮助文档功能开发中，如有问题请联系系统管理员。','info'); } else { alert('帮助文档功能开发中，如有问题请联系系统管理员。'); } }

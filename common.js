@@ -1408,9 +1408,9 @@ const NavigationManager = {
     },
     'dispatch': {
       href: 'dispatch_portal.html',
-      label: '调度管理',
+      label: '调度事务',
       icon: 'fas fa-route',
-      description: '计划、执行与应急调度的一站式工作台'
+      description: '计划、执行、分析一体的调度工作台'
     },
     'simulation': { 
       href: 'simulation.html', 
@@ -1438,9 +1438,9 @@ const NavigationManager = {
     },
     'risk_health': { 
       href: 'risk_health_portal.html', 
-      label: '漏损与管网健康', 
+      label: '漏损与爆管', 
       icon: 'fas fa-heartbeat',
-      description: '漏损量化、压力优化与健康评估'
+      description: '漏损治理、压力优化与爆管风险评估'
     },
     'ai': { 
       href: 'ai_portal.html', 
@@ -1661,7 +1661,7 @@ const NavigationManager = {
     const brandElement = document.querySelector('.logo span');
     if (brandElement) {
       // 保持统一的系统名称，不因角色而改变
-      brandElement.textContent = '智慧管网管理系统';
+      brandElement.textContent = '智慧管网运维平台';
     }
     
     // 更新浏览器标题，包含角色工作台信息
@@ -1678,6 +1678,19 @@ const NavigationManager = {
     const role = (window.__USER_ROLE__ || localStorage.getItem('rbacRole') || (UserPermissions.currentUser && UserPermissions.currentUser.role) || 'OPERATOR');
 
     function loadJSON(url){ return fetch(url, { cache: 'no-store' }).then(r=>r.json()); }
+    function loadJSONWithFallback(candidates){
+      return new Promise(function(resolve, reject){
+        let i = 0;
+        function attempt(){
+          if (i >= candidates.length) { reject(new Error('not found')); return; }
+          fetch(candidates[i], { cache: 'no-store' })
+            .then(r=>{ if(!r.ok) throw new Error('bad'); return r.json(); })
+            .then(resolve)
+            .catch(()=>{ i++; attempt(); });
+        }
+        attempt();
+      });
+    }
 
     function renderFromMenu(menu){
       try{
@@ -1716,7 +1729,9 @@ const NavigationManager = {
             a.href = base;
             a.addEventListener('click', function(e){ e.preventDefault();
               if (window.Router && Router.navigateTo){ Router.navigateTo(base); return; }
-              loadJSON('config/routes.json').then(rs=>{ const m = rs.find(r=>r.path===base); if(!m){ console.warn('未找到落地路由', base); const dash = rs.find(r=>r.path==='/dashboard'); window.location.href = (dash?dash.component:'dashboard_overview.html'); return; } window.location.href = m.component + '?path=' + encodeURIComponent(base); });
+              loadJSONWithFallback(['config/routes.json','../config/routes.json','../../config/routes.json','../../../config/routes.json','/config/routes.json'])
+                .then(rs=>{ const m = rs.find(r=>r.path===base); if(!m){ console.warn('未找到落地路由', base); const dash = rs.find(r=>r.path==='/dashboard'); window.location.href = (dash?dash.component:'dashboard_overview.html'); return; } window.location.href = m.component + '?path=' + encodeURIComponent(base); })
+                .catch(()=>{ window.location.href = 'dashboard_overview.html'; });
             });
           }
 
@@ -1757,10 +1772,31 @@ const NavigationManager = {
       self.addNavigationStyles();
     }
 
-    fetch('config/menu.json', { cache: 'no-store' })
-      .then(r=> r.ok ? r.json() : Promise.reject('menu.json not found'))
+    loadJSONWithFallback(['config/menu.json','../config/menu.json','../../config/menu.json','../../../config/menu.json','/config/menu.json'])
       .then(menu => renderFromMenu(menu))
       .catch(()=> renderFallback());
+
+    // 兜底：为所有页面绑定全局路由点击（一次）
+    try{
+      if (!window.__GLOBAL_ROUTE_BOUND__) {
+        window.__GLOBAL_ROUTE_BOUND__ = true;
+        const goto = function(path){
+          try{
+            if (window.Router && typeof Router.navigateTo === 'function') { Router.navigateTo(path); return; }
+          }catch(e){}
+          loadJSONWithFallback(['config/routes.json','../config/routes.json','../../config/routes.json','../../../config/routes.json','/config/routes.json'])
+            .then(function(rs){ var m=rs.find(function(r){ return r.path===path; }); if(m){ window.location.href = m.component + '?path=' + encodeURIComponent(path); } else { var dash=rs.find(function(r){return r.path==='/dashboard';}); window.location.href = (dash?dash.component:'dashboard_overview.html'); } })
+            .catch(function(){ window.location.href='dashboard_overview.html'; });
+        };
+        document.addEventListener('click', function(e){
+          var a = e.target.closest('a[data-route], .nav-links a');
+          if (!a) return;
+          var route = a.getAttribute('data-route') || a.getAttribute('data-basepath') || a.getAttribute('href');
+          if (!route) return;
+          if (/^\//.test(route)) { e.preventDefault(); goto(route); }
+        });
+      }
+    }catch(e){ /* no-op */ }
   },
 
   // 更新用户显示
@@ -3136,7 +3172,7 @@ if (typeof window.logout !== 'function') {
 
 // 在控制台输出帮助信息
 if (typeof window !== 'undefined') {
-  console.log('%c智慧管网管理系统 - 开发工具', 'color: #4A90B8; font-weight: bold; font-size: 16px;');
+  console.log('%c智慧管网运维平台 - 开发工具', 'color: #4A90B8; font-weight: bold; font-size: 16px;');
   console.log('%c可用命令:', 'color: #2ecc71; font-weight: bold;');
   console.log('setDemoUser("角色") - 设置演示用户');
   console.log('clearUser() - 清除用户信息');

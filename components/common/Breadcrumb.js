@@ -5,6 +5,18 @@
 	function findPathByUrl(menu, path){
 		for (var i=0;i<menu.length;i++){
 			var section = menu[i];
+			// 命中模块落地页（basePath）
+			if (section.basePath && (path === section.basePath || path.indexOf(section.basePath + '/') === 0)){
+				// 若后续未匹配到具体子项，则至少返回模块名
+				var matched = null;
+				if (section.children){
+					for (var k=0;k<section.children.length;k++){
+						var cp = section.children[k].path;
+						if (cp === path || path.indexOf(cp + '/') === 0){ matched = section.children[k].name; break; }
+					}
+				}
+				return matched ? [section.name, matched] : [section.name];
+			}
 			if (section.children){
 				for (var j=0;j<section.children.length;j++){
 					var item = section.children[j];

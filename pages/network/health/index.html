@@ -3,39 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管网健康评估</title>
-    <link rel="stylesheet" href="../../../components/common/layout.css">
+    <title>智慧管网运维平台 - 爆管风险评估</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../../../components/common/TooltipWrapper.js"></script>
-    <script src="../../../components/common/Breadcrumb.js"></script>
-    <script src="../../../components/common/ChartCard.js"></script>
-    <script src="../../../components/common/Layout.js"></script>
-    <script src="../../../modules/utils/rbac.js"></script>
-    <script src="../../../modules/utils/router.js"></script>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-stethoscope"></i> 爆管风险评估</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">管网健康评估与爆管风险预测（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="assessBtn"><i class="fas fa-calculator"></i> 重新评估</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出CSV</button>
+            </div>
+        </div>
+
+        <!-- 风险分布统计 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">极高风险管段</div>
+                <div style="font-size:22px;font-weight:700;color:#dc2626;">12</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">高风险管段</div>
+                <div style="font-size:22px;font-weight:700;color:#f59e0b;">28</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">中风险管段</div>
+                <div style="font-size:22px;font-weight:700;color:#3b82f6;">45</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">低风险管段</div>
+                <div style="font-size:22px;font-weight:700;color:#10b981;">182</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <!-- 风险分布图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">风险评分分布</div>
+                <canvas id="riskChart" width="400" height="300" style="width:100%;height:300px;"></canvas>
+            </div>
+
+            <!-- 高风险管段列表 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">高风险管段明细</div>
+                <div style="max-height:300px;overflow-y:auto;">
+                    <table class="table" style="width:100%;font-size:13px;">
+                        <thead>
+                            <tr><th>管段编号</th><th>风险评分</th><th>主要因子</th><th>建议</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>DN400-A-015</td>
+                                <td><span style="color:#dc2626;">95</span></td>
+                                <td>使用年限</td>
+                                <td><button class="btn btn-sm btn-danger">紧急检查</button></td>
+                            </tr>
+                            <tr>
+                                <td>DN300-B-023</td>
+                                <td><span style="color:#dc2626;">89</span></td>
+                                <td>材质老化</td>
+                                <td><button class="btn btn-sm btn-danger">优先更换</button></td>
+                            </tr>
+                            <tr>
+                                <td>DN250-C-008</td>
+                                <td><span style="color:#f59e0b;">78</span></td>
+                                <td>压力波动</td>
+                                <td><button class="btn btn-sm btn-outline">监控</button></td>
+                            </tr>
+                            <tr>
+                                <td>DN200-A-034</td>
+                                <td><span style="color:#f59e0b;">72</span></td>
+                                <td>历史事故</td>
+                                <td><button class="btn btn-sm btn-outline">巡检</button></td>
+                            </tr>
+                            <tr>
+                                <td>DN150-D-012</td>
+                                <td><span style="color:#f59e0b;">68</span></td>
+                                <td>土壤腐蚀</td>
+                                <td><button class="btn btn-sm btn-outline">检测</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评估参数和建议 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">评估模型参数</div>
+                <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;font-size:13px;">
+                    <div>
+                        <div style="color:#6b7280;">使用年限权重</div>
+                        <div style="font-weight:600;">30%</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;">材质类型权重</div>
+                        <div style="font-weight:600;">25%</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;">历史故障权重</div>
+                        <div style="font-weight:600;">20%</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;">压力负荷权重</div>
+                        <div style="font-weight:600;">15%</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;">环境因素权重</div>
+                        <div style="font-weight:600;">10%</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;">上次评估时间</div>
+                        <div style="font-weight:600;">2025-09-10</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">管理建议</div>
+                <ul style="margin:0;padding-left:16px;line-height:1.6;">
+                    <li style="margin-bottom:8px;">对12个极高风险管段实施紧急检查</li>
+                    <li style="margin-bottom:8px;">制定28个高风险管段的更换计划</li>
+                    <li style="margin-bottom:8px;">加强45个中风险管段的日常监控</li>
+                    <li style="margin-bottom:8px;">建议每月重新评估一次风险等级</li>
+                    <li style="margin-bottom:8px;">建立管网更新改造专项资金</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <script>
-        (function(){
-            var app = document.getElementById('app');
-            var layout = new AppLayout(app);
-            Router.init(layout).then(function(){
-                layout.setPath('/network/health');
-                var host = document.createElement('div');
-                var title = document.createElement('h2');
-                title.textContent = '管网健康评估';
-                var desc = document.createElement('div');
-                desc.textContent = '基于模型计算管道爆管概率与风险评分（占位页面）';
-                host.appendChild(title);
-                host.appendChild(desc);
-                var chartHolder = document.createElement('div');
-                host.appendChild(chartHolder);
-                layout.mountContent(host);
-                var cc = new ChartCard(chartHolder, { title: '高风险管段', tooltip: '点击卡片可从驾驶舱深链跳转到此页', height: 360 });
-                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">健康评分占位</div>'; });
+        function drawRiskChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var L = 40, R = 20, T = 20, B = 40;
+            ctx.clearRect(0, 0, W, H);
+
+            // 风险评分区间数据 [0-25, 25-50, 50-75, 75-100]
+            var data = [182, 45, 28, 12];
+            var colors = ['#10b981', '#3b82f6', '#f59e0b', '#dc2626'];
+            var labels = ['低风险\n(0-25)', '中风险\n(25-50)', '高风险\n(50-75)', '极高风险\n(75-100)'];
+            
+            var maxVal = Math.max.apply(null, data);
+            var barWidth = (W - L - R) / data.length * 0.8;
+            var barSpacing = (W - L - R) / data.length;
+
+            // 绘制网格线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for(var i = 0; i <= 5; i++){
+                var y = T + (H - T - B) * i / 5;
+                ctx.beginPath();
+                ctx.moveTo(L, y);
+                ctx.lineTo(W - R, y);
+                ctx.stroke();
+            }
+
+            // 绘制柱状图
+            data.forEach(function(val, i){
+                var x = L + i * barSpacing + (barSpacing - barWidth) / 2;
+                var height = (val / maxVal) * (H - T - B);
+                var y = H - B - height;
+                
+                ctx.fillStyle = colors[i];
+                ctx.fillRect(x, y, barWidth, height);
+                
+                // 数值标签
+                ctx.fillStyle = '#374151';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(val, x + barWidth/2, y - 5);
+                
+                // 分类标签
+                ctx.fillText(labels[i].split('\n')[0], x + barWidth/2, H - B + 15);
+                ctx.fillText(labels[i].split('\n')[1], x + barWidth/2, H - B + 30);
             });
-        })();
+
+            // Y轴标签
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'right';
+            for(var i = 0; i <= 5; i++){
+                var val = Math.round(maxVal * i / 5);
+                var y = H - B - (H - T - B) * i / 5;
+                ctx.fillText(val, L - 5, y + 3);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html', active: true},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('riskChart');
+            if(canvas) drawRiskChart(canvas);
+            
+            document.getElementById('assessBtn').addEventListener('click', function(){ 
+                if(canvas) drawRiskChart(canvas);
+                alert('风险评估已更新');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '管段编号,风险评分,主要因子,建议措施\nDN400-A-015,95,使用年限,紧急检查\nDN300-B-023,89,材质老化,优先更换\nDN250-C-008,78,压力波动,监控\nDN200-A-034,72,历史事故,巡检\nDN150-D-012,68,土壤腐蚀,检测';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='network_health_assessment.csv'; 
+                a.click();
+            });
+        });
     </script>
 </body>
-<\/html>
-
-
+</html>

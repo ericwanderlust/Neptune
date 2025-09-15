@@ -6,15 +6,22 @@
   { "path": "/dashboard/water",      "component": "water_quality.html" },
 
   { "path": "/dispatch",             "component": "dispatch_portal.html" },
+  { "path": "/dispatch/forecast",    "component": "pages/dispatch/forecast/index.html" },
+  { "path": "/dispatch/period",      "component": "pages/dispatch/period/index.html" },
+  { "path": "/dispatch/loss-pressure",    "component": "pages/dispatch/loss-pressure/index.html" },
+  { "path": "/dispatch/energy",      "component": "pages/dispatch/energy/index.html" },
   { "path": "/dispatch/planning",    "component": "schedule_planning.html" },
   { "path": "/dispatch/execute",     "component": "daily_dispatch.html" },
   { "path": "/dispatch/emergency",   "component": "dispatch_emergency.html" },
   { "path": "/dispatch/history",     "component": "historical_comparison.html" },
 
   { "path": "/monitor",              "component": "monitor.html" },
+  { "path": "/monitor/overview",     "component": "monitor.html" },
   { "path": "/monitor/realtime",     "component": "monitor_realtime_map.html" },
   { "path": "/monitor/alarms",       "component": "monitor_v3.html" },
   { "path": "/monitor/incidents",    "component": "report_event_archive.html" },
+  { "path": "/monitor/alarm-center", "component": "pages/monitor/alarm-center/index.html" },
+  { "path": "/monitor/incidents-new","component": "pages/monitor/incidents/index.html" },
 
   { "path": "/water",                "component": "water_portal.html" },
   { "path": "/water/observe",        "component": "water_quality.html" },
@@ -22,6 +29,7 @@
   { "path": "/water/trace",          "component": "quality_trace_analysis.html" },
   { "path": "/water/reports",        "component": "reports.html" },
   { "path": "/water/optimize",       "component": "pages/water/optimize/index.html" },
+  { "path": "/water/risks",          "component": "pages/water/risks/index.html" },
 
   { "path": "/risk-health",          "component": "risk_health_portal.html" },
   { "path": "/loss/analysis",        "component": "pages/loss/analysis/index.html" },
@@ -31,6 +39,8 @@
   { "path": "/dma/dynamic",          "component": "simulation.html" },
   { "path": "/network/health",       "component": "pages/network/health/index.html" },
   { "path": "/network/priority",     "component": "pages/network/priority/index.html" },
+  { "path": "/repair/manage",        "component": "pages/repair/manage/index.html" },
+  { "path": "/public/opinion",       "component": "pages/public/opinion/index.html" },
 
   { "path": "/ops",                  "component": "tickets.html" },
   { "path": "/ops/workorders",       "component": "tickets.html" },

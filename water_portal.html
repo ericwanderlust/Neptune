@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧管网管理系统 - 水质管理</title>
+    <title>智慧管网运维平台 - 水质管理</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="common_styles.css">
@@ -72,7 +72,7 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-left">
-                <div class="logo"><i class="fas fa-water"></i><span>智慧管网管理系统</span></div>
+                <div class="logo"><i class="fas fa-water"></i><span>智慧管网运维平台</span></div>
                 <div class="nav-links"></div>
             </div>
             <div class="navbar-right">
@@ -87,7 +87,7 @@
         <div class="page-header">
             <div class="header-info">
                 <h1><i class="fas fa-flask"></i> 水质管理中心</h1>
-                <p class="header-desc">保障供水水质，覆盖监测、趋势预测、溯源与优化，支持二供与污染事件</p>
+                <p class="header-desc">水质Key Map（余氯/浊度/水龄）、历史方案、报警与风险提示，支持水质调度预演</p>
             </div>
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="showQuickStart()"><i class="fas fa-rocket"></i> 快速开始</button>
@@ -108,6 +108,25 @@
                 <button class="btn btn-sm btn-outline" onclick="openQuickActionsConfig()"><i class="fas fa-cog"></i> 配置</button>
             </div>
             <div class="actions-grid" id="quickActionsGrid"></div>
+        </div>
+
+        <!-- Key Map 与风险提示 -->
+        <div class="function-grid">
+            <div class="function-card" onclick="navigateToFunction('water_quality.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-map"></i></div><div class="card-title"><h3>水质Key Map</h3><p class="card-subtitle">余氯/浊度/水龄</p></div></div>
+                <div class="card-content"><p class="card-description">展示关键水质指标的空间分布与阈值高亮，支持时序回放。</p>
+                    <ul class="feature-list"><li>热力图/等值线</li><li>阈值高亮</li><li>时间回放</li><li>叠层对比</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>模型渲染就绪</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 进入</button></div>
+            </div>
+
+            <div class="function-card" onclick="navigateToFunction('pages/water/risks/index.html')">
+                <div class="card-header"><div class="card-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="card-title"><h3>水质风险提示</h3><p class="card-subtitle">报警与风险</p></div></div>
+                <div class="card-content"><p class="card-description">统一展示报警与风险提示，辅助快速定位与处置。</p>
+                    <ul class="feature-list"><li>异常聚合</li><li>阈值设置</li><li>处置记录</li><li>报表导出</li></ul>
+                </div>
+                <div class="card-footer"><div class="card-status"><div class="status-dot"></div><span>数据接入正常</span></div><button class="btn btn-sm btn-primary"><i class="fas fa-arrow-right"></i> 查看</button></div>
+            </div>
         </div>
 
         <div class="function-grid">
@@ -175,6 +194,7 @@
     </div>
 
     <script src="common.js"></script>
+    <script src="modules/utils/router.js"></script>
     <script>
         const QuickActionsManager = {
             allActions: [
@@ -196,10 +216,18 @@
         };
 
         function openQuickActionsConfig(){ QuickActionsManager.renderAvailableActions(); document.getElementById('configModal').classList.add('show'); if(typeof OperationLogger!=='undefined'){ OperationLogger.log('打开水质管理-快速操作配置',{ timestamp:new Date().toISOString() }); } }
+
+        // 初始化 Router 保证页面内路由可用
+        try{ if (window.Router && !window.__ROUTER_INITED__) { window.__ROUTER_INITED__ = true; Router.init(); } }catch(e){}
         function closeQuickActionsConfig(){ document.getElementById('configModal').classList.remove('show'); }
         document.addEventListener('click', e=>{ const m=document.getElementById('configModal'); if(e.target===m) closeQuickActionsConfig(); });
 
-        function navigateToFunction(url){ if(typeof OperationLogger!=='undefined'){ OperationLogger.log('访问水质管理功能',{ target:url, timestamp:new Date().toISOString() }); } window.location.href=url; }
+        function navigateToFunction(url){
+            if (typeof OperationLogger!=='undefined'){ OperationLogger.log('访问水质管理功能',{ target:url, timestamp:new Date().toISOString() }); }
+            // 若传入的是路由路径则使用 Router，否则按原始URL
+            if (/^\//.test(url) && window.Router && Router.navigateTo){ Router.navigateTo(url); return; }
+            window.location.href=url;
+        }
 
         function updateStatusData(){ const el={ stationCount:document.getElementById('stationCount'), activeAlerts:document.getElementById('activeAlerts'), forecastTasks:document.getElementById('forecastTasks'), complianceRate:document.getElementById('complianceRate') }; if(el.stationCount) el.stationCount.textContent = 120 + Math.floor(Math.random()*20); if(el.activeAlerts) el.activeAlerts.textContent = Math.floor(Math.random()*8); if(el.forecastTasks) el.forecastTasks.textContent = Math.floor(Math.random()*10)+3; if(el.complianceRate) el.complianceRate.textContent = (98.5 + Math.random()*1.2).toFixed(1) + '%'; }
 

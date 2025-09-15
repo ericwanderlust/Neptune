@@ -3,52 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>水质优化建议</title>
-    <link rel="stylesheet" href="../../../components/common/layout.css">
+    <title>智慧管网运维平台 - 水质优化建议</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../../../components/common/TooltipWrapper.js"></script>
-    <script src="../../../components/common/Breadcrumb.js"></script>
-    <script src="../../../components/common/ChartCard.js"></script>
-    <script src="../../../components/common/DataTable.js"></script>
-    <script src="../../../components/common/Layout.js"></script>
-    <script src="../../../modules/utils/rbac.js"></script>
-    <script src="../../../modules/utils/router.js"></script>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将通过JavaScript生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-cog"></i> 水质优化建议</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">页面功能完善中（模拟数据展示）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="refreshBtn"><i class="fas fa-sync"></i> 刷新</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+            <div style="text-align:center;padding:40px;">
+                <i class="fas fa-tools" style="font-size:48px;color:#6b7280;margin-bottom:16px;"></i>
+                <h3 style="margin:0 0 8px 0;color:var(--text-primary);">水质优化建议</h3>
+                <p style="color:var(--text-secondary);margin:0;">功能开发中，敬请期待</p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        (function(){
-            var app = document.getElementById('app');
-            var layout = new AppLayout(app);
-            Router.init(layout).then(function(){
-                layout.setPath('/water/optimize');
-                var host = document.createElement('div');
-                var title = document.createElement('h2');
-                title.textContent = '水质优化建议';
-                var desc = document.createElement('div');
-                desc.textContent = '提供投加、冲洗等水质优化方案（占位页面）';
-                host.appendChild(title);
-                host.appendChild(desc);
-                var tableWrap = document.createElement('div');
-                host.appendChild(tableWrap);
-                layout.mountContent(host);
-                // 表格占位
-                var dtHost = document.createElement('div');
-                tableWrap.appendChild(dtHost);
-                new DataTable(dtHost, {
-                    columns: [
-                        { key: 'dma', title: '分区' },
-                        { key: 'action', title: '优化措施' },
-                        { key: 'impact', title: '预计效果' }
-                    ],
-                    rows: [
-                        { dma: 'A1', action: '加氯0.2mg/L', impact: '余氯+0.1mg/L' },
-                        { dma: 'B3', action: '夜间冲洗30min', impact: '浊度-15%' }
-                    ]
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin; // http://localhost:8000
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.text === '水质管理' ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        console.log('Navigating to:', fullUrl);
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
                 });
+                
+                console.log('Clean page initialized - Base URL:', baseUrl);
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 基础事件监听
+            document.getElementById('refreshBtn').addEventListener('click', function(){ 
+                window.location.reload();
             });
-        })();
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                alert('导出功能开发中');
+            });
+        });
     </script>
 </body>
-<\/html>
-
-
+</html>

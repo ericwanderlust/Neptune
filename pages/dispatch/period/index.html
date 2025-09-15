@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 时段用水差异分析</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-clock"></i> 时段用水差异分析</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">分析不同时段用水规律及异常差异（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="analyzeBtn"><i class="fas fa-play"></i> 重新分析</button>
+                <button class="btn btn-outline" id="compareBtn"><i class="fas fa-balance-scale"></i> 对比分析</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <!-- 分析条件 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 200px);gap:8px;margin-bottom:16px;">
+            <label>分析日期<input type="date" id="analysisDate" class="form-control" value="2025-09-15"></label>
+            <label>对比基准<select id="baseline" class="form-control"><option value="yesterday">昨日同期</option><option value="lastweek" selected>上周同期</option><option value="lastmonth">上月同期</option></select></label>
+            <label>分析粒度<select id="granularity" class="form-control"><option value="hour" selected>小时级</option><option value="15min">15分钟级</option><option value="5min">5分钟级</option></select></label>
+            <label>区域范围<select id="areaScope" class="form-control"><option value="all" selected>全网分析</option><option value="A">A区</option><option value="B">B区</option><option value="C">C区</option></select></label>
+        </div>
+
+        <!-- 关键指标 -->
+        <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">峰值用水时段</div>
+                <div style="font-size:18px;font-weight:700;color:#dc2626;">18:00-19:00</div>
+                <div style="color:#dc2626;font-size:12px;">208,600 m³/h</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">低谷用水时段</div>
+                <div style="font-size:18px;font-weight:700;color:#10b981;">03:00-04:00</div>
+                <div style="color:#10b981;font-size:12px;">45,200 m³/h</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">峰谷差倍数</div>
+                <div style="font-size:18px;font-weight:700;color:#f59e0b;">4.6x</div>
+                <div style="color:#f59e0b;font-size:12px;">较上周+0.3x</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">最大差异时段</div>
+                <div style="font-size:18px;font-weight:700;color:#8b5cf6;">14:00-15:00</div>
+                <div style="color:#8b5cf6;font-size:12px;">vs基准+18.5%</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">异常时段数</div>
+                <div style="font-size:18px;font-weight:700;color:#ef4444;">3</div>
+                <div style="color:#ef4444;font-size:12px;">超阈值±15%</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+            <!-- 时段对比图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">24小时用水量对比分析</div>
+                <canvas id="periodChart" width="700" height="400" style="width:100%;height:400px;"></canvas>
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;">
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#3b82f6;margin-right:4px;"></div>当前数据</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#10b981;margin-right:4px;"></div>对比基准</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#dc2626;margin-right:4px;"></div>异常时段</span>
+                </div>
+            </div>
+
+            <!-- 差异分析明细 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">时段差异明细</div>
+                <div style="max-height:400px;overflow-y:auto;">
+                    <table class="table" style="width:100%;font-size:12px;">
+                        <thead>
+                            <tr><th>时段</th><th>差异率</th><th>状态</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>06:00</td>
+                                <td><span style="color:#10b981;">+2.3%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>07:00</td>
+                                <td><span style="color:#10b981;">+5.8%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>08:00</td>
+                                <td><span style="color:#f59e0b;">+12.4%</span></td>
+                                <td><span style="color:#f59e0b;">关注</span></td>
+                            </tr>
+                            <tr>
+                                <td>09:00</td>
+                                <td><span style="color:#10b981;">+7.2%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>10:00</td>
+                                <td><span style="color:#10b981;">+3.6%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>11:00</td>
+                                <td><span style="color:#10b981;">+1.9%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>12:00</td>
+                                <td><span style="color:#f59e0b;">+14.7%</span></td>
+                                <td><span style="color:#f59e0b;">关注</span></td>
+                            </tr>
+                            <tr>
+                                <td>13:00</td>
+                                <td><span style="color:#10b981;">+8.3%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>14:00</td>
+                                <td><span style="color:#dc2626;">+18.5%</span></td>
+                                <td><span style="color:#dc2626;">异常</span></td>
+                            </tr>
+                            <tr>
+                                <td>15:00</td>
+                                <td><span style="color:#f59e0b;">+11.2%</span></td>
+                                <td><span style="color:#f59e0b;">关注</span></td>
+                            </tr>
+                            <tr>
+                                <td>16:00</td>
+                                <td><span style="color:#10b981;">+6.8%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>17:00</td>
+                                <td><span style="color:#10b981;">+4.5%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>18:00</td>
+                                <td><span style="color:#dc2626;">+16.9%</span></td>
+                                <td><span style="color:#dc2626;">异常</span></td>
+                            </tr>
+                            <tr>
+                                <td>19:00</td>
+                                <td><span style="color:#f59e0b;">+13.2%</span></td>
+                                <td><span style="color:#f59e0b;">关注</span></td>
+                            </tr>
+                            <tr>
+                                <td>20:00</td>
+                                <td><span style="color:#10b981;">+9.1%</span></td>
+                                <td><span style="color:#10b981;">正常</span></td>
+                            </tr>
+                            <tr>
+                                <td>21:00</td>
+                                <td><span style="color:#dc2626;">+17.3%</span></td>
+                                <td><span style="color:#dc2626;">异常</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析结论 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">分析结论与建议</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div>
+                    <div style="color:#6b7280;font-size:14px;margin-bottom:8px;">📊 用水规律分析</div>
+                    <ul style="margin:0;padding-left:16px;line-height:1.6;font-size:13px;">
+                        <li>早高峰(7-9时)用水量较基准期增长8.5%</li>
+                        <li>午餐时段(12-13时)用水量明显升高</li>
+                        <li>晚高峰(18-21时)用水量持续偏高</li>
+                        <li>深夜低谷期(2-5时)用水量平稳</li>
+                    </ul>
+                </div>
+                <div>
+                    <div style="color:#6b7280;font-size:14px;margin-bottom:8px;">💡 调度建议</div>
+                    <ul style="margin:0;padding-left:16px;line-height:1.6;font-size:13px;">
+                        <li>14:00、18:00、21:00时段需加强供水保障</li>
+                        <li>建议在13:00前预调节管网压力</li>
+                        <li>异常时段可能与气温升高相关</li>
+                        <li>建议设置动态预警阈值为±15%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function drawPeriodChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var L = 60, R = 30, T = 30, B = 60;
+            ctx.clearRect(0, 0, W, H);
+
+            // 24小时数据
+            var currentData = [52, 48, 45, 46, 50, 68, 98, 142, 156, 134, 128, 168, 145, 189, 155, 149, 178, 209, 186, 162, 138, 115, 89, 67];
+            var baselineData = [50, 47, 44, 45, 49, 64, 93, 135, 142, 128, 125, 147, 132, 159, 140, 142, 161, 179, 159, 138, 118, 102, 83, 62];
+            
+            var maxVal = Math.max.apply(null, currentData.concat(baselineData));
+            var minVal = Math.min.apply(null, currentData.concat(baselineData));
+            var range = maxVal - minVal;
+            
+            var xStep = (W - L - R) / 23;
+
+            // 绘制网格线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for(var i = 0; i <= 8; i++){
+                var y = T + (H - T - B) * i / 8;
+                ctx.beginPath();
+                ctx.moveTo(L, y);
+                ctx.lineTo(W - R, y);
+                ctx.stroke();
+            }
+
+            // 垂直时间网格
+            for(var i = 0; i < 24; i += 4){
+                var x = L + i * xStep;
+                ctx.beginPath();
+                ctx.moveTo(x, T);
+                ctx.lineTo(x, H - B);
+                ctx.stroke();
+            }
+
+            // 标记异常时段背景
+            var anomalies = [8, 14, 18, 21]; // 异常时段
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+            anomalies.forEach(function(hour){
+                var x = L + hour * xStep - xStep/2;
+                ctx.fillRect(x, T, xStep, H - T - B);
+            });
+
+            // 绘制基准线
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for(var i = 0; i < 24; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (baselineData[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 绘制当前数据线
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for(var i = 0; i < 24; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (currentData[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 异常点标记
+            ctx.fillStyle = '#dc2626';
+            anomalies.forEach(function(hour){
+                var x = L + hour * xStep;
+                var y = T + (1 - (currentData[hour] - minVal) / range) * (H - T - B);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // Y轴标签
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            for(var i = 0; i <= 8; i++){
+                var val = Math.round(minVal + range * i / 8);
+                var y = H - B - (H - T - B) * i / 8;
+                ctx.fillText(val, L - 5, y + 3);
+            }
+
+            // X轴标签
+            ctx.textAlign = 'center';
+            for(var i = 0; i < 24; i += 2){
+                var x = L + i * xStep;
+                ctx.fillText(i + ':00', x, H - B + 15);
+            }
+
+            // 坐标轴标题
+            ctx.fillText('时间', W/2, H - 10);
+            ctx.save();
+            ctx.translate(15, H/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('用水量(千m³/h)', 0, 0);
+            ctx.restore();
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html', active: true},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('periodChart');
+            if(canvas) drawPeriodChart(canvas);
+            
+            document.getElementById('analyzeBtn').addEventListener('click', function(){ 
+                if(canvas) drawPeriodChart(canvas);
+                alert('重新分析完成，发现3个异常时段');
+            });
+            
+            document.getElementById('compareBtn').addEventListener('click', function(){
+                alert('对比分析：当前数据 vs ' + document.getElementById('baseline').options[document.getElementById('baseline').selectedIndex].text);
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '时段,当前值,基准值,差异率,状态\n06:00,68,64,+6.3%,正常\n07:00,98,93,+5.4%,正常\n08:00,142,135,+5.2%,正常\n09:00,156,142,+9.9%,正常\n10:00,134,128,+4.7%,正常\n11:00,128,125,+2.4%,正常\n12:00,168,147,+14.3%,关注\n13:00,145,132,+9.8%,正常\n14:00,189,159,+18.9%,异常\n15:00,155,140,+10.7%,正常\n16:00,149,142,+4.9%,正常\n17:00,178,161,+10.6%,正常\n18:00,209,179,+16.8%,异常\n19:00,186,159,+17.0%,异常\n20:00,162,138,+17.4%,异常\n21:00,138,118,+16.9%,异常';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='period_analysis.csv'; 
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

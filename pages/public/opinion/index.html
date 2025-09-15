@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 舆情预案</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将通过JavaScript生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-bullhorn"></i> 舆情预案</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">突发事件公众通告模板库与发布管理（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="createBtn"><i class="fas fa-plus"></i> 创建模板</button>
+                <button class="btn btn-outline" id="publishBtn"><i class="fas fa-broadcast-tower"></i> 发布通告</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <!-- 预案模板库 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="font-weight:600;margin-bottom:12px;">应急通告模板库</div>
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;">
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;cursor:pointer;" onclick="selectTemplate('planned_outage')">
+                    <div style="display:flex;align-items:center;margin-bottom:8px;">
+                        <i class="fas fa-calendar-times" style="color:#f59e0b;margin-right:8px;"></i>
+                        <span style="font-weight:600;">计划停水通知</span>
+                    </div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin:0;">定期维护、设备更换等计划性停水通知模板</p>
+                </div>
+                
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;cursor:pointer;" onclick="selectTemplate('emergency_repair')">
+                    <div style="display:flex;align-items:center;margin-bottom:8px;">
+                        <i class="fas fa-exclamation-triangle" style="color:#dc2626;margin-right:8px;"></i>
+                        <span style="font-weight:600;">紧急抢修通告</span>
+                    </div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin:0;">爆管、漏损等突发事件紧急抢修通告模板</p>
+                </div>
+                
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;cursor:pointer;" onclick="selectTemplate('quality_alert')">
+                    <div style="display:flex;align-items:center;margin-bottom:8px;">
+                        <i class="fas fa-tint" style="color:#3b82f6;margin-right:8px;"></i>
+                        <span style="font-weight:600;">水质异常通知</span>
+                    </div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin:0;">水质指标异常、需要停止使用等水质问题通知模板</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通告内容预览 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+            <div style="font-weight:600;margin-bottom:12px;">通告内容预览</div>
+            <div id="templatePreview" style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;background:#f9fafb;min-height:200px;">
+                <div style="text-align:center;color:#6b7280;padding:40px;">
+                    <i class="fas fa-file-alt" style="font-size:36px;margin-bottom:12px;"></i>
+                    <p style="margin:0;">请选择左侧模板查看内容</p>
+                </div>
+            </div>
+            
+            <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+                <button class="btn btn-outline" id="editBtn" disabled><i class="fas fa-edit"></i> 编辑模板</button>
+                <button class="btn btn-primary" id="useBtn" disabled><i class="fas fa-paper-plane"></i> 使用此模板</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模板内容
+        const templates = {
+            planned_outage: {
+                title: '计划停水通知',
+                content: `
+                    <h3 style="color:#f59e0b;margin-bottom:16px;"><i class="fas fa-calendar-times"></i> 计划停水通知</h3>
+                    <p style="margin-bottom:12px;"><strong>停水时间：</strong>2025年9月16日 23:00 - 2025年9月17日 06:00</p>
+                    <p style="margin-bottom:12px;"><strong>影响区域：</strong>A区、B区部分用户</p>
+                    <p style="margin-bottom:12px;"><strong>停水原因：</strong>主供水管道设备维护升级</p>
+                    <p style="margin-bottom:12px;"><strong>恢复时间：</strong>预计2025年9月17日 06:00前全面恢复供水</p>
+                    <p style="margin-bottom:16px;"><strong>注意事项：</strong></p>
+                    <ul style="margin-bottom:16px;padding-left:20px;">
+                        <li>请提前储备生活用水</li>
+                        <li>停水期间请关闭家中水龙头</li>
+                        <li>恢复供水初期可能有轻微浑浊，请放水澄清后使用</li>
+                    </ul>
+                    <p style="color:#6b7280;"><strong>咨询电话：</strong>400-xxx-xxxx &nbsp;&nbsp; <strong>发布时间：</strong>2025-09-15 15:00</p>
+                `
+            },
+            emergency_repair: {
+                title: '紧急抢修通告',
+                content: `
+                    <h3 style="color:#dc2626;margin-bottom:16px;"><i class="fas fa-exclamation-triangle"></i> 紧急抢修通告</h3>
+                    <p style="margin-bottom:12px;"><strong>事件时间：</strong>2025年9月15日 14:30</p>
+                    <p style="margin-bottom:12px;"><strong>事件地点：</strong>A区主干道供水管线</p>
+                    <p style="margin-bottom:12px;"><strong>事件性质：</strong>DN400主管爆管，正在紧急抢修</p>
+                    <p style="margin-bottom:12px;"><strong>影响范围：</strong>A区全部用户，B区部分用户</p>
+                    <p style="margin-bottom:12px;"><strong>抢修进度：</strong>抢修队伍已到现场，预计4小时内恢复供水</p>
+                    <p style="margin-bottom:16px;"><strong>临时措施：</strong></p>
+                    <ul style="margin-bottom:16px;padding-left:20px;">
+                        <li>已启动备用供水线路，部分区域有微弱供水</li>
+                        <li>在社区中心设置临时供水点</li>
+                        <li>抢修期间请节约用水</li>
+                    </ul>
+                    <p style="color:#6b7280;"><strong>抢修热线：</strong>400-xxx-xxxx &nbsp;&nbsp; <strong>发布时间：</strong>2025-09-15 15:30</p>
+                `
+            },
+            quality_alert: {
+                title: '水质异常通知',
+                content: `
+                    <h3 style="color:#3b82f6;margin-bottom:16px;"><i class="fas fa-tint"></i> 水质异常通知</h3>
+                    <p style="margin-bottom:12px;"><strong>检测时间：</strong>2025年9月15日 13:00</p>
+                    <p style="margin-bottom:12px;"><strong>异常区域：</strong>C区供水区域</p>
+                    <p style="margin-bottom:12px;"><strong>异常指标：</strong>余氯含量偏低，浊度轻微超标</p>
+                    <p style="margin-bottom:12px;"><strong>处理措施：</strong>已加强消毒处理，正在冲洗管网</p>
+                    <p style="margin-bottom:12px;"><strong>预计恢复：</strong>2025年9月15日 18:00前水质恢复正常</p>
+                    <p style="margin-bottom:16px;"><strong>用户须知：</strong></p>
+                    <ul style="margin-bottom:16px;padding-left:20px;">
+                        <li>暂时停止直接饮用，建议烧开后使用</li>
+                        <li>可正常用于洗涤、清洁等生活用水</li>
+                        <li>水质恢复正常后将另行通知</li>
+                        <li>如有身体不适请及时就医</li>
+                    </ul>
+                    <p style="color:#6b7280;"><strong>咨询电话：</strong>400-xxx-xxxx &nbsp;&nbsp; <strong>发布时间：</strong>2025-09-15 14:00</p>
+                `
+            }
+        };
+
+        function selectTemplate(templateId) {
+            const template = templates[templateId];
+            if (template) {
+                document.getElementById('templatePreview').innerHTML = template.content;
+                document.getElementById('editBtn').disabled = false;
+                document.getElementById('useBtn').disabled = false;
+                
+                // 高亮选中的模板
+                document.querySelectorAll('[onclick^="selectTemplate"]').forEach(el => {
+                    el.style.borderColor = 'var(--border-color)';
+                    el.style.backgroundColor = 'var(--bg-primary)';
+                });
+                event.target.closest('[onclick^="selectTemplate"]').style.borderColor = '#3b82f6';
+                event.target.closest('[onclick^="selectTemplate"]').style.backgroundColor = '#eff6ff';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html', active: true},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+                
+                console.log('Public opinion page initialized');
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 事件监听
+            document.getElementById('createBtn').addEventListener('click', function(){ 
+                alert('创建自定义模板功能开发中');
+            });
+            
+            document.getElementById('publishBtn').addEventListener('click', function(){ 
+                alert('通告发布功能：将通过短信、网站、公告栏等渠道发布');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                alert('导出模板功能开发中');
+            });
+            
+            document.getElementById('editBtn').addEventListener('click', function(){ 
+                alert('编辑模板功能开发中');
+            });
+            
+            document.getElementById('useBtn').addEventListener('click', function(){ 
+                alert('已选择模板，进入发布流程');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -3,39 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>模型漏损定位</title>
-    <link rel="stylesheet" href="../../../components/common/layout.css">
+    <title>智慧管网运维平台 - 模型漏损定位</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../../../components/common/TooltipWrapper.js"></script>
-    <script src="../../../components/common/Breadcrumb.js"></script>
-    <script src="../../../components/common/ChartCard.js"></script>
-    <script src="../../../components/common/Layout.js"></script>
-    <script src="../../../modules/utils/rbac.js"></script>
-    <script src="../../../modules/utils/router.js"></script>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-map-marker-alt"></i> 模型漏损定位</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">基于水力模型的漏损区域智能定位分析（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="analyzeBtn"><i class="fas fa-search"></i> 开始分析</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-download"></i> 导出报告</button>
+            </div>
+        </div>
+
+        <!-- 分析参数 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 200px);gap:8px;margin-bottom:16px;">
+            <label>分析时段<select id="timeRange" class="form-control"><option value="24h">近24小时</option><option value="7d">近7天</option></select></label>
+            <label>分析区域<select id="areaSelect" class="form-control"><option value="ALL">全网分析</option><option value="A">A区</option><option value="B">B区</option></select></label>
+            <label>敏感度<select id="sensitivity" class="form-control"><option value="high">高敏感</option><option value="medium" selected>中等</option><option value="low">低敏感</option></select></label>
+            <label>定位精度<select id="precision" class="form-control"><option value="pipe">管段级</option><option value="node" selected>节点级</option></select></label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;">
+            <!-- 疑似漏损区域地图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">疑似漏损区域定位图</div>
+                <div style="width:100%;height:400px;background:#f3f4f6;border-radius:8px;position:relative;overflow:hidden;">
+                    <!-- 模拟地图区域 -->
+                    <div style="position:absolute;top:20px;left:20px;width:80px;height:60px;background:#dcfce7;border:2px solid #16a34a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;">A区<br/>正常</div>
+                    <div style="position:absolute;top:100px;left:120px;width:80px;height:60px;background:#fef3c7;border:2px solid #d97706;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;">B区<br/>轻微异常</div>
+                    <div style="position:absolute;top:180px;left:50px;width:80px;height:60px;background:#fee2e2;border:2px solid #dc2626;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;">C区<br/>疑似漏损</div>
+                    <div style="position:absolute;top:260px;left:150px;width:80px;height:60px;background:#dbeafe;border:2px solid #2563eb;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;">D区<br/>正常</div>
+                    
+                    <!-- 漏损点标记 -->
+                    <div style="position:absolute;top:200px;left:90px;width:12px;height:12px;background:#dc2626;border-radius:50%;border:2px solid #fff;"></div>
+                    <div style="position:absolute;top:140px;left:140px;width:8px;height:8px;background:#f59e0b;border-radius:50%;border:2px solid #fff;"></div>
+                </div>
+                
+                <!-- 图例 -->
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;">
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:50%;margin-right:4px;"></div>正常</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:50%;margin-right:4px;"></div>异常</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:50%;margin-right:4px;"></div>疑似漏损</span>
+                </div>
+            </div>
+
+            <!-- 定位结果列表 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">漏损定位结果</div>
+                <div style="max-height:400px;overflow-y:auto;">
+                    <table class="table" style="width:100%;font-size:13px;">
+                        <thead>
+                            <tr><th>位置</th><th>可信度</th><th>状态</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>C区节点C-15</td>
+                                <td><span style="color:#dc2626;">92%</span></td>
+                                <td><button class="btn btn-sm btn-danger">派发</button></td>
+                            </tr>
+                            <tr>
+                                <td>B区管段B-08</td>
+                                <td><span style="color:#f59e0b;">78%</span></td>
+                                <td><button class="btn btn-sm btn-outline">关注</button></td>
+                            </tr>
+                            <tr>
+                                <td>C区节点C-22</td>
+                                <td><span style="color:#f59e0b;">65%</span></td>
+                                <td><button class="btn btn-sm btn-outline">关注</button></td>
+                            </tr>
+                            <tr>
+                                <td>A区管段A-12</td>
+                                <td><span style="color:#6b7280;">45%</span></td>
+                                <td><span style="color:#6b7280;">正常</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析详情 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">分析详情报告</div>
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;">
+                <div>
+                    <div style="color:#6b7280;font-size:12px;">分析完成时间</div>
+                    <div style="font-weight:600;">2025-09-15 15:45:30</div>
+                </div>
+                <div>
+                    <div style="color:#6b7280;font-size:12px;">分析节点数量</div>
+                    <div style="font-weight:600;">1,247 个节点</div>
+                </div>
+                <div>
+                    <div style="color:#6b7280;font-size:12px;">疑似漏损点</div>
+                    <div style="font-weight:600;">3 个位置</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        (function(){
-            var app = document.getElementById('app');
-            var layout = new AppLayout(app);
-            Router.init(layout).then(function(){
-                layout.setPath('/loss/localize');
-                var host = document.createElement('div');
-                var title = document.createElement('h2');
-                title.textContent = '模型漏损定位';
-                var desc = document.createElement('div');
-                desc.textContent = '对比模型与实测，推断疑似漏损区域（占位页面）';
-                host.appendChild(title);
-                host.appendChild(desc);
-                var chartHolder = document.createElement('div');
-                host.appendChild(chartHolder);
-                layout.mountContent(host);
-                var cc = new ChartCard(chartHolder, { title: '疑似漏损热力分布', tooltip: '根据残差与压力异常热力渲染', height: 360 });
-                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">地图/图表占位</div>'; });
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html', active: true},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            document.getElementById('analyzeBtn').addEventListener('click', function(){ 
+                alert('重新分析完成，发现新的疑似漏损点');
             });
-        })();
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                alert('导出漏损定位分析报告');
+            });
+        });
     </script>
 </body>
-<\/html>
-
-
+</html>

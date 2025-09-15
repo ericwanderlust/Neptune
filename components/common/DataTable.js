@@ -123,6 +123,18 @@
 		update();
 	};
 
+	// 更新数据并重新渲染
+	DataTable.prototype.update = function(newRows){
+		this.rows = Array.isArray(newRows) ? newRows : [];
+		this.page = 1;
+		this._render();
+	};
+
+	// 获取当前筛选后的数据
+	DataTable.prototype.getRows = function(){
+		return this._filteredRows();
+	};
+
 	global.DataTable = DataTable;
 })(window);
 

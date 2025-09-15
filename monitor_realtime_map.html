@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧管网管理系统 - 实时监控</title>
+    <title>智慧管网运维平台 - 实时监控</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js"></script>
@@ -1247,7 +1247,7 @@
         <div class="nav-left">
             <div class="system-title">
                 <i class="fas fa-tint" style="color: #4A90B8; margin-right: 8px;"></i>
-                智慧管网管理系统 - 实时监控
+                智慧管网运维平台 - 实时监控
             </div>
         </div>
         
@@ -1467,7 +1467,7 @@
                     </div>
                     <div class="menu-item" onclick="filterByAlarm('warning')">
                         <i class="fas fa-exclamation-circle" style="color: #ffa502;"></i>
-                        <span>预警 (<span id="warning-count">0</span>)</span>
+                        <span>风险 (<span id="warning-count">0</span>)</span>
                     </div>
                     <div class="menu-item" onclick="filterByAlarm('maintenance')">
                         <i class="fas fa-tools" style="color: #747d8c;"></i>
@@ -3811,7 +3811,7 @@ proj4.defs('EPSG:2326',
         function getStatusName(status) {
             const statusMap = {
                 'normal': '正常',
-                'warning': '预警',
+                'warning': '风险',
                 'critical': '严重故障',
                 'maintenance': '维护中',
                 'low_pressure': '低压报警',

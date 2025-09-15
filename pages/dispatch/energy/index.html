@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 能耗分析</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-bolt"></i> 能耗分析</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">供水系统能耗监测与优化分析（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="optimizeBtn"><i class="fas fa-leaf"></i> 节能优化</button>
+                <button class="btn btn-outline" id="reportBtn"><i class="fas fa-chart-pie"></i> 能耗报告</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <!-- 分析配置 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 200px);gap:8px;margin-bottom:16px;">
+            <label>统计周期<select id="period" class="form-control"><option value="day">日统计</option><option value="week" selected>周统计</option><option value="month">月统计</option></select></label>
+            <label>能耗类型<select id="energyType" class="form-control"><option value="all" selected>全部</option><option value="pump">水泵</option><option value="treatment">处理</option><option value="other">其他</option></select></label>
+            <label>对比基准<select id="baseline" class="form-control"><option value="last_period" selected>上期对比</option><option value="target">目标对比</option><option value="industry">行业对比</option></select></label>
+            <label>分析维度<select id="dimension" class="form-control"><option value="total" selected>总量分析</option><option value="unit">单耗分析</option><option value="efficiency">效率分析</option></select></label>
+        </div>
+
+        <!-- 能耗概览 -->
+        <div style="display:grid;grid-template-columns:repeat(6, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">总能耗</div>
+                <div style="font-size:18px;font-weight:700;color:#dc2626;">28,560 kWh</div>
+                <div style="color:#f59e0b;font-size:12px;"><i class="fas fa-arrow-up"></i> +3.2% vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">单位能耗</div>
+                <div style="font-size:18px;font-weight:700;color:#3b82f6;">0.285 kWh/m³</div>
+                <div style="color:#10b981;font-size:12px;"><i class="fas fa-arrow-down"></i> -1.8% vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">水泵能效</div>
+                <div style="font-size:18px;font-weight:700;color:#10b981;">76.5%</div>
+                <div style="color:#10b981;font-size:12px;"><i class="fas fa-arrow-up"></i> +2.1% vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">峰谷差价</div>
+                <div style="font-size:18px;font-weight:700;color:#f59e0b;">¥2,840</div>
+                <div style="color:#10b981;font-size:12px;">节省电费</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">碳排放</div>
+                <div style="font-size:18px;font-weight:700;color:#6366f1;">18.2 t CO₂</div>
+                <div style="color:#f59e0b;font-size:12px;"><i class="fas fa-arrow-up"></i> +2.5% vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">节能潜力</div>
+                <div style="font-size:18px;font-weight:700;color:#10b981;">12.8%</div>
+                <div style="color:#10b981;font-size:12px;">可优化空间</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;">
+            <!-- 能耗趋势图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">近7天能耗趋势</div>
+                <canvas id="energyChart" width="600" height="350" style="width:100%;height:350px;"></canvas>
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;">
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#3b82f6;margin-right:4px;"></div>总能耗</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#10b981;margin-right:4px;"></div>水泵能耗</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#f59e0b;margin-right:4px;"></div>处理能耗</span>
+                </div>
+            </div>
+
+            <!-- 设备能耗排行 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">设备能耗排行</div>
+                <div style="max-height:350px;overflow-y:auto;">
+                    <table class="table" style="width:100%;font-size:13px;">
+                        <thead>
+                            <tr><th>设备</th><th>能耗(kWh)</th><th>占比</th><th>效率</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>主泵站A</td>
+                                <td><span style="color:#dc2626;">8,520</span></td>
+                                <td>29.8%</td>
+                                <td><span style="color:#10b981;">78%</span></td>
+                            </tr>
+                            <tr>
+                                <td>增压泵站B</td>
+                                <td><span style="color:#dc2626;">6,240</span></td>
+                                <td>21.8%</td>
+                                <td><span style="color:#f59e0b;">72%</span></td>
+                            </tr>
+                            <tr>
+                                <td>处理设备C</td>
+                                <td><span style="color:#f59e0b;">4,180</span></td>
+                                <td>14.6%</td>
+                                <td><span style="color:#10b981;">80%</span></td>
+                            </tr>
+                            <tr>
+                                <td>供水泵站D</td>
+                                <td><span style="color:#f59e0b;">3,920</span></td>
+                                <td>13.7%</td>
+                                <td><span style="color:#f59e0b;">74%</span></td>
+                            </tr>
+                            <tr>
+                                <td>加压泵站E</td>
+                                <td><span style="color:#3b82f6;">2,840</span></td>
+                                <td>9.9%</td>
+                                <td><span style="color:#10b981;">77%</span></td>
+                            </tr>
+                            <tr>
+                                <td>辅助设备F</td>
+                                <td><span style="color:#3b82f6;">1,680</span></td>
+                                <td>5.9%</td>
+                                <td><span style="color:#6b7280;">65%</span></td>
+                            </tr>
+                            <tr>
+                                <td>监控系统G</td>
+                                <td><span style="color:#10b981;">920</span></td>
+                                <td>3.2%</td>
+                                <td><span style="color:#10b981;">85%</span></td>
+                            </tr>
+                            <tr>
+                                <td>照明通风H</td>
+                                <td><span style="color:#10b981;">260</span></td>
+                                <td>0.9%</td>
+                                <td><span style="color:#6b7280;">60%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 节能建议和目标 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">节能优化建议</div>
+                <div style="font-size:13px;line-height:1.6;">
+                    <div style="margin-bottom:12px;padding:8px;background:#fef3c7;border-radius:6px;">
+                        <div style="font-weight:600;color:#d97706;">🔧 设备优化建议</div>
+                        <p style="margin:4px 0;">• 增压泵站B效率偏低(72%)，建议检修维护</p>
+                        <p style="margin:4px 0;">• 辅助设备F运行效率较差，考虑更新换代</p>
+                        <p style="margin:4px 0;">• 照明通风H可采用节能设备替换</p>
+                    </div>
+                    
+                    <div style="margin-bottom:12px;padding:8px;background:#ecfdf5;border-radius:6px;">
+                        <div style="font-weight:600;color:#059669;">⚡ 调度优化建议</div>
+                        <p style="margin:4px 0;">• 合理利用峰谷电价，调整高耗能设备运行时间</p>
+                        <p style="margin:4px 0;">• 优化水泵组合运行方式，提升整体效率</p>
+                        <p style="margin:4px 0;">• 实施变频调速，根据需求动态调节功率</p>
+                    </div>
+                    
+                    <div style="padding:8px;background:#eff6ff;border-radius:6px;">
+                        <div style="font-weight:600;color:#2563eb;">💰 经济效益预估</div>
+                        <p style="margin:4px 0;">• 预计月节电量：3,650 kWh</p>
+                        <p style="margin:4px 0;">• 预计月节省电费：¥2,920</p>
+                        <p style="margin:4px 0;">• 年度投资回收期：8个月</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">能耗目标监控</div>
+                <div style="space-y:12px;">
+                    <div style="margin-bottom:16px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>月度能耗目标</span>
+                            <span>120,000 kWh</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>当前完成度</span>
+                            <span style="color:#f59e0b;">28,560 / 120,000 (23.8%)</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:8px;">
+                            <div style="width:23.8%;background:#f59e0b;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:16px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>单耗目标</span>
+                            <span>≤ 0.28 kWh/m³</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>当前单耗</span>
+                            <span style="color:#f59e0b;">0.285 kWh/m³</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:8px;">
+                            <div style="width:98.2%;background:#f59e0b;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:16px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>设备效率目标</span>
+                            <span>≥ 78%</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                            <span>当前效率</span>
+                            <span style="color:#10b981;">76.5%</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:8px;">
+                            <div style="width:98.1%;background:#10b981;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:12px;color:#6b7280;margin-top:16px;">
+                        <p style="margin:2px 0;">📊 本月进度：第2周，预期进度25%</p>
+                        <p style="margin:2px 0;">🎯 完成预测：按当前趋势可达成月度目标</p>
+                        <p style="margin:2px 0;">⚠️ 风险提醒：单耗略超目标，需加强节能措施</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function drawEnergyChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var L = 50, R = 30, T = 30, B = 50;
+            ctx.clearRect(0, 0, W, H);
+
+            // 7天数据
+            var days = ['9/9', '9/10', '9/11', '9/12', '9/13', '9/14', '9/15'];
+            var totalEnergy = [26800, 27200, 25600, 28900, 27800, 29200, 28560];
+            var pumpEnergy = [18600, 19100, 17800, 20300, 19600, 20800, 20200];
+            var treatmentEnergy = [5200, 5300, 4900, 5800, 5400, 5600, 5480];
+            
+            var maxVal = Math.max.apply(null, totalEnergy);
+            var minVal = Math.min.apply(null, treatmentEnergy);
+            var range = maxVal - minVal;
+            
+            var xStep = (W - L - R) / (days.length - 1);
+
+            // 绘制网格线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for(var i = 0; i <= 6; i++){
+                var y = T + (H - T - B) * i / 6;
+                ctx.beginPath();
+                ctx.moveTo(L, y);
+                ctx.lineTo(W - R, y);
+                ctx.stroke();
+            }
+
+            // 绘制处理能耗面积
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+            ctx.beginPath();
+            for(var i = 0; i < days.length; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (treatmentEnergy[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.lineTo(L + (days.length - 1) * xStep, H - B);
+            ctx.lineTo(L, H - B);
+            ctx.closePath();
+            ctx.fill();
+
+            // 绘制水泵能耗面积
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+            ctx.beginPath();
+            for(var i = 0; i < days.length; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (pumpEnergy[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            var baseY = T + (1 - (treatmentEnergy[days.length - 1] - minVal) / range) * (H - T - B);
+            for(var i = days.length - 1; i >= 0; i--){
+                var x = L + i * xStep;
+                var y = T + (1 - (treatmentEnergy[i] - minVal) / range) * (H - T - B);
+                ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // 绘制总能耗线
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for(var i = 0; i < days.length; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (totalEnergy[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 绘制数据点
+            ctx.fillStyle = '#3b82f6';
+            for(var i = 0; i < days.length; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (totalEnergy[i] - minVal) / range) * (H - T - B);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            // Y轴标签
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            for(var i = 0; i <= 6; i++){
+                var val = Math.round((minVal + range * i / 6) / 1000);
+                var y = H - B - (H - T - B) * i / 6;
+                ctx.fillText(val + 'k', L - 5, y + 3);
+            }
+
+            // X轴标签
+            ctx.textAlign = 'center';
+            for(var i = 0; i < days.length; i++){
+                var x = L + i * xStep;
+                ctx.fillText(days[i], x, H - B + 15);
+            }
+
+            // 坐标轴标题
+            ctx.fillText('日期', W/2, H - 10);
+            ctx.save();
+            ctx.translate(15, H/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('能耗 (kWh)', 0, 0);
+            ctx.restore();
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html', active: true},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('energyChart');
+            if(canvas) drawEnergyChart(canvas);
+            
+            document.getElementById('optimizeBtn').addEventListener('click', function(){ 
+                alert('节能优化方案已生成：\n• 预计月节电量：3,650 kWh\n• 预计月节省电费：¥2,920\n• 投资回收期：8个月');
+            });
+            
+            document.getElementById('reportBtn').addEventListener('click', function(){
+                alert('能耗分析报告生成中，包含详细的设备效率分析和节能建议');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '设备,能耗kWh,占比%,效率%,状态,建议措施\n主泵站A,8520,29.8,78,良好,维持运行\n增压泵站B,6240,21.8,72,需优化,检修维护\n处理设备C,4180,14.6,80,优秀,继续保持\n供水泵站D,3920,13.7,74,一般,效率提升\n加压泵站E,2840,9.9,77,良好,维持运行\n辅助设备F,1680,5.9,65,较差,考虑更换\n监控系统G,920,3.2,85,优秀,继续保持\n照明通风H,260,0.9,60,较差,节能改造';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='energy_analysis.csv'; 
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

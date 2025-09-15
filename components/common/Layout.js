@@ -51,7 +51,18 @@
 			var base = section.basePath || (section.children && section.children[0] && (section.children[0].path.split('/').slice(0,2).join('/')));
 			a.href = base || '#';
 			a.textContent = section.name;
-			a.className = 'topmenu-link';
+			var isActive = false;
+			if (this.currentPath){
+				if (base && (this.currentPath === base || this.currentPath.indexOf(base + '/') === 0)) {
+					isActive = true;
+				} else if (section.children && section.children.length){
+					for (var c=0;c<section.children.length;c++){
+						var cp = section.children[c].path;
+						if (this.currentPath === cp || this.currentPath.indexOf(cp + '/') === 0){ isActive = true; break; }
+					}
+				}
+			}
+			a.className = 'topmenu-link' + (isActive ? ' active' : '');
 			if (base) a.setAttribute('data-basepath', base);
 			(function(path){
 				a.addEventListener('click', function(e){
@@ -82,9 +93,11 @@
 	Layout.prototype._findSectionByPath = function(path){
 		for (var i=0;i<this.menu.length;i++){
 			var s = this.menu[i];
+			if (s.basePath && (path === s.basePath || path.indexOf(s.basePath + '/') === 0)) return s;
 			if (!s.children) continue;
 			for (var j=0;j<s.children.length;j++){
-				if (s.children[j].path === path) return s;
+				var p = s.children[j].path;
+				if (p === path || path.indexOf(p + '/') === 0) return s;
 			}
 		}
 		return null;
@@ -120,6 +133,7 @@
 
 	Layout.prototype.setPath = function(path){
 		this.currentPath = path;
+		this._renderTopbar();
 		this._renderSidebar();
 		this._renderBreadcrumb();
 	};

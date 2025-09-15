@@ -2,7 +2,18 @@
 	var router = { routes: [], menu: [], layout: null };
 
 	function loadJSON(url){
-		return fetch(url, { cache: 'no-store' }).then(function(r){ return r.json(); });
+		var rel = (url || '').replace(/^\//, '');
+		var candidates = ['/' + rel, rel, '../' + rel, '../../' + rel, '../../../' + rel, '../../../../' + rel];
+		var index = 0;
+		function attempt(){
+			if (index >= candidates.length) return Promise.reject(new Error('Failed to load ' + url));
+			var path = candidates[index++];
+			return fetch(path, { cache: 'no-store' }).then(function(resp){
+				if (!resp.ok) throw new Error('HTTP ' + resp.status);
+				return resp.json();
+			}).catch(function(){ return attempt(); });
+		}
+		return attempt();
 	}
 
 	function findSection(menu, path){

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 压力与漏损分析</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer"></div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-compress-arrows-alt"></i> 压力与漏损分析</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">管网压力变化与漏损相关性分析（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="correlateBtn"><i class="fas fa-link"></i> 相关性分析</button>
+                <button class="btn btn-outline" id="optimizeBtn"><i class="fas fa-wrench"></i> 压力优化</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出</button>
+            </div>
+        </div>
+
+        <!-- 分析配置 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 200px);gap:8px;margin-bottom:16px;">
+            <label>分析时段<select id="timeRange" class="form-control"><option value="24h">近24小时</option><option value="7d" selected>近7天</option><option value="30d">近30天</option></select></label>
+            <label>压力阈值<input type="number" id="pressureThreshold" class="form-control" value="0.35" step="0.01" min="0" max="1"></label>
+            <label>漏损阈值<input type="number" id="leakThreshold" class="form-control" value="15" step="1" min="0" max="100"></label>
+            <label>分析区域<select id="analysisArea" class="form-control"><option value="all" selected>全网</option><option value="A">A区</option><option value="B">B区</option><option value="C">C区</option></select></label>
+        </div>
+
+        <!-- 关键指标 -->
+        <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">相关系数</div>
+                <div style="font-size:22px;font-weight:700;color:#dc2626;">-0.78</div>
+                <div style="color:#dc2626;font-size:12px;">强负相关</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">平均压力</div>
+                <div style="font-size:22px;font-weight:700;color:#3b82f6;">0.42 MPa</div>
+                <div style="color:#10b981;font-size:12px;">+0.03 vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">漏损率</div>
+                <div style="font-size:22px;font-weight:700;color:#f59e0b;">12.5%</div>
+                <div style="color:#dc2626;font-size:12px;">-1.2% vs上周</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">异常压力点</div>
+                <div style="font-size:22px;font-weight:700;color:#ef4444;">8</div>
+                <div style="color:#ef4444;font-size:12px;">需要关注</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">优化潜力</div>
+                <div style="font-size:22px;font-weight:700;color:#10b981;">18.3%</div>
+                <div style="color:#10b981;font-size:12px;">漏损可减少</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;">
+            <!-- 压力-漏损相关图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">压力与漏损相关性分析</div>
+                <canvas id="correlationChart" width="600" height="400" style="width:100%;height:400px;"></canvas>
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;">
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:50%;margin-right:4px;"></div>监测点</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:50%;margin-right:4px;"></div>异常点</span>
+                    <span><div style="display:inline-block;width:12px;height:1px;background:#10b981;margin-right:4px;"></div>回归线</span>
+                </div>
+            </div>
+
+            <!-- 异常监测点列表 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">异常监测点</div>
+                <div style="max-height:400px;overflow-y:auto;">
+                    <table class="table" style="width:100%;font-size:13px;">
+                        <thead>
+                            <tr><th>监测点</th><th>压力</th><th>漏损率</th><th>异常程度</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>MP-A-015</td>
+                                <td><span style="color:#dc2626;">0.28</span></td>
+                                <td><span style="color:#dc2626;">28.5%</span></td>
+                                <td><span style="color:#dc2626;">严重</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-B-008</td>
+                                <td><span style="color:#f59e0b;">0.32</span></td>
+                                <td><span style="color:#f59e0b;">19.2%</span></td>
+                                <td><span style="color:#f59e0b;">中等</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-C-023</td>
+                                <td><span style="color:#dc2626;">0.25</span></td>
+                                <td><span style="color:#dc2626;">31.8%</span></td>
+                                <td><span style="color:#dc2626;">严重</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-A-034</td>
+                                <td><span style="color:#f59e0b;">0.33</span></td>
+                                <td><span style="color:#f59e0b;">17.6%</span></td>
+                                <td><span style="color:#f59e0b;">中等</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-D-012</td>
+                                <td><span style="color:#dc2626;">0.27</span></td>
+                                <td><span style="color:#dc2626;">25.4%</span></td>
+                                <td><span style="color:#dc2626;">严重</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-B-019</td>
+                                <td><span style="color:#f59e0b;">0.34</span></td>
+                                <td><span style="color:#f59e0b;">16.3%</span></td>
+                                <td><span style="color:#f59e0b;">中等</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-C-007</td>
+                                <td><span style="color:#f59e0b;">0.31</span></td>
+                                <td><span style="color:#f59e0b;">20.1%</span></td>
+                                <td><span style="color:#f59e0b;">中等</span></td>
+                            </tr>
+                            <tr>
+                                <td>MP-A-028</td>
+                                <td><span style="color:#f59e0b;">0.33</span></td>
+                                <td><span style="color:#f59e0b;">18.9%</span></td>
+                                <td><span style="color:#f59e0b;">中等</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 压力优化建议 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">压力优化方案</div>
+                <table class="table" style="width:100%;font-size:13px;">
+                    <thead>
+                        <tr><th>区域</th><th>当前压力</th><th>建议压力</th><th>预期效果</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>A区</td>
+                            <td>0.42 MPa</td>
+                            <td><span style="color:#10b981;">0.38 MPa</span></td>
+                            <td>漏损率-5.2%</td>
+                        </tr>
+                        <tr>
+                            <td>B区</td>
+                            <td>0.45 MPa</td>
+                            <td><span style="color:#10b981;">0.40 MPa</span></td>
+                            <td>漏损率-6.8%</td>
+                        </tr>
+                        <tr>
+                            <td>C区</td>
+                            <td>0.39 MPa</td>
+                            <td><span style="color:#10b981;">0.36 MPa</span></td>
+                            <td>漏损率-3.5%</td>
+                        </tr>
+                        <tr>
+                            <td>D区</td>
+                            <td>0.41 MPa</td>
+                            <td><span style="color:#10b981;">0.37 MPa</span></td>
+                            <td>漏损率-4.8%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">分析结论</div>
+                <div style="font-size:13px;line-height:1.6;">
+                    <p style="margin-bottom:8px;"><strong>🔍 相关性分析：</strong></p>
+                    <p style="margin-bottom:8px;">• 压力与漏损率呈强负相关(-0.78)</p>
+                    <p style="margin-bottom:8px;">• 压力每降低0.05MPa，漏损率平均减少3.2%</p>
+                    <p style="margin-bottom:8px;">• 最优压力区间为0.35-0.40MPa</p>
+                    
+                    <p style="margin-bottom:8px;margin-top:12px;"><strong>💡 优化建议：</strong></p>
+                    <p style="margin-bottom:8px;">• 建议降低A、B区供水压力</p>
+                    <p style="margin-bottom:8px;">• 重点关注8个异常监测点</p>
+                    <p style="margin-bottom:8px;">• 实施分时段压力调节策略</p>
+                    <p style="margin-bottom:8px;">• 预计可减少18.3%漏损量</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function drawCorrelationChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var L = 60, R = 30, T = 30, B = 60;
+            ctx.clearRect(0, 0, W, H);
+
+            // 模拟监测点数据 [压力MPa, 漏损率%]
+            var normalPoints = [
+                [0.42, 8.5], [0.45, 6.2], [0.38, 12.3], [0.41, 9.8], [0.39, 11.5],
+                [0.43, 7.9], [0.40, 10.2], [0.44, 7.1], [0.37, 13.8], [0.46, 5.8],
+                [0.35, 15.2], [0.48, 4.9], [0.36, 14.5], [0.47, 5.5], [0.38, 12.8]
+            ];
+            
+            var anomalyPoints = [
+                [0.28, 28.5], [0.32, 19.2], [0.25, 31.8], [0.33, 17.6],
+                [0.27, 25.4], [0.34, 16.3], [0.31, 20.1], [0.33, 18.9]
+            ];
+            
+            var allPoints = normalPoints.concat(anomalyPoints);
+            var pressures = allPoints.map(p => p[0]);
+            var leakRates = allPoints.map(p => p[1]);
+            
+            var minPressure = Math.min.apply(null, pressures) - 0.02;
+            var maxPressure = Math.max.apply(null, pressures) + 0.02;
+            var minLeak = Math.min.apply(null, leakRates) - 2;
+            var maxLeak = Math.max.apply(null, leakRates) + 2;
+            
+            var pressureRange = maxPressure - minPressure;
+            var leakRange = maxLeak - minLeak;
+
+            // 绘制网格线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for(var i = 0; i <= 8; i++){
+                var y = T + (H - T - B) * i / 8;
+                ctx.beginPath();
+                ctx.moveTo(L, y);
+                ctx.lineTo(W - R, y);
+                ctx.stroke();
+                
+                var x = L + (W - L - R) * i / 8;
+                ctx.beginPath();
+                ctx.moveTo(x, T);
+                ctx.lineTo(x, H - B);
+                ctx.stroke();
+            }
+
+            // 绘制回归线
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            var x1 = L;
+            var y1 = T + (1 - (35 - minLeak) / leakRange) * (H - T - B);
+            var x2 = W - R;
+            var y2 = T + (1 - (2 - minLeak) / leakRange) * (H - T - B);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // 绘制正常监测点
+            ctx.fillStyle = '#3b82f6';
+            normalPoints.forEach(function(point){
+                var x = L + ((point[0] - minPressure) / pressureRange) * (W - L - R);
+                var y = T + (1 - (point[1] - minLeak) / leakRange) * (H - T - B);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // 绘制异常监测点
+            ctx.fillStyle = '#dc2626';
+            anomalyPoints.forEach(function(point){
+                var x = L + ((point[0] - minPressure) / pressureRange) * (W - L - R);
+                var y = T + (1 - (point[1] - minLeak) / leakRange) * (H - T - B);
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // 坐标轴标签
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            for(var i = 0; i <= 8; i++){
+                var val = (minLeak + leakRange * i / 8).toFixed(1);
+                var y = H - B - (H - T - B) * i / 8;
+                ctx.fillText(val + '%', L - 5, y + 3);
+            }
+
+            ctx.textAlign = 'center';
+            for(var i = 0; i <= 8; i++){
+                var val = (minPressure + pressureRange * i / 8).toFixed(2);
+                var x = L + (W - L - R) * i / 8;
+                ctx.fillText(val, x, H - B + 15);
+            }
+
+            // 坐标轴标题
+            ctx.fillText('压力 (MPa)', W/2, H - 10);
+            ctx.save();
+            ctx.translate(15, H/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('漏损率 (%)', 0, 0);
+            ctx.restore();
+
+            // 相关系数文字
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('r = -0.78 (强负相关)', L + 20, T + 30);
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html', active: true},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('correlationChart');
+            if(canvas) drawCorrelationChart(canvas);
+            
+            document.getElementById('correlateBtn').addEventListener('click', function(){ 
+                if(canvas) drawCorrelationChart(canvas);
+                alert('相关性分析完成，相关系数：-0.78（强负相关）');
+            });
+            
+            document.getElementById('optimizeBtn').addEventListener('click', function(){
+                alert('压力优化方案已生成，预计可减少18.3%的漏损量');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '监测点,压力MPa,漏损率%,异常程度,建议措施\nMP-A-015,0.28,28.5,严重,紧急调压\nMP-B-008,0.32,19.2,中等,重点监控\nMP-C-023,0.25,31.8,严重,紧急调压\nMP-A-034,0.33,17.6,中等,重点监控\nMP-D-012,0.27,25.4,严重,紧急调压\nMP-B-019,0.34,16.3,中等,重点监控\nMP-C-007,0.31,20.1,中等,重点监控\nMP-A-028,0.33,18.9,中等,重点监控';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='pressure_leak_analysis.csv'; 
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

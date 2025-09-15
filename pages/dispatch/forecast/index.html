@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧管网运维平台 - 水量预测</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
+</head>
+<body>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info"></div>
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-chart-line"></i> 水量预测</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">基于历史数据和机器学习的用水量智能预测（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="predictBtn"><i class="fas fa-magic"></i> 重新预测</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出预测</button>
+            </div>
+        </div>
+
+        <!-- 预测参数设置 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 200px);gap:8px;margin-bottom:16px;">
+            <label>预测范围<select id="forecastRange" class="form-control"><option value="7d">未来7天</option><option value="30d" selected>未来30天</option><option value="90d">未来90天</option></select></label>
+            <label>预测模型<select id="modelType" class="form-control"><option value="arima">ARIMA模型</option><option value="lstm" selected>LSTM神经网络</option><option value="ensemble">集成模型</option></select></label>
+            <label>历史周期<select id="historyPeriod" class="form-control"><option value="1y" selected>过去1年</option><option value="2y">过去2年</option><option value="3y">过去3年</option></select></label>
+            <label>置信度<select id="confidence" class="form-control"><option value="0.8">80%</option><option value="0.9" selected>90%</option><option value="0.95">95%</option></select></label>
+        </div>
+
+        <!-- 预测结果概览 -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">今日预测水量</div>
+                <div style="font-size:22px;font-weight:700;color:#3b82f6;">142,580 m³</div>
+                <div style="color:#10b981;font-size:12px;"><i class="fas fa-arrow-up"></i> +2.3% vs昨日</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">明日预测水量</div>
+                <div style="font-size:22px;font-weight:700;color:#3b82f6;">138,920 m³</div>
+                <div style="color:#f59e0b;font-size:12px;"><i class="fas fa-arrow-down"></i> -2.6% vs今日</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">月平均预测</div>
+                <div style="font-size:22px;font-weight:700;color:#6366f1;">145,200 m³</div>
+                <div style="color:#10b981;font-size:12px;"><i class="fas fa-arrow-up"></i> +1.8% vs上月</div>
+            </div>
+            <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+                <div style="color:#6b7280;font-size:12px;">预测准确率</div>
+                <div style="font-size:22px;font-weight:700;color:#10b981;">94.2%</div>
+                <div style="color:#10b981;font-size:12px;">过去30天平均</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+            <!-- 预测趋势图 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">未来30天水量预测趋势</div>
+                <canvas id="forecastChart" width="600" height="350" style="width:100%;height:350px;"></canvas>
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;">
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#3b82f6;margin-right:4px;"></div>历史实际值</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#10b981;margin-right:4px;"></div>预测值</span>
+                    <span><div style="display:inline-block;width:12px;height:12px;background:#f59e0b;opacity:0.3;margin-right:4px;"></div>置信区间</span>
+                </div>
+            </div>
+
+            <!-- 影响因子分析 -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+                <div style="font-weight:600;margin-bottom:8px;">预测影响因子</div>
+                <div style="space-y:8px;">
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;">
+                            <span>气温变化</span>
+                            <span style="color:#dc2626;">35%</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:6px;">
+                            <div style="width:35%;background:#dc2626;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;">
+                            <span>周期性规律</span>
+                            <span style="color:#f59e0b;">28%</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:6px;">
+                            <div style="width:28%;background:#f59e0b;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;">
+                            <span>人口密度</span>
+                            <span style="color:#3b82f6;">22%</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:6px;">
+                            <div style="width:22%;background:#3b82f6;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;">
+                            <span>节假日影响</span>
+                            <span style="color:#10b981;">15%</span>
+                        </div>
+                        <div style="width:100%;background:#e5e7eb;border-radius:4px;height:6px;">
+                            <div style="width:15%;background:#10b981;height:100%;border-radius:4px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:16px;font-size:12px;color:#6b7280;">
+                    <p style="margin:4px 0;">⚠️ 预测提醒：</p>
+                    <p style="margin:4px 0;">• 9月18日预计用水量达峰值</p>
+                    <p style="margin:4px 0;">• 9月22-24日为中秋假期，用水量将下降</p>
+                    <p style="margin:4px 0;">• 建议提前调节供水压力</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预测明细表 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">未来7天预测明细</div>
+            <table class="table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>预测水量(m³)</th>
+                        <th>置信区间</th>
+                        <th>主要影响因子</th>
+                        <th>调度建议</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2025-09-16</td>
+                        <td><span style="color:#3b82f6;">142,580</span></td>
+                        <td>138,200 - 146,900</td>
+                        <td>工作日+气温升高</td>
+                        <td><span style="color:#10b981;">正常调度</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-09-17</td>
+                        <td><span style="color:#3b82f6;">138,920</span></td>
+                        <td>134,800 - 143,100</td>
+                        <td>工作日+降雨预报</td>
+                        <td><span style="color:#10b981;">正常调度</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-09-18</td>
+                        <td><span style="color:#dc2626;">156,400</span></td>
+                        <td>151,200 - 161,600</td>
+                        <td>工作日+高温预警</td>
+                        <td><span style="color:#f59e0b;">增加供水</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-09-19</td>
+                        <td><span style="color:#3b82f6;">145,200</span></td>
+                        <td>140,900 - 149,500</td>
+                        <td>工作日+温度回落</td>
+                        <td><span style="color:#10b981;">正常调度</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-09-20</td>
+                        <td><span style="color:#3b82f6;">148,600</span></td>
+                        <td>144,200 - 153,000</td>
+                        <td>周五+温度适宜</td>
+                        <td><span style="color:#10b981;">正常调度</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function drawForecastChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var L = 50, R = 30, T = 30, B = 50;
+            ctx.clearRect(0, 0, W, H);
+
+            // 模拟30天的历史和预测数据
+            var historyDays = 15; // 历史15天
+            var forecastDays = 15; // 预测15天
+            var totalDays = historyDays + forecastDays;
+            
+            // 生成模拟数据
+            var historyData = [];
+            var forecastData = [];
+            var confidenceUpper = [];
+            var confidenceLower = [];
+            
+            for(var i = 0; i < historyDays; i++){
+                historyData.push(130000 + Math.sin(i * 0.5) * 15000 + Math.random() * 8000);
+            }
+            
+            for(var i = 0; i < forecastDays; i++){
+                var base = 135000 + Math.sin((historyDays + i) * 0.5) * 12000;
+                forecastData.push(base);
+                confidenceUpper.push(base + 8000 + Math.random() * 4000);
+                confidenceLower.push(base - 8000 - Math.random() * 4000);
+            }
+            
+            var allData = historyData.concat(forecastData);
+            var allUpperData = historyData.concat(confidenceUpper);
+            var allLowerData = historyData.concat(confidenceLower);
+            
+            var minVal = Math.min.apply(null, allLowerData);
+            var maxVal = Math.max.apply(null, allUpperData);
+            var range = maxVal - minVal;
+            
+            var xStep = (W - L - R) / (totalDays - 1);
+
+            // 绘制网格线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for(var i = 0; i <= 6; i++){
+                var y = T + (H - T - B) * i / 6;
+                ctx.beginPath();
+                ctx.moveTo(L, y);
+                ctx.lineTo(W - R, y);
+                ctx.stroke();
+            }
+
+            // 绘制置信区间（阴影）
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+            ctx.beginPath();
+            // 上边界
+            for(var i = historyDays; i < totalDays; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (confidenceUpper[i - historyDays] - minVal) / range) * (H - T - B);
+                if(i === historyDays) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            // 下边界（反向）
+            for(var i = totalDays - 1; i >= historyDays; i--){
+                var x = L + i * xStep;
+                var y = T + (1 - (confidenceLower[i - historyDays] - minVal) / range) * (H - T - B);
+                ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // 绘制历史数据线
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for(var i = 0; i < historyDays; i++){
+                var x = L + i * xStep;
+                var y = T + (1 - (historyData[i] - minVal) / range) * (H - T - B);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 绘制预测数据线
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for(var i = historyDays - 1; i < totalDays; i++){
+                var x = L + i * xStep;
+                var val = i === historyDays - 1 ? historyData[historyDays - 1] : forecastData[i - historyDays];
+                var y = T + (1 - (val - minVal) / range) * (H - T - B);
+                if(i === historyDays - 1) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 分割线（历史/预测）
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 5]);
+            var splitX = L + (historyDays - 1) * xStep;
+            ctx.beginPath();
+            ctx.moveTo(splitX, T);
+            ctx.lineTo(splitX, H - B);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Y轴标签
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            for(var i = 0; i <= 6; i++){
+                var val = Math.round((minVal + range * i / 6) / 1000);
+                var y = H - B - (H - T - B) * i / 6;
+                ctx.fillText(val + 'k', L - 5, y + 3);
+            }
+
+            // X轴标签
+            ctx.textAlign = 'center';
+            for(var i = 0; i < totalDays; i += 3){
+                var x = L + i * xStep;
+                var date = new Date();
+                date.setDate(date.getDate() - historyDays + 1 + i);
+                var label = (date.getMonth() + 1) + '/' + date.getDate();
+                ctx.fillText(label, x, H - B + 15);
+            }
+
+            // 图例
+            ctx.fillText('历史|预测分界线', splitX, T - 10);
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try{ 
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html', active: true},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html'},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('forecastChart');
+            if(canvas) drawForecastChart(canvas);
+            
+            document.getElementById('predictBtn').addEventListener('click', function(){ 
+                if(canvas) drawForecastChart(canvas);
+                alert('重新预测完成，模型准确率：94.5%');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = '日期,预测水量,置信下限,置信上限,主要影响因子\n2025-09-16,142580,138200,146900,工作日+气温升高\n2025-09-17,138920,134800,143100,工作日+降雨预报\n2025-09-18,156400,151200,161600,工作日+高温预警\n2025-09-19,145200,140900,149500,工作日+温度回落\n2025-09-20,148600,144200,153000,周五+温度适宜';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='water_forecast.csv'; 
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

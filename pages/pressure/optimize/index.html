@@ -3,39 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>压力监控优化</title>
-    <link rel="stylesheet" href="../../../components/common/layout.css">
+    <title>智慧管网运维平台 - 压力监控优化</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../common_styles.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../../../components/common/TooltipWrapper.js"></script>
-    <script src="../../../components/common/Breadcrumb.js"></script>
-    <script src="../../../components/common/ChartCard.js"></script>
-    <script src="../../../components/common/Layout.js"></script>
-    <script src="../../../modules/utils/rbac.js"></script>
-    <script src="../../../modules/utils/router.js"></script>
+    <!-- 统一顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <span>智慧管网运维平台</span>
+                </div>
+                <div class="nav-links" id="navLinksContainer">
+                    <!-- 菜单将通过JavaScript动态生成以确保路径正确 -->
+                </div>
+            </div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <!-- 用户信息将通过JavaScript生成 -->
+                </div>
+                
+                <div class="current-time-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="current-time"></span>
+                </div>
+                
+                <button class="btn btn-sm btn-danger" onclick="window.location.href='/login.html'">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-layout" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">
+            <div class="header-info">
+                <h1 style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0"><i class="fas fa-gauge-high"></i> 压力监控优化</h1>
+                <p class="header-desc" style="color:var(--text-secondary)">监控分区压力并给出优化方案（模拟数据）</p>
+            </div>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="diagnoseBtn"><i class="fas fa-search"></i> 诊断</button>
+                <button class="btn btn-outline" id="exportBtn"><i class="fas fa-file-export"></i> 导出建议</button>
+            </div>
+        </div>
+
+        <!-- 过滤器 -->
+        <div style="display:grid;grid-template-columns:repeat(3, 200px);gap:8px;margin-bottom:12px;">
+            <label>时间范围<select id="timeRange" class="form-control"><option value="24h">近24小时</option><option value="7d">近7天</option></select></label>
+            <label>区域<select id="area" class="form-control"><option value="ALL">全网</option><option value="A">A区</option><option value="B">B区</option></select></label>
+            <label>压力阈值<select id="threshold" class="form-control"><option value="low">低压预警</option><option value="high">高压预警</option></select></label>
+        </div>
+
+        <!-- 趋势图表 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">压力趋势监控</div>
+            <canvas id="pressureChart" width="900" height="300" style="width:100%;height:300px;"></canvas>
+        </div>
+
+        <!-- PRV调节建议表 -->
+        <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">PRV调节建议</div>
+            <table class="table" style="width:100%;">
+                <thead>
+                    <tr><th>PRV位置</th><th>当前压力(MPa)</th><th>建议压力(MPa)</th><th>调节量</th><th>预期效果</th></tr>
+                </thead>
+                <tbody id="prvTableBody">
+                    <tr><td>A区主阀</td><td>0.45</td><td>0.42</td><td>-0.03</td><td>降低末端压力波动</td></tr>
+                    <tr><td>B区分阀</td><td>0.38</td><td>0.40</td><td>+0.02</td><td>提升供水稳定性</td></tr>
+                    <tr><td>C区减压阀</td><td>0.52</td><td>0.48</td><td>-0.04</td><td>减少管网负荷</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
-        (function(){
-            var app = document.getElementById('app');
-            var layout = new AppLayout(app);
-            Router.init(layout).then(function(){
-                layout.setPath('/pressure/optimize');
-                var host = document.createElement('div');
-                var title = document.createElement('h2');
-                title.textContent = '压力监控优化';
-                var desc = document.createElement('div');
-                desc.textContent = '监控分区压力并给出优化方案（占位页面）';
-                host.appendChild(title);
-                host.appendChild(desc);
-                var holder = document.createElement('div');
-                host.appendChild(holder);
-                layout.mountContent(host);
-                var cc = new ChartCard(holder, { title: '关键节点压力趋势', tooltip: '支持缩放与悬停提示', height: 320 });
-                cc.mountTo(function(el){ el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;">趋势图占位</div>'; });
+        // 简单的图表绘制
+        function drawPressureChart(canvas){
+            var ctx = canvas.getContext('2d');
+            var W=canvas.width, H=canvas.height, L=40, R=10, T=10, B=24;
+            ctx.clearRect(0,0,W,H);
+            
+            // 生成三条压力曲线：A区、B区、C区
+            var timePoints = 24;
+            var zones = [
+                {name: 'A区', color: '#4A90B8', data: []},
+                {name: 'B区', color: '#10B981', data: []},
+                {name: 'C区', color: '#F59E0B', data: []}
+            ];
+            
+            for(var i = 0; i < timePoints; i++){
+                zones[0].data.push(0.40 + 0.08*Math.sin((i/24)*Math.PI*2) + (Math.random()-0.5)*0.02);
+                zones[1].data.push(0.35 + 0.06*Math.sin((i/24)*Math.PI*2 + Math.PI/3) + (Math.random()-0.5)*0.015);
+                zones[2].data.push(0.50 + 0.10*Math.sin((i/24)*Math.PI*2 + Math.PI/6) + (Math.random()-0.5)*0.025);
+            }
+            
+            var allData = zones.flatMap(z => z.data);
+            var minY = Math.min.apply(null, allData) * 0.95;
+            var maxY = Math.max.apply(null, allData) * 1.05;
+            
+            function xAt(i){ return L + (i/(timePoints-1))*(W-L-R); }
+            function yAt(v){ return T + (1-(v-minY)/(maxY-minY))*(H-T-B); }
+            
+            // 网格
+            ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=1; ctx.beginPath();
+            for(var g=0; g<=4; g++){ var y=T+g*(H-T-B)/4; ctx.moveTo(L,y); ctx.lineTo(W-R,y);} ctx.stroke();
+            
+            // 绘制压力曲线
+            zones.forEach(function(zone){
+                ctx.strokeStyle = zone.color; ctx.lineWidth = 2; ctx.beginPath();
+                zone.data.forEach(function(v,i){ 
+                    var x=xAt(i), y=yAt(v); 
+                    if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); 
+                });
+                ctx.stroke();
             });
-        })();
+            
+            // 标签
+            ctx.fillStyle='#64748b'; ctx.font='12px sans-serif';
+            for(var h=0; h<24; h+=4){ var x=xAt(h); ctx.fillText(String(h).padStart(2,'0')+':00', x-14, H-6); }
+            
+            // Y轴标签
+            for(var g=0; g<=4; g++){ 
+                var v=minY+g*(maxY-minY)/4; 
+                var y=T+(1-g/4)*(H-T-B); 
+                ctx.fillText(v.toFixed(2), 6, y+4); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            // 纯净的页面初始化，无NavigationManager干扰
+            try{ 
+                // 更新时间显示
+                setInterval(function(){
+                    const timeEl = document.querySelector('.current-time');
+                    if(timeEl) timeEl.textContent = new Date().toLocaleString('zh-CN');
+                }, 1000);
+                
+                // 显示用户信息
+                const userEl = document.querySelector('.user-info');
+                if(userEl) userEl.innerHTML = '<span style="color:#6b7280;margin-right:12px;"><i class="fas fa-user"></i> 操作员</span>';
+                
+                // 动态生成导航菜单
+                const baseUrl = window.location.origin;
+                const navContainer = document.getElementById('navLinksContainer');
+                const menuItems = [
+                    {icon: 'fas fa-tachometer-alt', text: '首页驾驶舱', url: 'dashboard_overview.html'},
+                    {icon: 'fas fa-desktop', text: '监控与告警', url: 'monitor.html'},
+                    {icon: 'fas fa-route', text: '调度事务', url: 'dispatch_portal.html'},
+                    {icon: 'fas fa-flask', text: '水质管理', url: 'water_portal.html'},
+                    {icon: 'fas fa-heartbeat', text: '漏损与爆管', url: 'risk_health_portal.html', active: true},
+                    {icon: 'fas fa-brain', text: '智能分析', url: 'ai_portal.html'},
+                    {icon: 'fas fa-tools', text: '工单与运维', url: 'tickets.html'},
+                    {icon: 'fas fa-chart-bar', text: '数据与报表', url: 'reports.html'},
+                    {icon: 'fas fa-cogs', text: '系统管理', url: 'admin.html'}
+                ];
+                
+                menuItems.forEach(function(item){
+                    const link = document.createElement('a');
+                    link.className = 'nav-link' + (item.active ? ' active' : '');
+                    link.innerHTML = '<i class="' + item.icon + '"></i>' + item.text;
+                    link.href = 'javascript:void(0)';
+                    
+                    const fullUrl = baseUrl + '/' + item.url;
+                    link.onclick = function(e){
+                        e.preventDefault();
+                        window.location.href = fullUrl;
+                        return false;
+                    };
+                    
+                    navContainer.appendChild(link);
+                });
+                
+                console.log('Pressure optimize page initialized');
+            }catch(e){ console.error('Page init failed:', e); }
+            
+            // 绘制图表
+            var canvas = document.getElementById('pressureChart');
+            if(canvas) drawPressureChart(canvas);
+            
+            // 事件监听
+            document.getElementById('diagnoseBtn').addEventListener('click', function(){ 
+                if(canvas) drawPressureChart(canvas);
+                alert('压力诊断完成，已更新建议'); 
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function(){
+                var csv = 'PRV位置,当前压力,建议压力,调节量,预期效果\nA区主阀,0.45,0.42,-0.03,降低末端压力波动\nB区分阀,0.38,0.40,+0.02,提升供水稳定性\nC区减压阀,0.52,0.48,-0.04,减少管网负荷';
+                var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+                var a=document.createElement('a'); 
+                a.href=URL.createObjectURL(blob); 
+                a.download='pressure_optimization.csv'; 
+                a.click();
+            });
+        });
     </script>
 </body>
-<\/html>
-
-
+</html>
